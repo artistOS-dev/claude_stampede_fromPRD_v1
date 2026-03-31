@@ -35,3 +35,5 @@ yarn-debug.log*
 # Supabase
 supabase/.branches/
 supabase/.temp/
+apps/web/tsconfig.tsbuildinfo
+package-lock.json

@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Stampede",
+    "slug": "stampede",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "stampede",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F97316"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stampede.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F97316"
+      },
+      "package": "com.stampede.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Stampede to access your photos to set a profile picture.",
+          "cameraPermission": "Allow Stampede to access your camera to take a profile picture."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

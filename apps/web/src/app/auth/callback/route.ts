@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/signup?step=3'
 
   if (code) {
     const cookieStore = cookies()
@@ -14,17 +13,14 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll()
+          get(name: string) {
+            return cookieStore.get(name)?.value
           },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Ignore in Server Components
-            }
+          set(name: string, value: string, options: CookieOptions) {
+            try { cookieStore.set({ name, value, ...options }) } catch {}
+          },
+          remove(name: string, options: CookieOptions) {
+            try { cookieStore.set({ name, value: '', ...options }) } catch {}
           },
         },
       }
@@ -34,18 +30,12 @@ export async function GET(request: Request) {
 
     if (!error) {
       const forwardedHost = request.headers.get('x-forwarded-host')
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}/signup?step=3`)
-      } else if (forwardedHost) {
+      if (forwardedHost) {
         return NextResponse.redirect(`https://${forwardedHost}/signup?step=3`)
-      } else {
-        return NextResponse.redirect(`${origin}/signup?step=3`)
       }
+      return NextResponse.redirect(`${origin}/signup?step=3`)
     }
   }
 
-  // Return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/signup?error=verification_failed`)
 }

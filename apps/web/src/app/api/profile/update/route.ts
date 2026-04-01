@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
   )
 
   if (upsertError) {
-    console.error('Profile update error:', upsertError)
+    console.error('Profile update error:', upsertError.code, upsertError.message, upsertError.details)
 
-    // Handle unique constraint violation on display_name
+    // Unique constraint violation on display_name
     if (upsertError.code === '23505') {
       return NextResponse.json(
         { error: 'That display name is already taken.' },
@@ -59,7 +59,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+    // RLS violation — profile row missing and no INSERT policy yet
+    // (user was created before the migration added the INSERT policy)
+    if (upsertError.code === '42501') {
+      return NextResponse.json(
+        { error: 'Profile permission denied. Please run migration 002 in your Supabase SQL Editor.' },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: `Failed to update profile: ${upsertError.message} (code: ${upsertError.code})` },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({ success: true })

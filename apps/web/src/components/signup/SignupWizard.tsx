@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Music2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import ProgressBar from './ProgressBar'
 import Step1Credentials from './Step1Credentials'
 import Step2Verify from './Step2Verify'
@@ -88,14 +89,37 @@ export default function SignupWizard({
 
   // Hydrate from sessionStorage after mount
   useEffect(() => {
-    const saved = loadState()
-    // If initialStep is provided via URL (e.g., from email callback), override
-    if (initialStep && initialStep > saved.step) {
-      setStateRaw({ ...saved, step: initialStep })
-    } else {
-      setStateRaw(saved)
+    async function hydrate() {
+      const saved = loadState()
+      let nextState = { ...saved }
+
+      // If initialStep is provided via URL (e.g., from email callback), override
+      if (initialStep && initialStep > saved.step) {
+        nextState = { ...nextState, step: initialStep }
+      }
+
+      // If we're at step 3+ but don't have userId (e.g., email opened in new tab),
+      // try to get it from the active Supabase auth session
+      if (nextState.step >= 3 && !nextState.userId) {
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            nextState.userId = user.id
+            if (!nextState.email && user.email) {
+              nextState.email = user.email
+            }
+          }
+        } catch {
+          // Ignore — will fall back to showing Step1Credentials
+        }
+      }
+
+      setStateRaw(nextState)
+      setIsHydrated(true)
     }
-    setIsHydrated(true)
+
+    hydrate()
   }, [initialStep])
 
   const setState = useCallback((updater: Partial<SignupState> | ((prev: SignupState) => SignupState)) => {

@@ -7,6 +7,7 @@ interface SignupPageProps {
     entry?: string
     circle?: string
     inviter?: string
+    error?: string
   }
 }
 
@@ -15,6 +16,7 @@ function SignupWizardWrapper({ searchParams }: SignupPageProps) {
   const entryPoint = searchParams.entry
   const preselectedCircleId = searchParams.circle
   const inviterName = searchParams.inviter
+  const errorParam = searchParams.error
 
   return (
     <SignupWizard
@@ -22,6 +24,7 @@ function SignupWizardWrapper({ searchParams }: SignupPageProps) {
       entryPoint={entryPoint}
       preselectedCircleId={preselectedCircleId}
       inviterName={inviterName}
+      verificationError={errorParam === 'verification_failed'}
     />
   )
 }

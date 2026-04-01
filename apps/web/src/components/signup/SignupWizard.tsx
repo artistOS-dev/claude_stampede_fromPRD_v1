@@ -45,6 +45,7 @@ interface SignupWizardProps {
   entryPoint?: string
   preselectedCircleId?: string
   inviterName?: string
+  verificationError?: boolean
 }
 
 function loadState(): SignupState {
@@ -82,6 +83,7 @@ export default function SignupWizard({
   entryPoint,
   preselectedCircleId,
   inviterName,
+  verificationError,
 }: SignupWizardProps) {
   const router = useRouter()
   const [state, setStateRaw] = useState<SignupState>(DEFAULT_STATE)
@@ -92,6 +94,14 @@ export default function SignupWizard({
     async function hydrate() {
       const saved = loadState()
       let nextState = { ...saved }
+
+      // If verification failed, send user back to step 2 so they can resend the email
+      if (verificationError) {
+        nextState = { ...nextState, step: saved.step >= 2 ? 2 : 1 }
+        setStateRaw(nextState)
+        setIsHydrated(true)
+        return
+      }
 
       // If initialStep is provided via URL (e.g., from email callback), override
       if (initialStep && initialStep > saved.step) {
@@ -234,6 +244,18 @@ export default function SignupWizard({
           <div className="mb-8">
             <ProgressBar currentStep={step} totalSteps={6} />
           </div>
+
+          {/* Verification error banner */}
+          {verificationError && step === 2 && (
+            <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200" role="alert">
+              <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-amber-700">
+                That verification link has expired or already been used. Please request a new one below.
+              </p>
+            </div>
+          )}
 
           {/* Step card */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">

@@ -217,10 +217,7 @@ export default function Step3Profile({
   const canContinue =
     displayName.length >= 3 &&
     role !== null &&
-    (usernameStatus === 'available' || usernameStatus === 'idle') &&
-    usernameStatus !== 'taken' &&
-    usernameStatus !== 'invalid' &&
-    usernameStatus !== 'checking'
+    (usernameStatus === 'available' || usernameStatus === 'idle')
 
   return (
     <div>

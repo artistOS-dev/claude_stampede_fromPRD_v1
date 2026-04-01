@@ -40,7 +40,7 @@ export default function CirclesPage() {
       const data: { error?: string } = await res.json()
       throw new Error(data.error ?? 'Failed to join circle')
     }
-    setJoinedCircles((prev) => new Set([...prev, circleId]))
+    setJoinedCircles((prev) => new Set(prev).add(circleId))
   }, [])
 
   const filtered = search.trim()

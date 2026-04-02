@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, Star, Music2, CheckCircle2 } from 'lucide-react'
+import { Users, Star, Music2, CheckCircle2, LogOut } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 export interface CircleData {
@@ -21,6 +21,7 @@ export interface CircleData {
 interface CircleCardProps {
   circle: CircleData
   onJoin: (circleId: string) => Promise<void>
+  onLeave?: (circleId: string) => Promise<void>
   joined: boolean
 }
 
@@ -31,21 +32,34 @@ function formatMemberCount(count: number): string {
   return count.toString()
 }
 
-export default function CircleCard({ circle, onJoin, joined }: CircleCardProps) {
+export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCardProps) {
   const [isJoining, setIsJoining] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleJoin = async () => {
     if (joined || isJoining) return
     setIsJoining(true)
     setError(null)
-
     try {
       await onJoin(circle.id)
     } catch {
       setError('Failed to join. Please try again.')
     } finally {
       setIsJoining(false)
+    }
+  }
+
+  const handleLeave = async () => {
+    if (!onLeave || !joined || isLeaving) return
+    setIsLeaving(true)
+    setError(null)
+    try {
+      await onLeave(circle.id)
+    } catch {
+      setError('Failed to leave. Please try again.')
+    } finally {
+      setIsLeaving(false)
     }
   }
 
@@ -133,15 +147,28 @@ export default function CircleCard({ circle, onJoin, joined }: CircleCardProps) 
         </p>
       )}
 
-      {/* Join button */}
+      {/* Join / Leave button */}
       {joined ? (
-        <div
-          className="flex items-center gap-2 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-semibold"
-          role="status"
-          aria-label={`You have joined ${circle.name}`}
-        >
-          <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-          Joined!
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-semibold flex-1"
+            role="status"
+            aria-label={`You have joined ${circle.name}`}
+          >
+            <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+            Joined
+          </div>
+          {onLeave && (
+            <Button
+              variant="secondary"
+              className="flex-shrink-0 !px-3"
+              loading={isLeaving}
+              onClick={handleLeave}
+              aria-label={`Leave ${circle.name}`}
+            >
+              <LogOut className="w-4 h-4" aria-hidden="true" />
+            </Button>
+          )}
         </div>
       ) : (
         <Button

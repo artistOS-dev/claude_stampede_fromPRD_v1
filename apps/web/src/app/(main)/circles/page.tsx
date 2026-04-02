@@ -15,10 +15,20 @@ export default function CirclesPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/circles')
-      if (!res.ok) throw new Error('Failed to load circles')
-      const data: { circles: CircleData[] } = await res.json()
-      setCircles(data.circles ?? [])
+      const [circlesRes, membershipsRes] = await Promise.all([
+        fetch('/api/circles'),
+        fetch('/api/circles/memberships'),
+      ])
+
+      if (!circlesRes.ok) throw new Error('Failed to load circles')
+
+      const circlesData: { circles: CircleData[] } = await circlesRes.json()
+      setCircles(circlesData.circles ?? [])
+
+      if (membershipsRes.ok) {
+        const membershipsData: { circle_ids: string[] } = await membershipsRes.json()
+        setJoinedCircles(new Set(membershipsData.circle_ids ?? []))
+      }
     } catch {
       setError('Could not load circles. Please refresh the page.')
     } finally {
@@ -41,6 +51,23 @@ export default function CirclesPage() {
       throw new Error(data.error ?? 'Failed to join circle')
     }
     setJoinedCircles((prev) => new Set(prev).add(circleId))
+  }, [])
+
+  const handleLeave = useCallback(async (circleId: string) => {
+    const res = await fetch('/api/circles/leave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ circle_id: circleId }),
+    })
+    if (!res.ok) {
+      const data: { error?: string } = await res.json()
+      throw new Error(data.error ?? 'Failed to leave circle')
+    }
+    setJoinedCircles((prev) => {
+      const next = new Set(prev)
+      next.delete(circleId)
+      return next
+    })
   }, [])
 
   const filtered = search.trim()
@@ -78,7 +105,6 @@ export default function CirclesPage() {
         />
       </div>
 
-      {/* States */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" aria-label="Loading" />
@@ -114,6 +140,7 @@ export default function CirclesPage() {
               key={circle.id}
               circle={circle}
               onJoin={handleJoin}
+              onLeave={handleLeave}
               joined={joinedCircles.has(circle.id)}
             />
           ))}

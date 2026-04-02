@@ -36,22 +36,11 @@ export async function GET(
   }
 
   // Attach the current user's rating to each song
-  const songs = (data ?? []).map((s: {
-    id: string
-    title: string
-    artist: string
-    album: string | null
-    spotify_url: string | null
-    cover_url: string | null
-    avg_rating: number
-    rating_count: number
-    created_at: string
-    shared_by: string
-    profiles: { display_name: string; avatar_url: string | null } | null
-    song_ratings: Array<{ rating: number; user_id: string }>
-  }) => {
-    const myRating = s.song_ratings?.find((r) => r.user_id === user.id)?.rating ?? null
-    const { song_ratings, ...rest } = s
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const songs = (data ?? []).map((s: any) => {
+    const myRating = (s.song_ratings as Array<{ rating: number; user_id: string }> | null)
+      ?.find((r) => r.user_id === user.id)?.rating ?? null
+    const { song_ratings: _, ...rest } = s
     return { ...rest, my_rating: myRating }
   })
 

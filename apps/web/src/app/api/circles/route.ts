@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Shape returned by the DB (matches migration 001 column names)
+interface CircleRow {
+  id: string
+  name: string
+  description: string
+  core_artists: string[]
+  member_count: number
+  avg_song_rating: number
+  personality_tags: string[]
+  image_url: string | null
+}
+
+// Shape the frontend expects (CircleData in CircleCard.tsx)
 interface Circle {
   id: string
   name: string
@@ -11,6 +24,24 @@ interface Circle {
   personality_types: string[]
   cover_image_url: string | null
   slug: string
+}
+
+function toSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function mapRow(row: CircleRow): Circle {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    core_artists: row.core_artists ?? [],
+    member_count: row.member_count ?? 0,
+    avg_rating: row.avg_song_rating ?? 0,
+    personality_types: row.personality_tags ?? [],
+    cover_image_url: row.image_url ?? null,
+    slug: toSlug(row.name),
+  }
 }
 
 const MOCK_CIRCLES: Circle[] = [
@@ -82,49 +113,39 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
 
+    // Query using the actual column names from migration 001
     let query = supabase
       .from('circles')
-      .select('id, name, description, core_artists, member_count, avg_rating, personality_types, cover_image_url, slug')
+      .select('id, name, description, core_artists, member_count, avg_song_rating, personality_tags, image_url')
       .order('member_count', { ascending: false })
       .limit(10)
 
     if (personalityTypes.length > 0) {
-      query = query.overlaps('personality_types', personalityTypes)
+      query = query.overlaps('personality_tags', personalityTypes)
     }
 
     const { data, error } = await query
 
     if (error) {
-      // If the table doesn't exist, return mock circles
-      if (error.code === '42P01') {
-        const filtered = filterMockCircles(MOCK_CIRCLES, personalityTypes)
-        return NextResponse.json({ circles: filtered })
-      }
-      throw error
+      console.error('Circles DB error:', error.code, error.message)
+      return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
     }
 
     if (!data || data.length === 0) {
-      // Return mock circles as fallback
-      const filtered = filterMockCircles(MOCK_CIRCLES, personalityTypes)
-      return NextResponse.json({ circles: filtered })
+      return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
     }
 
-    return NextResponse.json({ circles: data })
+    return NextResponse.json({ circles: (data as CircleRow[]).map(mapRow) })
   } catch (err) {
     console.error('Circles fetch error:', err)
-    // Return mock circles on any error
-    const filtered = filterMockCircles(MOCK_CIRCLES, personalityTypes)
-    return NextResponse.json({ circles: filtered })
+    return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
   }
 }
 
 function filterMockCircles(circles: Circle[], personalityTypes: string[]): Circle[] {
   if (personalityTypes.length === 0) return circles
-
   const withOverlap = circles.filter((c) =>
     c.personality_types.some((pt) => personalityTypes.includes(pt))
   )
-
-  // Return at least 3 even if no match
   return withOverlap.length >= 2 ? withOverlap : circles.slice(0, 4)
 }

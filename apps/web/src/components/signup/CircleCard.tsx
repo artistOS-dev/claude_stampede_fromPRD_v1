@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Users, Star, Music2, CheckCircle2, LogOut } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
@@ -33,6 +34,7 @@ function formatMemberCount(count: number): string {
 }
 
 export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCardProps) {
+  const router = useRouter()
   const [isJoining, setIsJoining] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -76,7 +78,17 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-gray-900 text-base leading-tight">{circle.name}</h3>
+            {joined ? (
+              <button
+                type="button"
+                onClick={() => router.push(`/circles/${circle.id}`)}
+                className="font-bold text-gray-900 text-base leading-tight hover:text-orange-600 transition-colors text-left"
+              >
+                {circle.name}
+              </button>
+            ) : (
+              <h3 className="font-bold text-gray-900 text-base leading-tight">{circle.name}</h3>
+            )}
             {circle.isHighlighted && circle.inviterName && (
               <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">
                 Invited by {circle.inviterName}

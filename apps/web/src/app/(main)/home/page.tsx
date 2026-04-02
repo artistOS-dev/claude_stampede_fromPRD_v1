@@ -15,11 +15,19 @@ export default async function HomePage() {
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('display_name, avatar_url, role, subscription_tier')
-    .eq('id', user.id)
-    .maybeSingle()
+  const [{ data: profile }, { data: memberships }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('display_name, avatar_url, role, subscription_tier')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('circle_members')
+      .select('circle_id, joined_at, circles(id, name, description, core_artists, member_count)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: false }),
+  ])
 
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'there'
   const avatarUrl = profile?.avatar_url ?? null
@@ -31,6 +39,16 @@ export default async function HomePage() {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+
+  const myCircles = (memberships ?? [])
+    .map((m: { circle_id: string; joined_at: string; circles: unknown }) => m.circles)
+    .filter(Boolean) as Array<{
+      id: string
+      name: string
+      description: string
+      core_artists: string[]
+      member_count: number
+    }>
 
   return (
     <div className="space-y-8">
@@ -78,7 +96,7 @@ export default async function HomePage() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Your circles</p>
-            <p className="text-xl font-bold text-gray-900">0</p>
+            <p className="text-xl font-bold text-gray-900">{myCircles.length}</p>
           </div>
         </div>
 
@@ -103,9 +121,43 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* My Circles */}
+      {myCircles.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">My Circles</h2>
+            <a href="/circles" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+              Browse more
+            </a>
+          </div>
+          <div className="space-y-3">
+            {myCircles.map((circle) => (
+              <div
+                key={circle.id}
+                className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+              >
+                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{circle.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{circle.description}</p>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+                  <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{circle.member_count?.toLocaleString() ?? 0}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Getting started */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Get started</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">
+          {myCircles.length === 0 ? 'Get started' : 'Explore more'}
+        </h2>
         <div className="space-y-3">
           <a
             href="/circles"
@@ -122,19 +174,8 @@ export default async function HomePage() {
                 Find communities of fans who share your taste
               </p>
             </div>
-            <svg
-              className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </a>
 
@@ -153,19 +194,8 @@ export default async function HomePage() {
                 See what the community is listening to
               </p>
             </div>
-            <svg
-              className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </a>
         </div>

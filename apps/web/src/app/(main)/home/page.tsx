@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
-import { Music2, Users, Star, Headphones } from 'lucide-react'
+import { Music2, Users, Star, Headphones, ChevronRight } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = createClient()
@@ -15,19 +15,33 @@ export default async function HomePage() {
     redirect('/login')
   }
 
-  const [{ data: profile }, { data: memberships }] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('display_name, avatar_url, role, subscription_tier')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('circle_members')
-      .select('circle_id, joined_at, circles(id, name, description, core_artists, member_count)')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('joined_at', { ascending: false }),
-  ])
+  const [{ data: profile }, { data: memberships }, { data: songsShared }, { data: recentSongs }] =
+    await Promise.all([
+      supabase
+        .from('profiles')
+        .select('display_name, avatar_url, role, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('circle_members')
+        .select('circle_id, joined_at, circles(id, name, description, member_count)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('joined_at', { ascending: false }),
+      supabase
+        .from('circle_songs')
+        .select('id', { count: 'exact', head: true })
+        .eq('shared_by', user.id),
+      supabase
+        .from('circle_songs')
+        .select(`
+          id, title, artist, avg_rating, rating_count, created_at,
+          circles(id, name)
+        `)
+        .eq('shared_by', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5),
+    ])
 
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'there'
   const avatarUrl = profile?.avatar_url ?? null
@@ -40,15 +54,22 @@ export default async function HomePage() {
     .toUpperCase()
     .slice(0, 2)
 
-  const myCircles = (memberships ?? [])
-    .map((m: { circle_id: string; joined_at: string; circles: unknown }) => m.circles)
-    .filter(Boolean) as Array<{
-      id: string
-      name: string
-      description: string
-      core_artists: string[]
-      member_count: number
-    }>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const myCircles = ((memberships ?? []) as any[])
+    .map((m) => m.circles)
+    .filter(Boolean) as Array<{ id: string; name: string; description: string; member_count: number }>
+
+  const songsCount = (songsShared as unknown as { count?: number } | null)?.count ?? 0
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const myRecentSongs = ((recentSongs ?? []) as any[]) as Array<{
+    id: string
+    title: string
+    artist: string
+    avg_rating: number
+    rating_count: number
+    circles: { id: string; name: string } | null
+  }>
 
   return (
     <div className="space-y-8">
@@ -74,9 +95,7 @@ export default async function HomePage() {
             )}
           </div>
           <div>
-            <h1 className="text-2xl font-bold">
-              Welcome to Stampede, {displayName}!
-            </h1>
+            <h1 className="text-2xl font-bold">Welcome to Stampede, {displayName}!</h1>
             <p className="text-orange-100 mt-1">
               {tier === 'superfan'
                 ? 'Superfan member — you have full access'
@@ -90,7 +109,7 @@ export default async function HomePage() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4">
+        <a href="/circles" className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4 hover:border-orange-200 transition-colors">
           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
             <Users className="w-5 h-5 text-orange-600" aria-hidden="true" />
           </div>
@@ -98,7 +117,7 @@ export default async function HomePage() {
             <p className="text-sm text-gray-500">Your circles</p>
             <p className="text-xl font-bold text-gray-900">{myCircles.length}</p>
           </div>
-        </div>
+        </a>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -106,7 +125,7 @@ export default async function HomePage() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Songs shared</p>
-            <p className="text-xl font-bold text-gray-900">0</p>
+            <p className="text-xl font-bold text-gray-900">{songsCount}</p>
           </div>
         </div>
 
@@ -130,73 +149,82 @@ export default async function HomePage() {
               Browse more
             </a>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {myCircles.map((circle) => (
-              <div
+              <a
                 key={circle.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                href={`/circles/${circle.id}`}
+                className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-colors group"
               >
                 <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                   <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{circle.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                    {circle.name}
+                  </p>
                   <p className="text-xs text-gray-500 truncate">{circle.description}</p>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
-                  <Users className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>{circle.member_count?.toLocaleString() ?? 0}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>{circle.member_count?.toLocaleString() ?? 0}</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-orange-400 transition-colors" />
                 </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recently shared songs */}
+      {myRecentSongs.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Songs I&apos;ve Shared</h2>
+          <div className="space-y-3">
+            {myRecentSongs.map((song) => (
+              <div key={song.id} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{song.title}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {song.artist}
+                    {song.circles ? (
+                      <> · <a href={`/circles/${song.circles.id}`} className="text-orange-500 hover:text-orange-600">{song.circles.name}</a></>
+                    ) : null}
+                  </p>
+                </div>
+                {song.avg_rating > 0 && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" />
+                    <span className="text-xs text-gray-500">{song.avg_rating.toFixed(1)}</span>
+                    <span className="text-xs text-gray-400">({song.rating_count})</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Getting started */}
+      {/* Getting started / Explore */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">
           {myCircles.length === 0 ? 'Get started' : 'Explore more'}
         </h2>
         <div className="space-y-3">
-          <a
-            href="/circles"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-          >
+          <a href="/circles" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
             <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
               <Users className="w-4 h-4 text-orange-600" aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors">
-                Browse Circles
-              </p>
-              <p className="text-xs text-gray-500">
-                Find communities of fans who share your taste
-              </p>
+              <p className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors">Browse Circles</p>
+              <p className="text-xs text-gray-500">Find communities of fans who share your taste</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
-
-          <a
-            href="/feed"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-          >
-            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors">
-                Explore the Feed
-              </p>
-              <p className="text-xs text-gray-500">
-                See what the community is listening to
-              </p>
-            </div>
-            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
           </a>
         </div>
       </div>

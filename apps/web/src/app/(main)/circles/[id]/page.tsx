@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   Music2, Users, Star, Plus, Trash2, ExternalLink, ArrowLeft, Loader2,
   Trophy, Coins, TrendingUp, TrendingDown, Minus, Crown, Archive,
-  ChevronRight, Flame, CheckCircle2,
+  ChevronRight, Flame, CheckCircle2, ThumbsUp, PauseCircle, XCircle,
+  AlertCircle, Swords,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -385,6 +386,381 @@ function RodeoHistoryCard({
   )
 }
 
+// ── BoardInboxTab ─────────────────────────────────────────────
+
+function BoardInboxTab({
+  data,
+  loading,
+  error,
+  isBoardMember,
+  circleId,
+  onVoted,
+  onNewChallenge,
+  onViewRodeo,
+}: {
+  data: BoardData | null
+  loading: boolean
+  error: string | null
+  isBoardMember: boolean | null
+  circleId: string
+  onVoted: () => void
+  onNewChallenge: () => void
+  onViewRodeo: (id: string) => void
+}) {
+  if (loading) {
+    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>
+  }
+
+  if (isBoardMember === false) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center space-y-2">
+        <Crown className="w-10 h-10 text-amber-400 mx-auto" />
+        <p className="font-semibold text-amber-900">Board access required</p>
+        <p className="text-sm text-amber-700">Only board members and founders can view the board inbox.</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-600">{error}</div>
+  }
+
+  if (!data) return null
+
+  const pending = data.proposals.filter((p) => p.status === 'pending')
+  const past    = data.proposals.filter((p) => p.status !== 'pending')
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-gray-900 flex items-center gap-2">
+          <Crown className="w-5 h-5 text-orange-500" />
+          Board Inbox
+        </h2>
+        <button
+          type="button"
+          onClick={onNewChallenge}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors"
+        >
+          <Swords className="w-4 h-4" /> New Challenge
+        </button>
+      </div>
+
+      {/* Pending proposals */}
+      {pending.length === 0 && past.length === 0 && (
+        <div className="text-center py-16 text-gray-400">
+          <Crown className="w-10 h-10 mx-auto mb-2" />
+          <p className="font-medium">No pending challenge proposals</p>
+          <p className="text-sm mt-1">Start a new challenge to put it before the board.</p>
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+            Pending approval ({pending.length})
+          </h3>
+          {pending.map((p) => (
+            <ProposalCard
+              key={p.id}
+              proposal={p}
+              circleId={circleId}
+              boardSeatCount={data.board_seat_count}
+              myUserId={data.my_user_id}
+              onVoted={onVoted}
+              onViewRodeo={onViewRodeo}
+            />
+          ))}
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Past proposals</h3>
+          {past.map((p) => (
+            <ProposalCard
+              key={p.id}
+              proposal={p}
+              circleId={circleId}
+              boardSeatCount={data.board_seat_count}
+              myUserId={data.my_user_id}
+              onVoted={onVoted}
+              onViewRodeo={onViewRodeo}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── ProposalCard ──────────────────────────────────────────────
+
+const STATUS_STYLE: Record<string, { bg: string; border: string; badge: string; label: string }> = {
+  pending:  { bg: 'bg-orange-50', border: 'border-orange-200', badge: 'bg-orange-100 text-orange-700', label: 'Pending' },
+  approved: { bg: 'bg-green-50',  border: 'border-green-200',  badge: 'bg-green-100 text-green-700',   label: 'Approved' },
+  held:     { bg: 'bg-yellow-50', border: 'border-yellow-200', badge: 'bg-yellow-100 text-yellow-700', label: 'Held' },
+  declined: { bg: 'bg-red-50',    border: 'border-red-200',    badge: 'bg-red-100 text-red-600',       label: 'Declined' },
+  sent:     { bg: 'bg-blue-50',   border: 'border-blue-200',   badge: 'bg-blue-100 text-blue-700',     label: 'Sent' },
+}
+
+function ProposalCard({
+  proposal,
+  circleId,
+  boardSeatCount,
+  myUserId,
+  onVoted,
+  onViewRodeo,
+}: {
+  proposal: ChallengeProposal
+  circleId: string
+  boardSeatCount: number
+  myUserId: string
+  onVoted: () => void
+  onViewRodeo: (id: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [votingState, setVotingState] = useState<'idle' | 'pending' | 'done' | 'error'>('idle')
+  const [voteError, setVoteError] = useState<string | null>(null)
+  const [comment, setComment] = useState('')
+
+  const style = STATUS_STYLE[proposal.status] ?? STATUS_STYLE.pending
+  const isPending = proposal.status === 'pending'
+  const myVote = proposal.challenge_proposal_votes.find((v) => v.voter_id === myUserId)
+
+  const tally = { approve: 0, hold: 0, decline: 0 }
+  for (const v of proposal.challenge_proposal_votes) {
+    tally[v.vote]++
+  }
+  const majority = Math.floor(boardSeatCount / 2) + 1
+
+  const castVote = async (vote: 'approve' | 'hold' | 'decline') => {
+    setVoteError(null)
+    setVotingState('pending')
+    try {
+      const res = await fetch(`/api/circles/${circleId}/challenge-proposals/${proposal.id}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote, comment: comment.trim() || undefined }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Vote failed')
+      setVotingState('done')
+      setComment('')
+      onVoted()
+    } catch (e) {
+      setVoteError(e instanceof Error ? e.message : 'Vote failed')
+      setVotingState('error')
+    }
+  }
+
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${style.border}`}>
+      {/* Header */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className={`w-full text-left flex items-start gap-3 p-4 ${style.bg} hover:brightness-[0.97] transition-all`}
+        aria-expanded={expanded}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.badge}`}>{style.label}</span>
+            <span className="font-semibold text-gray-900 truncate text-sm">{proposal.title}</span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+            <span>vs <strong>{proposal.target?.name ?? '—'}</strong></span>
+            <span className="text-gray-300">·</span>
+            <span>{formatCredits(proposal.credit_buy_in)} credits per side</span>
+            <span className="text-gray-300">·</span>
+            <span>by {proposal.profiles?.display_name ?? '—'}</span>
+          </div>
+        </div>
+        {/* Tally pills */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <TallyPill count={tally.approve} needed={majority} icon="approve" />
+          <TallyPill count={tally.hold}    needed={majority} icon="hold" />
+          <TallyPill count={tally.decline} needed={majority} icon="decline" />
+        </div>
+        <ChevronRight className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+      </button>
+
+      {/* Expanded */}
+      {expanded && (
+        <div className="bg-white border-t border-gray-100 p-4 space-y-4">
+
+          {/* Storyline */}
+          {proposal.description && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Storyline</p>
+              <p className="text-sm text-gray-700 leading-relaxed">{proposal.description}</p>
+            </div>
+          )}
+
+          {/* Songs */}
+          {proposal.challenge_proposal_songs.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Songs on the Line</p>
+              <div className="space-y-1.5">
+                {proposal.challenge_proposal_songs.map((s) => (
+                  <div key={s.song_id} className="flex items-center gap-2 text-sm">
+                    <Music2 className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                    <span className="font-medium text-gray-800 truncate">{s.circle_songs?.title ?? 'Untitled'}</span>
+                    <span className="text-gray-400 truncate">{s.circle_songs?.artist}</span>
+                    {s.label && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${s.label === 'live' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                        {s.label === 'live' ? 'Live' : 'Studio'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Board vote breakdown — always visible */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Board vote ({proposal.challenge_proposal_votes.length}/{boardSeatCount} cast · majority = {majority})
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['approve', 'hold', 'decline'] as const).map((v) => (
+                <div key={v} className={`rounded-xl p-3 text-center ${
+                  v === 'approve' ? 'bg-green-50' : v === 'hold' ? 'bg-yellow-50' : 'bg-red-50'
+                }`}>
+                  <div className={`text-xl font-bold ${v === 'approve' ? 'text-green-700' : v === 'hold' ? 'text-yellow-700' : 'text-red-600'}`}>
+                    {tally[v]}
+                  </div>
+                  <div className={`text-xs mt-0.5 capitalize ${v === 'approve' ? 'text-green-600' : v === 'hold' ? 'text-yellow-600' : 'text-red-500'}`}>
+                    {v}
+                  </div>
+                  {tally[v] >= majority && (
+                    <div className="text-xs text-gray-400 mt-0.5">✓ majority</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Board comment (hold/decline) */}
+          {proposal.board_comment && (
+            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+              <span className="font-medium text-gray-700">Board note: </span>
+              {proposal.board_comment}
+            </div>
+          )}
+
+          {/* If sent → link to rodeo */}
+          {proposal.status === 'sent' && proposal.rodeo_id && (
+            <button
+              type="button"
+              onClick={() => onViewRodeo(proposal.rodeo_id!)}
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
+            >
+              View Rodeo <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Vote UI (pending only) */}
+          {isPending && (
+            <div className="space-y-3 pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Your vote {myVote ? `(current: ${myVote.vote})` : ''}
+              </p>
+
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Optional comment (required for Decline)…"
+                rows={2}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+
+              {voteError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-xl p-3">
+                  <AlertCircle className="w-4 h-4 shrink-0" />{voteError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                <VoteButton
+                  label="Approve"
+                  icon={<ThumbsUp className="w-4 h-4" />}
+                  variant="approve"
+                  active={myVote?.vote === 'approve'}
+                  disabled={votingState === 'pending'}
+                  onClick={() => castVote('approve')}
+                />
+                <VoteButton
+                  label="Hold"
+                  icon={<PauseCircle className="w-4 h-4" />}
+                  variant="hold"
+                  active={myVote?.vote === 'hold'}
+                  disabled={votingState === 'pending'}
+                  onClick={() => castVote('hold')}
+                />
+                <VoteButton
+                  label="Decline"
+                  icon={<XCircle className="w-4 h-4" />}
+                  variant="decline"
+                  active={myVote?.vote === 'decline'}
+                  disabled={votingState === 'pending'}
+                  onClick={() => castVote('decline')}
+                />
+              </div>
+
+              {votingState === 'pending' && (
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Recording vote…
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TallyPill({ count, needed, icon }: { count: number; needed: number; label?: string; icon: 'approve' | 'hold' | 'decline' }) {
+  const reached = count >= needed
+  const colors = {
+    approve: reached ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700',
+    hold:    reached ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700',
+    decline: reached ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600',
+  }
+  return (
+    <span className={`text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${colors[icon]}`}>
+      {count}
+    </span>
+  )
+}
+
+function VoteButton({
+  label, icon, variant, active, disabled, onClick,
+}: {
+  label: string
+  icon: React.ReactNode
+  variant: 'approve' | 'hold' | 'decline'
+  active: boolean
+  disabled: boolean
+  onClick: () => void
+}) {
+  const base = 'flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold border-2 transition-all'
+  const styles = {
+    approve: active ? 'bg-green-500 border-green-500 text-white' : 'border-green-200 text-green-700 hover:bg-green-50',
+    hold:    active ? 'bg-yellow-500 border-yellow-500 text-white' : 'border-yellow-200 text-yellow-700 hover:bg-yellow-50',
+    decline: active ? 'bg-red-500 border-red-500 text-white' : 'border-red-200 text-red-600 hover:bg-red-50',
+  }
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+      {icon}{label}
+    </button>
+  )
+}
+
 function StarRating({
   value,
   interactive,
@@ -481,15 +857,57 @@ interface RodeoHistoryData {
   artist_records: ArtistRecord[]
 }
 
+// ── Board Inbox types ─────────────────────────────────────────
+
+interface ProposalSong {
+  song_id: string
+  label: 'studio' | 'live' | null
+  circle_songs: { id: string; title: string; artist: string } | null
+}
+
+interface ProposalVote {
+  vote: 'approve' | 'hold' | 'decline'
+  voter_id: string
+  profiles: { display_name: string; avatar_url: string | null } | null
+}
+
+interface ChallengeProposal {
+  id: string
+  title: string
+  description: string | null
+  status: 'pending' | 'approved' | 'held' | 'declined' | 'sent'
+  credit_buy_in: number
+  board_comment: string | null
+  rodeo_id: string | null
+  created_at: string
+  profiles: { display_name: string; avatar_url: string | null } | null
+  circles: { id: string; name: string } | null
+  target: { id: string; name: string } | null
+  challenge_proposal_songs: ProposalSong[]
+  challenge_proposal_votes: ProposalVote[]
+}
+
+interface BoardData {
+  proposals: ChallengeProposal[]
+  board_seat_count: number
+  my_user_id: string
+}
+
 export default function CircleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos'>('songs')
+  const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos' | 'board'>('songs')
 
   // Rodeo history state
   const [rodeoHistory, setRodeoHistory] = useState<RodeoHistoryData | null>(null)
   const [rodeoHistoryLoading, setRodeoHistoryLoading] = useState(false)
   const [rodeoHistoryError, setRodeoHistoryError] = useState<string | null>(null)
+
+  // Board inbox state
+  const [boardData, setBoardData] = useState<BoardData | null>(null)
+  const [boardLoading, setBoardLoading] = useState(false)
+  const [boardError, setBoardError] = useState<string | null>(null)
+  const [isBoardMember, setIsBoardMember] = useState<boolean | null>(null)
 
   // Songs state
   const [songs, setSongs] = useState<Song[]>([])
@@ -556,14 +974,31 @@ export default function CircleDetailPage() {
     }
   }, [id])
 
+  const loadBoardInbox = useCallback(async () => {
+    setBoardLoading(true)
+    setBoardError(null)
+    try {
+      const res = await fetch(`/api/circles/${id}/challenge-proposals`)
+      if (res.status === 403) { setIsBoardMember(false); return }
+      if (!res.ok) throw new Error('Failed to load board inbox')
+      const data: BoardData = await res.json()
+      setBoardData(data)
+      setIsBoardMember(true)
+    } catch {
+      setBoardError('Could not load board inbox.')
+    } finally {
+      setBoardLoading(false)
+    }
+  }, [id])
+
   useEffect(() => { loadSongs() }, [loadSongs])
   useEffect(() => { loadArtists() }, [loadArtists])
-  // Load rodeo history only when that tab is first opened
   useEffect(() => {
-    if (tab === 'rodeos' && !rodeoHistory && !rodeoHistoryLoading) {
-      loadRodeoHistory()
-    }
+    if (tab === 'rodeos' && !rodeoHistory && !rodeoHistoryLoading) loadRodeoHistory()
   }, [tab, rodeoHistory, rodeoHistoryLoading, loadRodeoHistory])
+  useEffect(() => {
+    if (tab === 'board' && !boardData && !boardLoading) loadBoardInbox()
+  }, [tab, boardData, boardLoading, loadBoardInbox])
 
   const handleAddSong = async () => {
     if (!songTitle.trim() || !songArtist.trim()) return
@@ -678,6 +1113,20 @@ export default function CircleDetailPage() {
           className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'rodeos' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4" />Rodeo History</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('board')}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'board' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Crown className="w-4 h-4" />Board
+            {boardData && boardData.proposals.filter((p) => p.status === 'pending').length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">
+                {boardData.proposals.filter((p) => p.status === 'pending').length}
+              </span>
+            )}
+          </span>
         </button>
       </div>
 
@@ -828,6 +1277,20 @@ export default function CircleDetailPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* ── BOARD INBOX TAB ── */}
+      {tab === 'board' && (
+        <BoardInboxTab
+          data={boardData}
+          loading={boardLoading}
+          error={boardError}
+          isBoardMember={isBoardMember}
+          circleId={id}
+          onVoted={loadBoardInbox}
+          onNewChallenge={() => router.push('/rodeos/challenge')}
+          onViewRodeo={(rodeoId) => router.push(`/rodeos/${rodeoId}`)}
+        />
       )}
 
       {/* ── RODEO HISTORY TAB ── */}

@@ -6,11 +6,11 @@ export const NOMINATION_SLOTS: Record<
   string,
   { young_buck: number; rising_star: number }
 > = {
-  free:     { young_buck: 0, rising_star: 0 },
-  fan:      { young_buck: 1, rising_star: 2 },
-  superfan: { young_buck: 3, rising_star: 5 },
-  artist:   { young_buck: 5, rising_star: 10 },
-  producer: { young_buck: 5, rising_star: 10 },
+  free:     { young_buck: 1, rising_star: 2 },
+  fan:      { young_buck: 2, rising_star: 4 },
+  superfan: { young_buck: 5, rising_star: 10 },
+  artist:   { young_buck: 7, rising_star: 15 },
+  producer: { young_buck: 7, rising_star: 15 },
 }
 
 export interface NominationBudget {

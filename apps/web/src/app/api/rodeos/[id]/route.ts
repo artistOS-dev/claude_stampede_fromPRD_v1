@@ -32,10 +32,30 @@ export async function GET(
     .eq('id', user.id)
     .single()
 
+  // Permission flags for the Result Screen
+  const isCreator = rodeo?.created_by === user.id
+
+  // Check if user is board/founder of the winning circle
+  let isWinningCircleBoard = false
+  const winnerCircleId = rodeo?.rodeo_results?.winner_circle_id ?? null
+  if (winnerCircleId) {
+    const { data: membership } = await supabase
+      .from('circle_members')
+      .select('role')
+      .eq('circle_id', winnerCircleId)
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .in('role', ['board', 'founder'])
+      .maybeSingle()
+    isWinningCircleBoard = !!membership
+  }
+
   return NextResponse.json({
     rodeo,
     myVotes: myVotes ?? [],
     isSubscribed: profile?.subscription_tier !== 'free',
+    isCreator,
+    isWinningCircleBoard,
   })
 }
 

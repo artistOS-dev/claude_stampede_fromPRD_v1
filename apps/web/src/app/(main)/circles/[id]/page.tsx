@@ -1032,6 +1032,10 @@ export default function CircleDetailPage() {
   const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
   const [feedError, setFeedError] = useState<string | null>(null)
+  const [feedLoaded, setFeedLoaded] = useState(false)
+
+  // Nominations loaded flag
+  const [nominationsLoaded, setNominationsLoaded] = useState(false)
 
   const loadSongs = useCallback(async () => {
     setSongsLoading(true)
@@ -1114,6 +1118,7 @@ export default function CircleDetailPage() {
       setNominationsError('Could not load nominations.')
     } finally {
       setNominationsLoading(false)
+      setNominationsLoaded(true)
     }
   }, [id])
 
@@ -1129,6 +1134,7 @@ export default function CircleDetailPage() {
       setFeedError('Could not load activity feed.')
     } finally {
       setFeedLoading(false)
+      setFeedLoaded(true)
     }
   }, [id])
 
@@ -1138,14 +1144,15 @@ export default function CircleDetailPage() {
     if (tab === 'rodeos' && !rodeoHistory && !rodeoHistoryLoading) loadRodeoHistory()
   }, [tab, rodeoHistory, rodeoHistoryLoading, loadRodeoHistory])
   useEffect(() => {
-    if (tab === 'board' && !boardData && !boardLoading) loadBoardInbox()
-  }, [tab, boardData, boardLoading, loadBoardInbox])
+    // guard: also stop retrying if isBoardMember was set to false (403 response)
+    if (tab === 'board' && !boardData && !boardLoading && isBoardMember !== false) loadBoardInbox()
+  }, [tab, boardData, boardLoading, isBoardMember, loadBoardInbox])
   useEffect(() => {
-    if (tab === 'nominations' && !nominationsLoading && nominations.length === 0) loadNominations()
-  }, [tab, nominationsLoading, nominations.length, loadNominations])
+    if (tab === 'nominations' && !nominationsLoaded) loadNominations()
+  }, [tab, nominationsLoaded, loadNominations])
   useEffect(() => {
-    if (tab === 'feed' && !feedLoading && feedEvents.length === 0) loadFeed()
-  }, [tab, feedLoading, feedEvents.length, loadFeed])
+    if (tab === 'feed' && !feedLoaded) loadFeed()
+  }, [tab, feedLoaded, loadFeed])
 
   const handleAddSong = async () => {
     if (!songTitle.trim() || !songArtist.trim()) return

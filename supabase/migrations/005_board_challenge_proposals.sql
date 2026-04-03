@@ -3,8 +3,14 @@
 -- Superfan board approval gating for Circle-vs-Circle challenges
 -- ============================================================
 
--- Reuse updated_at trigger from prior migrations
--- (trigger function set_updated_at already exists)
+-- updated_at trigger function (may not exist from prior migrations)
+create or replace function public.set_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
 -- ── challenge_proposals ──────────────────────────────────────
 -- A proposal to challenge another Circle, submitted by a board/founder

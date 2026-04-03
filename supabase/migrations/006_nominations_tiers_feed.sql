@@ -110,8 +110,8 @@ create table public.circle_rodeo_events (
 
 -- ── TRIGGERS ─────────────────────────────────────────────────
 
--- updated_at for nomination_budgets
-create or replace function public.set_updated_at_generic()
+-- Ensure updated_at trigger function exists (defined in migration 005)
+create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
 begin
   new.updated_at = now();
@@ -121,15 +121,15 @@ $$;
 
 create trigger nomination_budgets_updated_at
   before update on public.nomination_budgets
-  for each row execute procedure public.set_updated_at_generic();
+  for each row execute procedure public.set_updated_at();
 
 create trigger nominations_updated_at
   before update on public.nominations
-  for each row execute procedure public.set_updated_at_generic();
+  for each row execute procedure public.set_updated_at();
 
 create trigger circle_artists_updated_at
   before update on public.circle_artists
-  for each row execute procedure public.set_updated_at_generic();
+  for each row execute procedure public.set_updated_at();
 
 -- ── INDEXES ──────────────────────────────────────────────────
 

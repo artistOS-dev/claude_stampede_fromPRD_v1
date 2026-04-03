@@ -31,6 +31,93 @@ interface Artist {
   created_at: string
   added_by: string
   profiles: { display_name: string } | null
+  tier?: 'rising_star' | 'young_buck' | 'core' | 'legacy'
+  promotion_eligible?: boolean
+  rodeo_wins?: number
+  rodeo_appearances?: number
+}
+
+interface NominationBudget {
+  id: string
+  young_buck_slots: number
+  rising_star_slots: number
+  young_buck_used: number
+  rising_star_used: number
+  period_end: string
+}
+
+interface Nomination {
+  id: string
+  artist_name: string
+  tier_target: 'young_buck' | 'core'
+  status: string
+  votes_for: number
+  votes_against: number
+  message: string | null
+  created_at: string
+}
+
+interface FeedEvent {
+  id: string
+  event_type: string
+  actor_id: string | null
+  rodeo_id: string | null
+  nomination_id: string | null
+  payload: Record<string, unknown>
+  board_only: boolean
+  created_at: string
+}
+
+const TIER_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  rising_star: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Rising Star' },
+  young_buck:  { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Young Buck' },
+  core:        { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Core' },
+  legacy:      { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Legacy' },
+}
+
+const EVENT_ICONS: Record<string, string> = {
+  challenge_sent:        '⚔️',
+  challenge_received:    '📨',
+  challenge_accepted:    '✅',
+  challenge_declined:    '❌',
+  rodeo_opened:          '🤠',
+  vote_milestone:        '📊',
+  result_posted:         '🏆',
+  artist_promoted:       '⬆️',
+  credits_distributed:   '💰',
+  budget_reset:          '🔄',
+  board_approval_pending:'⏳',
+  nomination_passed:     '🗳️',
+  nomination_inducted:   '🎤',
+}
+
+function FeedEventCard({ event }: { event: FeedEvent }) {
+  const icon = EVENT_ICONS[event.event_type] ?? '📌'
+  const label = event.event_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const payload = event.payload as Record<string, string>
+
+  return (
+    <div className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
+      <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 text-base">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900">{label}</p>
+        {payload.artist_name && (
+          <p className="text-xs text-gray-500 truncate">Artist: {payload.artist_name}</p>
+        )}
+        {payload.action && (
+          <p className="text-xs text-gray-400 truncate capitalize">{String(payload.action).replace(/_/g, ' ')}</p>
+        )}
+        <p className="text-xs text-gray-400 mt-0.5">{formatDate(event.created_at)}</p>
+      </div>
+      {event.board_only && (
+        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full h-fit self-center flex-shrink-0">
+          Board
+        </span>
+      )}
+    </div>
+  )
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -896,7 +983,7 @@ interface BoardData {
 export default function CircleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos' | 'board'>('songs')
+  const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos' | 'nominations' | 'feed' | 'board'>('songs')
 
   // Rodeo history state
   const [rodeoHistory, setRodeoHistory] = useState<RodeoHistoryData | null>(null)
@@ -928,6 +1015,23 @@ export default function CircleDetailPage() {
   const [artistName, setArtistName] = useState('')
   const [addingArtist, setAddingArtist] = useState(false)
   const [addArtistError, setAddArtistError] = useState<string | null>(null)
+
+  // Nominations state
+  const [nominations, setNominations] = useState<Nomination[]>([])
+  const [nominationsLoading, setNominationsLoading] = useState(false)
+  const [nominationsError, setNominationsError] = useState<string | null>(null)
+  const [budget, setBudget] = useState<NominationBudget | null>(null)
+  const [nomArtistName, setNomArtistName] = useState('')
+  const [nomTierTarget, setNomTierTarget] = useState<'young_buck' | 'core'>('young_buck')
+  const [nomMessage, setNomMessage] = useState('')
+  const [submittingNom, setSubmittingNom] = useState(false)
+  const [nomError, setNomError] = useState<string | null>(null)
+  const [showNomForm, setShowNomForm] = useState(false)
+
+  // Activity feed state
+  const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([])
+  const [feedLoading, setFeedLoading] = useState(false)
+  const [feedError, setFeedError] = useState<string | null>(null)
 
   const loadSongs = useCallback(async () => {
     setSongsLoading(true)
@@ -991,6 +1095,43 @@ export default function CircleDetailPage() {
     }
   }, [id])
 
+  const loadNominations = useCallback(async () => {
+    setNominationsLoading(true)
+    setNominationsError(null)
+    try {
+      const [nomRes, budgetRes] = await Promise.all([
+        fetch(`/api/circles/${id}/nominations`),
+        fetch(`/api/circles/${id}/budget`),
+      ])
+      if (!nomRes.ok) throw new Error('Failed to load nominations')
+      const nomData: { nominations: Nomination[] } = await nomRes.json()
+      setNominations(nomData.nominations ?? [])
+      if (budgetRes.ok) {
+        const budgetData: { budget: NominationBudget } = await budgetRes.json()
+        setBudget(budgetData.budget)
+      }
+    } catch {
+      setNominationsError('Could not load nominations.')
+    } finally {
+      setNominationsLoading(false)
+    }
+  }, [id])
+
+  const loadFeed = useCallback(async () => {
+    setFeedLoading(true)
+    setFeedError(null)
+    try {
+      const res = await fetch(`/api/circles/${id}/feed`)
+      if (!res.ok) throw new Error('Failed to load feed')
+      const data: { events: FeedEvent[] } = await res.json()
+      setFeedEvents(data.events ?? [])
+    } catch {
+      setFeedError('Could not load activity feed.')
+    } finally {
+      setFeedLoading(false)
+    }
+  }, [id])
+
   useEffect(() => { loadSongs() }, [loadSongs])
   useEffect(() => { loadArtists() }, [loadArtists])
   useEffect(() => {
@@ -999,6 +1140,12 @@ export default function CircleDetailPage() {
   useEffect(() => {
     if (tab === 'board' && !boardData && !boardLoading) loadBoardInbox()
   }, [tab, boardData, boardLoading, loadBoardInbox])
+  useEffect(() => {
+    if (tab === 'nominations' && !nominationsLoading && nominations.length === 0) loadNominations()
+  }, [tab, nominationsLoading, nominations.length, loadNominations])
+  useEffect(() => {
+    if (tab === 'feed' && !feedLoading && feedEvents.length === 0) loadFeed()
+  }, [tab, feedLoading, feedEvents.length, loadFeed])
 
   const handleAddSong = async () => {
     if (!songTitle.trim() || !songArtist.trim()) return
@@ -1070,6 +1217,33 @@ export default function CircleDetailPage() {
     }
   }
 
+  const handleSubmitNomination = async () => {
+    if (!nomArtistName.trim()) return
+    setSubmittingNom(true)
+    setNomError(null)
+    try {
+      const res = await fetch(`/api/circles/${id}/nominations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          artist_name: nomArtistName.trim(),
+          tier_target: nomTierTarget,
+          message: nomMessage.trim() || null,
+        }),
+      })
+      const data: { nomination?: Nomination; error?: string } = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to submit nomination')
+      setNomArtistName('')
+      setNomMessage('')
+      setShowNomForm(false)
+      loadNominations()
+    } catch (err) {
+      setNomError(err instanceof Error ? err.message : 'Failed to submit nomination')
+    } finally {
+      setSubmittingNom(false)
+    }
+  }
+
   const handleRemoveArtist = async (artistId: string) => {
     try {
       await fetch(`/api/circles/${id}/artists?artist_id=${artistId}`, { method: 'DELETE' })
@@ -1113,6 +1287,20 @@ export default function CircleDetailPage() {
           className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'rodeos' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4" />Rodeo History</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('nominations')}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'nominations' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <span className="flex items-center gap-1.5"><Star className="w-4 h-4" />Nominate</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('feed')}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'feed' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <span className="flex items-center gap-1.5"><Flame className="w-4 h-4" />Feed</span>
         </button>
         <button
           type="button"
@@ -1295,13 +1483,287 @@ export default function CircleDetailPage() {
 
       {/* ── RODEO HISTORY TAB ── */}
       {tab === 'rodeos' && (
-        <RodeoHistoryTab
-          data={rodeoHistory}
-          loading={rodeoHistoryLoading}
-          error={rodeoHistoryError}
-          onNavigate={(rodeoId) => router.push(`/rodeos/${rodeoId}`)}
-          onNavigateCircle={(cId) => router.push(`/circles/${cId}`)}
-        />
+        <div className="space-y-6">
+          {/* Rodeo Surface Summary Widget */}
+          {rodeoHistory && (
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-5">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-orange-500" />
+                Circle Rodeo Record
+              </h3>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
+                  <div className="text-2xl font-bold text-green-600">{rodeoHistory.record.wins}</div>
+                  <div className="text-xs text-gray-500 font-medium">Wins</div>
+                </div>
+                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
+                  <div className="text-2xl font-bold text-red-500">{rodeoHistory.record.losses}</div>
+                  <div className="text-xs text-gray-500 font-medium">Losses</div>
+                </div>
+                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
+                  <div className="text-2xl font-bold text-gray-700">{rodeoHistory.record.total}</div>
+                  <div className="text-xs text-gray-500 font-medium">Total</div>
+                </div>
+              </div>
+              {/* Last 5 results (pending rodeos = active) */}
+              {rodeoHistory.rodeos.filter((r) => r.result === 'pending').length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-2">LIVE NOW</p>
+                  {rodeoHistory.rodeos
+                    .filter((r) => r.result === 'pending')
+                    .map((r) => (
+                      <div key={r.rodeo_id} className="flex items-center gap-2 bg-white rounded-xl p-3 mb-2 shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-900 flex-1 truncate">{r.title}</span>
+                        <span className="text-xs text-gray-400">Active</span>
+                      </div>
+                    ))}
+                </div>
+              )}
+              {/* Last 5 results */}
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-2">RECENT RESULTS</p>
+                <div className="space-y-1">
+                  {rodeoHistory.rodeos.slice(0, 5).map((r) => {
+                    const style = RESULT_STYLES[r.result ?? 'pending']
+                    const Icon = style.icon
+                    return (
+                      <div key={r.rodeo_id} className="flex items-center gap-2 text-sm">
+                        <span className={`${style.badge} px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1`}>
+                          <Icon className="w-3 h-3" />{style.label}
+                        </span>
+                        <span className="text-gray-700 truncate flex-1">{r.title}</span>
+                        <span className="text-gray-400 text-xs flex-shrink-0">{formatDate(r.date)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {/* Top performing artist */}
+              {rodeoHistory.artist_records && rodeoHistory.artist_records.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-orange-200">
+                  <p className="text-xs font-semibold text-gray-600 mb-2">TOP PERFORMER</p>
+                  {(() => {
+                    const top = [...rodeoHistory.artist_records].sort((a, b) => b.credits_earned - a.credits_earned)[0]
+                    return (
+                      <div className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                          <Music2 className="w-4 h-4 text-orange-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{top.artist_name}</p>
+                          <p className="text-xs text-gray-400">{top.wins}W · {top.rodeos} rodeos</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-orange-600">{formatCredits(top.credits_earned)}</p>
+                          <p className="text-xs text-gray-400">credits</p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+              {/* Credits earned total */}
+              <div className="mt-3 pt-3 border-t border-orange-200 flex items-center justify-between">
+                <span className="text-sm text-gray-600 font-medium">Total Credits Earned</span>
+                <span className="text-lg font-bold text-orange-600">
+                  {formatCredits(rodeoHistory.rodeos.reduce((sum, r) => sum + (r.credits_won ?? 0), 0))}
+                </span>
+              </div>
+            </div>
+          )}
+          <RodeoHistoryTab
+            data={rodeoHistory}
+            loading={rodeoHistoryLoading}
+            error={rodeoHistoryError}
+            onNavigate={(rodeoId) => router.push(`/rodeos/${rodeoId}`)}
+            onNavigateCircle={(cId) => router.push(`/circles/${cId}`)}
+          />
+        </div>
+      )}
+
+      {/* ── NOMINATIONS TAB ── */}
+      {tab === 'nominations' && (
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Artist Nominations</h2>
+            <Button variant="primary" onClick={() => setShowNomForm((v) => !v)}>
+              <Plus className="w-4 h-4" />Nominate
+            </Button>
+          </div>
+
+          {/* Budget widget */}
+          {budget && (
+            <div className="bg-gradient-to-br from-purple-50 to-yellow-50 border border-purple-200 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-5 h-5 text-purple-500" />
+                <h3 className="font-semibold text-gray-900 text-sm">Your Nomination Budget</h3>
+                <span className="text-xs text-gray-400 ml-auto">Resets {formatDate(budget.period_end)}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-xl p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1 font-medium">Young Buck Slots</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-yellow-400 h-2 rounded-full transition-all"
+                        style={{ width: budget.young_buck_slots > 0 ? `${((budget.young_buck_slots - budget.young_buck_used) / budget.young_buck_slots) * 100}%` : '0%' }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                      {budget.young_buck_slots - budget.young_buck_used}/{budget.young_buck_slots}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1 font-medium">Rising Star Slots</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-purple-400 h-2 rounded-full transition-all"
+                        style={{ width: budget.rising_star_slots > 0 ? `${((budget.rising_star_slots - budget.rising_star_used) / budget.rising_star_slots) * 100}%` : '0%' }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                      {budget.rising_star_slots - budget.rising_star_used}/{budget.rising_star_slots}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Nomination form */}
+          {showNomForm && (
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
+              <h3 className="font-semibold text-gray-900 text-sm">Submit a Nomination</h3>
+              <Input
+                label="Artist Name"
+                type="text"
+                id="nom-artist-name"
+                value={nomArtistName}
+                onChange={(e) => setNomArtistName(e.target.value)}
+                placeholder="e.g. Zach Bryan"
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nominate for tier</label>
+                <div className="flex gap-2">
+                  {(['young_buck', 'core'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setNomTierTarget(t)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${nomTierTarget === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'}`}
+                    >
+                      {t === 'young_buck' ? 'Young Buck' : 'Core Artist'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Pitch (optional)</label>
+                <textarea
+                  value={nomMessage}
+                  onChange={(e) => setNomMessage(e.target.value)}
+                  placeholder="Why should this artist join the circle?"
+                  className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  rows={3}
+                />
+              </div>
+              {nomError && <p className="text-sm text-red-600">{nomError}</p>}
+              <div className="flex gap-2 justify-end">
+                <Button variant="secondary" onClick={() => setShowNomForm(false)}>Cancel</Button>
+                <Button variant="primary" loading={submittingNom} onClick={handleSubmitNomination} disabled={!nomArtistName.trim()}>
+                  Submit Nomination
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {nominationsLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>}
+          {nominationsError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{nominationsError}</p>}
+
+          {!nominationsLoading && nominations.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <Star className="w-10 h-10 mx-auto mb-2" />
+              <p className="font-medium">No nominations yet</p>
+              <p className="text-sm mt-1">Nominate an artist to grow the circle</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {nominations.map((nom) => {
+              const total = nom.votes_for + nom.votes_against
+              const forPct = total > 0 ? Math.round((nom.votes_for / total) * 100) : 0
+              const statusColors: Record<string, string> = {
+                pending_vote: 'bg-yellow-100 text-yellow-700',
+                passed: 'bg-green-100 text-green-700',
+                board_review: 'bg-blue-100 text-blue-700',
+                approved: 'bg-emerald-100 text-emerald-700',
+                declined: 'bg-red-100 text-red-600',
+                held: 'bg-gray-100 text-gray-600',
+              }
+              return (
+                <div key={nom.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="font-semibold text-gray-900">{nom.artist_name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Nominating for <span className="font-medium">{nom.tier_target === 'young_buck' ? 'Young Buck' : 'Core Artist'}</span>
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ${statusColors[nom.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {nom.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </span>
+                  </div>
+                  {nom.message && <p className="text-sm text-gray-600 italic mb-2">&#34;{nom.message}&#34;</p>}
+                  {nom.status === 'pending_vote' && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div className="bg-green-400 h-2 rounded-full" style={{ width: `${forPct}%` }} />
+                        </div>
+                        <span className="text-xs text-gray-500 flex-shrink-0">{nom.votes_for}↑ {nom.votes_against}↓</span>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2">{formatDate(nom.created_at)}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── FEED TAB ── */}
+      {tab === 'feed' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Activity Feed</h2>
+            <button type="button" onClick={loadFeed} className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+              Refresh
+            </button>
+          </div>
+
+          {feedLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>}
+          {feedError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{feedError}</p>}
+
+          {!feedLoading && feedEvents.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <Flame className="w-10 h-10 mx-auto mb-2" />
+              <p className="font-medium">No events yet</p>
+              <p className="text-sm mt-1">Circle activity will appear here</p>
+            </div>
+          )}
+
+          {!feedLoading && feedEvents.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm divide-y divide-gray-50 px-4">
+              {feedEvents.map((event) => (
+                <FeedEventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── ARTISTS TAB ── */}
@@ -1372,9 +1834,24 @@ export default function CircleDetailPage() {
                     <Music2 className="w-5 h-5 text-orange-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{artist.artist_name}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-gray-900 truncate">{artist.artist_name}</p>
+                      {artist.tier && TIER_STYLES[artist.tier] && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${TIER_STYLES[artist.tier].bg} ${TIER_STYLES[artist.tier].text}`}>
+                          {TIER_STYLES[artist.tier].label}
+                        </span>
+                      )}
+                      {artist.promotion_eligible && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700 flex-shrink-0">
+                          ↑ Eligible
+                        </span>
+                      )}
+                    </div>
                     {artist.profiles && (
                       <p className="text-xs text-gray-400">Added by {artist.profiles.display_name}</p>
+                    )}
+                    {artist.rodeo_wins !== undefined && artist.rodeo_appearances !== undefined && artist.rodeo_appearances > 0 && (
+                      <p className="text-xs text-gray-400">{artist.rodeo_wins}W · {artist.rodeo_appearances} rodeos</p>
                     )}
                   </div>
                   <button

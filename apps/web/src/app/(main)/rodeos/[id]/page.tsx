@@ -332,6 +332,16 @@ export default function RodeoDetailPage() {
                 Vote Now
               </button>
             )}
+            {isFinished && (
+              <button
+                type="button"
+                onClick={() => router.push(`/rodeos/${rodeo.id}/result`)}
+                className="ml-auto flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                View Result
+              </button>
+            )}
           </div>
         )}
         {entries.length === 1 && (

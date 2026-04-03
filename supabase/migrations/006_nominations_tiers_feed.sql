@@ -150,6 +150,14 @@ create policy "nomination_budgets: user reads own"
   on public.nomination_budgets for select
   using (user_id = auth.uid());
 
+create policy "nomination_budgets: user inserts own"
+  on public.nomination_budgets for insert
+  with check (user_id = auth.uid());
+
+create policy "nomination_budgets: user updates own"
+  on public.nomination_budgets for update
+  using (user_id = auth.uid());
+
 create policy "nomination_budgets: board reads circle"
   on public.nomination_budgets for select
   using (
@@ -165,11 +173,22 @@ create policy "nomination_budgets: service role full access"
   on public.nomination_budgets for all
   using (auth.role() = 'service_role');
 
--- nominations: circle members can read
+-- nominations: circle members can read and insert
 create policy "nominations: circle members read"
   on public.nominations for select
   using (
     exists (
+      select 1 from public.circle_members cm
+      where cm.circle_id = nominations.circle_id
+        and cm.user_id = auth.uid()
+    )
+  );
+
+create policy "nominations: circle members insert"
+  on public.nominations for insert
+  with check (
+    nominated_by = auth.uid()
+    and exists (
       select 1 from public.circle_members cm
       where cm.circle_id = nominations.circle_id
         and cm.user_id = auth.uid()

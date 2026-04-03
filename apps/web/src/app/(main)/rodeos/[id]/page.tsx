@@ -318,10 +318,20 @@ export default function RodeoDetailPage() {
 
         {/* Matchup row */}
         {entries.length >= 2 && (
-          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/50">
+          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/50 flex-wrap">
             <EntryChip entry={entries[0]} isWinner={result?.winner_circle_id === entries[0].circle_id || result?.winner_artist_id === entries[0].artist_id} />
             <span className="text-sm font-bold text-gray-500 shrink-0">VS</span>
             <EntryChip entry={entries[1]} isWinner={result?.winner_circle_id === entries[1].circle_id || result?.winner_artist_id === entries[1].artist_id} />
+            {isVoting && (
+              <button
+                type="button"
+                onClick={() => router.push(`/rodeos/${rodeo.id}/vote`)}
+                className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+              >
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                Vote Now
+              </button>
+            )}
           </div>
         )}
         {entries.length === 1 && (

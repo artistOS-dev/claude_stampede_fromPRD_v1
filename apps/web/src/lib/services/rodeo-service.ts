@@ -749,12 +749,12 @@ export const RodeoService = {
     // Determine the winner (highest weighted score)
     let winnerId: string | null = null
     let highScore = -1
-    for (const [entryId, score] of entryScores.entries()) {
+    Array.from(entryScores.entries()).forEach(([entryId, score]) => {
       if (score > highScore) {
         highScore = score
         winnerId = entryId
       }
-    }
+    })
 
     const winnerEntry = entries.find((e) => e.id === winnerId)
 

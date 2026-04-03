@@ -154,11 +154,20 @@ export default function RodeoFeedPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rodeo Feed</h1>
-        <p className="text-gray-500 mt-1">
-          Competitive events where Circles and artists put their music on the line
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Rodeo Feed</h1>
+          <p className="text-gray-500 mt-1">
+            Competitive events where Circles and artists put their music on the line
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push('/rodeos/challenge')}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shrink-0 shadow-sm"
+        >
+          <Trophy className="w-4 h-4" /> Challenge
+        </button>
       </div>
 
       {/* Filters bar */}

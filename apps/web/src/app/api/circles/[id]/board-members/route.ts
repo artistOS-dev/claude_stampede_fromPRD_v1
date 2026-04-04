@@ -25,7 +25,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('circle_members')
-    .select('user_id, role, status, joined_at')
+    .select('user_id, role, status, joined_at, profiles(display_name, email)')
     .eq('circle_id', params.id)
     .eq('status', 'active')
     .order('joined_at', { ascending: true })

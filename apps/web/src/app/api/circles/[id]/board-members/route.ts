@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 const MANAGEABLE_ROLES = ['member', 'board'] as const
 
@@ -32,8 +32,21 @@ export async function GET(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const userIds = (data ?? []).map((row) => row.user_id)
+  let profiles: Array<{ id: string; display_name: string | null; email: string | null }> = []
+  if (userIds.length > 0) {
+    const serviceSupabase = createServiceClient()
+    const { data: profileRows } = await serviceSupabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', userIds)
+    profiles = profileRows ?? []
+  }
+
+  const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]))
+
   const members = (data ?? []).map((row) => {
-    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
+    const profile = profileById.get(row.user_id)
     return {
       user_id: row.user_id,
       role: row.role,

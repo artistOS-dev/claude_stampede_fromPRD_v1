@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
 
 // Shape returned by the DB (matches migration 001 column names)
 interface CircleRow {
@@ -29,6 +30,17 @@ interface Circle {
 interface CircleMembershipRow {
   circle_id: string
 }
+
+const createCircleSchema = z.object({
+  name: z.string().min(2).max(80),
+  description: z.string().max(500).optional().nullable(),
+  core_artists: z.array(z.string().min(1).max(120)).max(25).default([]),
+  max_members: z.number().int().positive().optional().nullable(),
+  is_paid: z.boolean().default(false),
+  required_tier: z.enum(['free', 'fan', 'superfan', 'artist', 'producer']).optional().nullable(),
+  personality_tags: z.array(z.string().min(1).max(60)).max(25).default([]),
+  image_url: z.string().url().optional().nullable(),
+})
 
 function toSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -110,4 +122,76 @@ export async function GET(request: NextRequest) {
     console.error('Circles fetch error:', err)
     return NextResponse.json({ circles: [] }, { status: 500 })
   }
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || profile.role !== 'producer') {
+    return NextResponse.json({ error: 'Only producers can create circles' }, { status: 403 })
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const parsed = createCircleSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid circle payload' }, { status: 422 })
+  }
+
+  const payload = parsed.data
+  const { data: insertedCircle, error: circleError } = await supabase
+    .from('circles')
+    .insert({
+      name: payload.name.trim(),
+      description: payload.description?.trim() || null,
+      core_artists: payload.core_artists,
+      max_members: payload.max_members ?? null,
+      is_paid: payload.is_paid,
+      required_tier: payload.required_tier ?? null,
+      personality_tags: payload.personality_tags,
+      image_url: payload.image_url ?? null,
+      created_by: user.id,
+    })
+    .select('id, name, description, core_artists, member_count, avg_song_rating, personality_tags, image_url')
+    .single()
+
+  if (circleError || !insertedCircle) {
+    return NextResponse.json({ error: circleError?.message ?? 'Failed to create circle' }, { status: 500 })
+  }
+
+  const { error: founderError } = await supabase
+    .from('circle_members')
+    .insert({
+      circle_id: insertedCircle.id,
+      user_id: user.id,
+      role: 'founder',
+      status: 'active',
+      joined_at: new Date().toISOString(),
+    })
+
+  if (founderError) {
+    return NextResponse.json({ error: founderError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    circle: {
+      ...mapRow(insertedCircle as CircleRow),
+      member_count: 1,
+    },
+  }, { status: 201 })
 }

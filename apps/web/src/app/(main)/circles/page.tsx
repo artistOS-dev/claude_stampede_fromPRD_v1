@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Users, Search } from 'lucide-react'
 import CircleCard, { type CircleData } from '@/components/signup/CircleCard'
+import { createClient } from '@/lib/supabase/client'
 
 export default function CirclesPage() {
   const [circles, setCircles] = useState<CircleData[]>([])
@@ -10,6 +11,19 @@ export default function CirclesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [canCreateCircle, setCanCreateCircle] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    coreArtists: '',
+    maxMembers: '',
+    isPaid: false,
+    requiredTier: 'free',
+    personalityTags: '',
+    imageUrl: '',
+  })
 
   const loadCircles = useCallback(async () => {
     setIsLoading(true)
@@ -39,6 +53,21 @@ export default function CirclesPage() {
   useEffect(() => {
     loadCircles()
   }, [loadCircles])
+
+  useEffect(() => {
+    const loadRole = async () => {
+      const supabase = createClient()
+      const { data: auth } = await supabase.auth.getUser()
+      if (!auth.user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', auth.user.id)
+        .maybeSingle()
+      setCanCreateCircle(profile?.role === 'producer')
+    }
+    loadRole()
+  }, [])
 
   const handleJoin = useCallback(async (circleId: string) => {
     const res = await fetch('/api/circles/join', {
@@ -93,6 +122,60 @@ export default function CirclesPage() {
       )
     : circles
 
+  const handleCreateCircle = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreateError(null)
+    setCreating(true)
+
+    const coreArtists = form.coreArtists
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+
+    const personalityTags = form.personalityTags
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      core_artists: coreArtists,
+      max_members: form.maxMembers ? Number(form.maxMembers) : null,
+      is_paid: form.isPaid,
+      required_tier: form.isPaid ? form.requiredTier : null,
+      personality_tags: personalityTags,
+      image_url: form.imageUrl.trim() || null,
+    }
+
+    try {
+      const res = await fetch('/api/circles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json: { error?: string; circle?: CircleData } = await res.json()
+      if (!res.ok || !json.circle) throw new Error(json.error ?? 'Could not create circle')
+
+      setCircles((prev) => [json.circle!, ...prev])
+      setJoinedCircles((prev) => new Set(prev).add(json.circle!.id))
+      setForm({
+        name: '',
+        description: '',
+        coreArtists: '',
+        maxMembers: '',
+        isPaid: false,
+        requiredTier: 'free',
+        personalityTags: '',
+        imageUrl: '',
+      })
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Could not create circle')
+    } finally {
+      setCreating(false)
+    }
+  }, [form])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -102,6 +185,93 @@ export default function CirclesPage() {
           Find communities of fans who share your taste in country music
         </p>
       </div>
+
+      {canCreateCircle && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900">Create Circle (Producer)</h2>
+          <form onSubmit={handleCreateCircle} className="space-y-3">
+            <input
+              type="text"
+              required
+              placeholder="Circle name"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm"
+            />
+            <textarea
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none"
+              rows={3}
+            />
+            <input
+              type="text"
+              placeholder="Core artists (comma separated)"
+              value={form.coreArtists}
+              onChange={(e) => setForm((prev) => ({ ...prev, coreArtists: e.target.value }))}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Personality tags (comma separated)"
+              value={form.personalityTags}
+              onChange={(e) => setForm((prev) => ({ ...prev, personalityTags: e.target.value }))}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="number"
+                min={1}
+                placeholder="Max members (optional)"
+                value={form.maxMembers}
+                onChange={(e) => setForm((prev) => ({ ...prev, maxMembers: e.target.value }))}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm"
+              />
+              <input
+                type="url"
+                placeholder="Image URL (optional)"
+                value={form.imageUrl}
+                onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.isPaid}
+                onChange={(e) => setForm((prev) => ({ ...prev, isPaid: e.target.checked }))}
+              />
+              Paid circle
+            </label>
+            {form.isPaid && (
+              <select
+                value={form.requiredTier}
+                onChange={(e) => setForm((prev) => ({ ...prev, requiredTier: e.target.value }))}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white"
+              >
+                <option value="free">free</option>
+                <option value="fan">fan</option>
+                <option value="superfan">superfan</option>
+                <option value="artist">artist</option>
+                <option value="producer">producer</option>
+              </select>
+            )}
+            {createError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">
+                {createError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={creating}
+              className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold"
+            >
+              {creating ? 'Creating…' : 'Create Circle'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">

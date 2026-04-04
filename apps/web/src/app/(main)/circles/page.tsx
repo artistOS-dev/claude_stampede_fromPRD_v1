@@ -51,6 +51,13 @@ export default function CirclesPage() {
       throw new Error(data.error ?? 'Failed to join circle')
     }
     setJoinedCircles((prev) => new Set(prev).add(circleId))
+    setCircles((prev) =>
+      prev.map((circle) =>
+        circle.id === circleId
+          ? { ...circle, member_count: (circle.member_count ?? 0) + 1 }
+          : circle
+      )
+    )
   }, [])
 
   const handleLeave = useCallback(async (circleId: string) => {
@@ -68,6 +75,13 @@ export default function CirclesPage() {
       next.delete(circleId)
       return next
     })
+    setCircles((prev) =>
+      prev.map((circle) =>
+        circle.id === circleId
+          ? { ...circle, member_count: Math.max((circle.member_count ?? 1) - 1, 0) }
+          : circle
+      )
+    )
   }, [])
 
   const filtered = search.trim()

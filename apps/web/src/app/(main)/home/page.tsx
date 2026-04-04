@@ -43,6 +43,26 @@ export default async function HomePage() {
         .limit(5),
     ])
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memberCircleIds = ((memberships ?? []) as any[])
+    .map((m) => m.circle_id)
+    .filter(Boolean) as string[]
+
+  let memberCountByCircle: Record<string, number> = {}
+  if (memberCircleIds.length > 0) {
+    const { data: activeMemberships } = await supabase
+      .from('circle_members')
+      .select('circle_id')
+      .in('circle_id', memberCircleIds)
+      .eq('status', 'active')
+
+    memberCountByCircle = ((activeMemberships ?? []) as Array<{ circle_id: string }>)
+      .reduce<Record<string, number>>((acc, row) => {
+        acc[row.circle_id] = (acc[row.circle_id] ?? 0) + 1
+        return acc
+      }, {})
+  }
+
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'there'
   const avatarUrl = profile?.avatar_url ?? null
   const tier = profile?.subscription_tier ?? 'free'
@@ -57,7 +77,11 @@ export default async function HomePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const myCircles = ((memberships ?? []) as any[])
     .map((m) => m.circles)
-    .filter(Boolean) as Array<{ id: string; name: string; description: string; member_count: number }>
+    .filter(Boolean)
+    .map((circle) => ({
+      ...circle,
+      member_count: memberCountByCircle[circle.id] ?? circle.member_count ?? 0,
+    })) as Array<{ id: string; name: string; description: string; member_count: number }>
 
   const songsCount = (songsShared as unknown as { count?: number } | null)?.count ?? 0
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
 
 // Shape returned by the DB (matches migration 001 column names)
 interface CircleRow {
@@ -26,6 +27,21 @@ interface Circle {
   slug: string
 }
 
+interface CircleMembershipRow {
+  circle_id: string
+}
+
+const createCircleSchema = z.object({
+  name: z.string().min(2).max(80),
+  description: z.string().max(500).optional().nullable(),
+  core_artists: z.array(z.string().min(1).max(120)).max(25).default([]),
+  max_members: z.number().int().positive().optional().nullable(),
+  is_paid: z.boolean().default(false),
+  required_tier: z.enum(['free', 'fan', 'superfan', 'artist', 'producer']).optional().nullable(),
+  personality_tags: z.array(z.string().min(1).max(60)).max(25).default([]),
+  image_url: z.string().url().optional().nullable(),
+})
+
 function toSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
@@ -43,64 +59,6 @@ function mapRow(row: CircleRow): Circle {
     slug: toSlug(row.name),
   }
 }
-
-const MOCK_CIRCLES: Circle[] = [
-  {
-    id: 'mock-1',
-    name: 'Morgan Wallen Nation',
-    description: 'The largest Morgan Wallen fan community. Share your love for his music, news, and tour dates.',
-    core_artists: ['Morgan Wallen'],
-    member_count: 24831,
-    avg_rating: 4.8,
-    personality_types: ['superfan', 'loyalist', 'trailblazer'],
-    cover_image_url: null,
-    slug: 'morgan-wallen-nation',
-  },
-  {
-    id: 'mock-2',
-    name: 'New Country Discoveries',
-    description: 'A community for fans who love unearthing new country talent before they break big.',
-    core_artists: ['Zach Bryan', 'Tyler Childers', 'Cody Johnson'],
-    member_count: 8472,
-    avg_rating: 4.7,
-    personality_types: ['trailblazer', 'explorer', 'storyteller'],
-    cover_image_url: null,
-    slug: 'new-country-discoveries',
-  },
-  {
-    id: 'mock-3',
-    name: 'Classic Country Corner',
-    description: 'Honoring the legends: Merle Haggard, Loretta Lynn, Johnny Cash and the roots of country music.',
-    core_artists: ['Johnny Cash', 'Merle Haggard', 'Loretta Lynn', 'Waylon Jennings'],
-    member_count: 15603,
-    avg_rating: 4.9,
-    personality_types: ['traditionalist', 'loyalist', 'storyteller'],
-    cover_image_url: null,
-    slug: 'classic-country-corner',
-  },
-  {
-    id: 'mock-4',
-    name: 'Country Road Trippers',
-    description: 'For fans whose best country moments happen on a long drive with the windows down.',
-    core_artists: ['Chris Stapleton', 'Luke Combs', 'Kacey Musgraves'],
-    member_count: 6218,
-    avg_rating: 4.6,
-    personality_types: ['melodist', 'explorer', 'community'],
-    cover_image_url: null,
-    slug: 'country-road-trippers',
-  },
-  {
-    id: 'mock-5',
-    name: 'Songwriters Circle',
-    description: 'Celebrate the craft of country songwriting — the stories, the poetry, the truth behind the music.',
-    core_artists: ['Kacey Musgraves', 'Tyler Childers', 'Brandi Carlile'],
-    member_count: 4891,
-    avg_rating: 4.8,
-    personality_types: ['storyteller', 'melodist', 'trailblazer'],
-    cover_image_url: null,
-    slug: 'songwriters-circle',
-  },
-]
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -128,24 +86,112 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Circles DB error:', error.code, error.message)
-      return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
+      return NextResponse.json({ circles: [] }, { status: 500 })
     }
 
     if (!data || data.length === 0) {
-      return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
+      return NextResponse.json({ circles: [] })
     }
 
-    return NextResponse.json({ circles: (data as CircleRow[]).map(mapRow) })
+    const circles = (data as CircleRow[]).map(mapRow)
+    const circleIds = circles.map((circle) => circle.id)
+
+    const { data: memberships, error: membershipsError } = await supabase
+      .from('circle_members')
+      .select('circle_id')
+      .in('circle_id', circleIds)
+      .eq('status', 'active')
+
+    if (membershipsError) {
+      console.error('Circle membership count error:', membershipsError.code, membershipsError.message)
+      return NextResponse.json({ circles })
+    }
+
+    const memberCountByCircle = ((memberships ?? []) as CircleMembershipRow[]).reduce<Record<string, number>>((acc, row) => {
+      acc[row.circle_id] = (acc[row.circle_id] ?? 0) + 1
+      return acc
+      }, {})
+
+    const circlesWithExactMembers = circles.map((circle) => ({
+      ...circle,
+      member_count: memberCountByCircle[circle.id] ?? 0,
+    }))
+
+    return NextResponse.json({ circles: circlesWithExactMembers })
   } catch (err) {
     console.error('Circles fetch error:', err)
-    return NextResponse.json({ circles: filterMockCircles(MOCK_CIRCLES, personalityTypes) })
+    return NextResponse.json({ circles: [] }, { status: 500 })
   }
 }
 
-function filterMockCircles(circles: Circle[], personalityTypes: string[]): Circle[] {
-  if (personalityTypes.length === 0) return circles
-  const withOverlap = circles.filter((c) =>
-    c.personality_types.some((pt) => personalityTypes.includes(pt))
-  )
-  return withOverlap.length >= 2 ? withOverlap : circles.slice(0, 4)
+export async function POST(request: NextRequest) {
+  const supabase = createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || profile.role !== 'producer') {
+    return NextResponse.json({ error: 'Only producers can create circles' }, { status: 403 })
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const parsed = createCircleSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid circle payload' }, { status: 422 })
+  }
+
+  const payload = parsed.data
+  const { data: insertedCircle, error: circleError } = await supabase
+    .from('circles')
+    .insert({
+      name: payload.name.trim(),
+      description: payload.description?.trim() || null,
+      core_artists: payload.core_artists,
+      max_members: payload.max_members ?? null,
+      is_paid: payload.is_paid,
+      required_tier: payload.required_tier ?? null,
+      personality_tags: payload.personality_tags,
+      image_url: payload.image_url ?? null,
+      created_by: user.id,
+    })
+    .select('id, name, description, core_artists, member_count, avg_song_rating, personality_tags, image_url')
+    .single()
+
+  if (circleError || !insertedCircle) {
+    return NextResponse.json({ error: circleError?.message ?? 'Failed to create circle' }, { status: 500 })
+  }
+
+  const { error: founderError } = await supabase
+    .from('circle_members')
+    .insert({
+      circle_id: insertedCircle.id,
+      user_id: user.id,
+      role: 'founder',
+      status: 'active',
+      joined_at: new Date().toISOString(),
+    })
+
+  if (founderError) {
+    return NextResponse.json({ error: founderError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    circle: {
+      ...mapRow(insertedCircle as CircleRow),
+      member_count: 1,
+    },
+  }, { status: 201 })
 }

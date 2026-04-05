@@ -494,6 +494,52 @@ function BoardInboxTab({
   onNewChallenge: () => void
   onViewRodeo: (id: string) => void
 }) {
+  const [boardMembers, setBoardMembers] = useState<CircleBoardMember[]>([])
+  const [myRole, setMyRole] = useState<'member' | 'board' | 'founder' | null>(null)
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [membersError, setMembersError] = useState<string | null>(null)
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
+
+  const loadBoardMembers = useCallback(async () => {
+    setMembersLoading(true)
+    setMembersError(null)
+    try {
+      const res = await fetch(`/api/circles/${circleId}/board-members`)
+      if (!res.ok) throw new Error('Failed to load board members')
+      const json: { my_role: 'member' | 'board' | 'founder'; members: CircleBoardMember[] } = await res.json()
+      setMyRole(json.my_role)
+      setBoardMembers(json.members ?? [])
+    } catch {
+      setMembersError('Could not load board management data.')
+    } finally {
+      setMembersLoading(false)
+    }
+  }, [circleId])
+
+  useEffect(() => {
+    if (isBoardMember === false) return
+    loadBoardMembers()
+  }, [isBoardMember, loadBoardMembers])
+
+  const updateBoardRole = async (userId: string, nextRole: 'member' | 'board') => {
+    setUpdatingUserId(userId)
+    setMembersError(null)
+    try {
+      const res = await fetch(`/api/circles/${circleId}/board-members`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, role: nextRole }),
+      })
+      const json: { error?: string } = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Could not update member role')
+      await loadBoardMembers()
+    } catch (e) {
+      setMembersError(e instanceof Error ? e.message : 'Could not update member role')
+    } finally {
+      setUpdatingUserId(null)
+    }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>
   }
@@ -519,6 +565,99 @@ function BoardInboxTab({
 
   return (
     <div className="space-y-6">
+      {/* Board management */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Board management</h3>
+          {myRole && (
+            <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 capitalize">
+              You are {myRole}
+            </span>
+          )}
+        </div>
+
+        {membersLoading && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading members…
+          </div>
+        )}
+
+        {membersError && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{membersError}</div>
+        )}
+
+        {!membersLoading && boardMembers.length > 0 && (
+          <div className="space-y-2">
+            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+              <div className="col-span-4">Display name</div>
+              <div className="col-span-4">Email</div>
+              <div className="col-span-2">Role</div>
+              <div className="col-span-2 text-right">Action</div>
+            </div>
+            {boardMembers.map((member) => {
+              const canEdit = myRole === 'founder' && member.role !== 'founder'
+              const promote = member.role === 'member'
+              const demote = member.role === 'board'
+
+              return (
+                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                  <div className="col-span-4 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {member.display_name}
+                    </p>
+                  </div>
+                  <div className="col-span-4 min-w-0">
+                    <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                      member.role === 'founder'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : member.role === 'board'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {member.role}
+                    </span>
+                  </div>
+                  <div className="col-span-2 flex justify-end">
+                    {canEdit && promote && (
+                      <button
+                        type="button"
+                        onClick={() => updateBoardRole(member.user_id, 'board')}
+                        disabled={updatingUserId === member.user_id}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+                      >
+                        Make board
+                      </button>
+                    )}
+                    {canEdit && demote && (
+                      <button
+                        type="button"
+                        onClick={() => updateBoardRole(member.user_id, 'member')}
+                        disabled={updatingUserId === member.user_id}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                      >
+                        Remove board
+                      </button>
+                    )}
+                    {!canEdit && (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {myRole !== 'founder' && !membersLoading && (
+          <p className="text-xs text-gray-500">
+            Only founders can change board roles.
+          </p>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-gray-900 flex items-center gap-2">
@@ -978,6 +1117,15 @@ interface BoardData {
   proposals: ChallengeProposal[]
   board_seat_count: number
   my_user_id: string
+}
+
+interface CircleBoardMember {
+  user_id: string
+  role: 'member' | 'board' | 'founder'
+  status: 'active' | 'pending' | 'banned'
+  joined_at: string
+  display_name: string | null
+  email: string | null
 }
 
 export default function CircleDetailPage() {

@@ -47,12 +47,13 @@ export async function GET(
 
   const members = (data ?? []).map((row) => {
     const profile = profileById.get(row.user_id)
+    const fallbackDisplayName = profile?.email?.split('@')[0] ?? `member-${row.user_id.slice(0, 8)}`
     return {
       user_id: row.user_id,
       role: row.role,
       status: row.status,
       joined_at: row.joined_at,
-      display_name: profile?.display_name ?? null,
+      display_name: profile?.display_name ?? fallbackDisplayName,
       email: profile?.email ?? null,
     }
   })

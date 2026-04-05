@@ -115,7 +115,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Founder role cannot be changed here' }, { status: 400 })
   }
 
-  const { error } = await supabase
+  const serviceSupabase = createServiceClient()
+  const { error } = await serviceSupabase
     .from('circle_members')
     .update({ role: body.role })
     .eq('circle_id', params.id)

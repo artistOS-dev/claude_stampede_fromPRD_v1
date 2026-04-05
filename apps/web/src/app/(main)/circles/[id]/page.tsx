@@ -588,20 +588,28 @@ function BoardInboxTab({
 
         {!membersLoading && boardMembers.length > 0 && (
           <div className="space-y-2">
+            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+              <div className="col-span-4">Display name</div>
+              <div className="col-span-4">Email</div>
+              <div className="col-span-2">Role</div>
+              <div className="col-span-2 text-right">Action</div>
+            </div>
             {boardMembers.map((member) => {
               const canEdit = myRole === 'founder' && member.role !== 'founder'
               const promote = member.role === 'member'
               const demote = member.role === 'board'
 
               return (
-                <div key={member.user_id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-                  <div className="min-w-0">
+                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                  <div className="col-span-4 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {member.display_name ?? member.email ?? 'Member'}
+                      {member.display_name ?? 'No display name'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{member.email ?? member.user_id}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="col-span-4 min-w-0">
+                    <p className="text-xs text-gray-500 truncate">{member.email ?? 'No email'}</p>
+                  </div>
+                  <div className="col-span-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
                       member.role === 'founder'
                         ? 'bg-yellow-100 text-yellow-700'
@@ -611,6 +619,8 @@ function BoardInboxTab({
                     }`}>
                       {member.role}
                     </span>
+                  </div>
+                  <div className="col-span-2 flex justify-end">
                     {canEdit && promote && (
                       <button
                         type="button"
@@ -630,6 +640,9 @@ function BoardInboxTab({
                       >
                         Remove board
                       </button>
+                    )}
+                    {!canEdit && (
+                      <span className="text-xs text-gray-400">—</span>
                     )}
                   </div>
                 </div>

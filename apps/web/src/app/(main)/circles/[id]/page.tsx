@@ -603,11 +603,11 @@ function BoardInboxTab({
                 <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
                   <div className="col-span-4 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {member.display_name ?? 'No display name'}
+                      {member.display_name}
                     </p>
                   </div>
                   <div className="col-span-4 min-w-0">
-                    <p className="text-xs text-gray-500 truncate">{member.email ?? 'No email'}</p>
+                    <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>
                   </div>
                   <div className="col-span-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${

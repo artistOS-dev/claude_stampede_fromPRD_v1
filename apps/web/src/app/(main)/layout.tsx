@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import LogoutButton from '@/components/auth/LogoutButton'
 
 export default async function MainLayout({
   children,
@@ -54,6 +55,7 @@ export default async function MainLayout({
             >
               Rodeos
             </a>
+            <LogoutButton />
           </nav>
         </div>
       </header>

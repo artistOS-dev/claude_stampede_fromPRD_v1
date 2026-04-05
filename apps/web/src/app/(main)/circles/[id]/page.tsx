@@ -566,9 +566,9 @@ function BoardInboxTab({
   return (
     <div className="space-y-6">
       {/* Board management */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Board management</h3>
+          <h3 className="text-sm font-semibold text-orange-900 uppercase tracking-wide">🤠 Board management</h3>
           {myRole && (
             <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 capitalize">
               You are {myRole}
@@ -588,7 +588,7 @@ function BoardInboxTab({
 
         {!membersLoading && boardMembers.length > 0 && (
           <div className="space-y-2">
-            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-orange-500 font-semibold">
               <div className="col-span-4">Display name</div>
               <div className="col-span-4">Email</div>
               <div className="col-span-2">Role</div>
@@ -600,7 +600,7 @@ function BoardInboxTab({
               const demote = member.role === 'board'
 
               return (
-                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-orange-100 bg-white/90 px-3 py-2">
                   <div className="col-span-4 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {member.display_name}

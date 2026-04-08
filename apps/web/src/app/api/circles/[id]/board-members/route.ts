@@ -117,14 +117,18 @@ export async function PATCH(
   }
 
   const serviceSupabase = createServiceClient()
-  const { error } = await serviceSupabase
+  const { data: updated, error } = await serviceSupabase
     .from('circle_members')
     .update({ role: body.role })
     .eq('circle_id', params.id)
     .eq('user_id', body.user_id)
     .eq('status', 'active')
+    .select()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ error: 'Member not found or role could not be updated' }, { status: 404 })
+  }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, role: updated[0].role })
 }

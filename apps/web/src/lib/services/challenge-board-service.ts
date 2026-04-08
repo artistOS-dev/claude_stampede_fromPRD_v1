@@ -53,7 +53,7 @@ export const ChallengeBoardService = {
   // that requires majority board approval before sending.
   // ────────────────────────────────────────────────────────────
   async submitProposal(input: SubmitProposalInput): Promise<Result<{ proposal_id: string }>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { data: null, error: new BoardError('Unauthorized', 'UNAUTHORIZED', 401) }
 
@@ -136,7 +136,7 @@ export const ChallengeBoardService = {
   //   - If all board members voted and no majority → default to 'held'
   // ────────────────────────────────────────────────────────────
   async castBoardVote(input: CastVoteInput): Promise<Result<{ resolved: boolean; outcome: string | null }>> {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { data: null, error: new BoardError('Unauthorized', 'UNAUTHORIZED', 401) }
 
@@ -293,7 +293,7 @@ export const ChallengeBoardService = {
   // listProposals — proposals for a circle, newest first
   // ────────────────────────────────────────────────────────────
   async listProposals(circle_id: string, status?: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     let query = supabase
       .from('challenge_proposals')
@@ -313,26 +313,14 @@ export const ChallengeBoardService = {
 
     if (status) query = query.eq('status', status)
 
-    return supabase.from('challenge_proposals').select(`
-      id, title, description, status, credit_buy_in, end_date, board_comment, rodeo_id, created_at,
-      initiated_by,
-      profiles!challenge_proposals_initiated_by_fkey(display_name, avatar_url),
-      circles!challenge_proposals_circle_id_fkey(id, name),
-      target:circles!challenge_proposals_target_circle_id_fkey(id, name),
-      challenge_proposal_songs(song_id, label, circle_songs(id, title, artist)),
-      challenge_proposal_votes(vote, voter_id,
-        profiles!challenge_proposal_votes_voter_id_fkey(display_name, avatar_url)
-      )
-    `)
-      .eq('circle_id', circle_id)
-      .order('created_at', { ascending: false })
+    return query
   },
 
   // ────────────────────────────────────────────────────────────
   // getBoardMembers — for tally context
   // ────────────────────────────────────────────────────────────
   async getBoardMembers(circle_id: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     return supabase
       .from('circle_members')
       .select('user_id, role, profiles(display_name, avatar_url)')

@@ -912,7 +912,7 @@ export const RodeoService = {
           *,
           circles(id, name, member_count),
           profiles!rodeo_entries_artist_id_fkey(id, display_name, avatar_url),
-          rodeo_entry_songs(*, circle_songs(id, title, artist))
+          rodeo_entry_songs(*, circle_songs(id, title, artist, avg_rating, rating_count))
         ),
         rodeo_results(
           *,

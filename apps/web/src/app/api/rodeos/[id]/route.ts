@@ -25,6 +25,19 @@ export async function GET(
     .eq('rodeo_id', params.id)
     .eq('voter_id', user.id)
 
+  // Collect all song IDs from this rodeo's entries
+  const songIds = (rodeo?.rodeo_entries ?? [])
+    .flatMap((e: { rodeo_entry_songs?: { song_id: string }[] }) => (e.rodeo_entry_songs ?? []).map((s) => s.song_id))
+
+  // Fetch this user's own ratings for those songs
+  const { data: myRatings } = songIds.length > 0
+    ? await supabase
+        .from('song_ratings')
+        .select('song_id, rating')
+        .eq('user_id', user.id)
+        .in('song_id', songIds)
+    : { data: [] }
+
   // Fetch user's subscription tier for vote-gating
   const { data: profile } = await supabase
     .from('profiles')
@@ -53,6 +66,7 @@ export async function GET(
   return NextResponse.json({
     rodeo,
     myVotes: myVotes ?? [],
+    myRatings: (myRatings ?? []) as { song_id: string; rating: number }[],
     isSubscribed: profile?.subscription_tier !== 'free',
     isCreator,
     isWinningCircleBoard,

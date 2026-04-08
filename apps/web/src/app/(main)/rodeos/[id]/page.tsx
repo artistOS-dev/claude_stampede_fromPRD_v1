@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
+  GripVertical,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -38,7 +39,7 @@ interface EntrySong {
   song_id: string
   label: 'studio' | 'live' | null
   locked: boolean
-  circle_songs: { id: string; title: string; artist: string } | null
+  circle_songs: { id: string; title: string; artist: string; avg_rating: number; rating_count: number } | null
 }
 
 interface Entry {
@@ -166,9 +167,13 @@ export default function RodeoDetailPage() {
 
   const [rodeo, setRodeo] = useState<RodeoDetail | null>(null)
   const [myVotes, setMyVotes] = useState<MyVote[]>([])
+  const [myRatings, setMyRatings] = useState<Record<string, number>>({})
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Per-entry song order (drag-to-reorder, keyed by entry id)
+  const [songOrders, setSongOrders] = useState<Record<string, EntrySong[]>>({})
 
   // Per-song voting state { [song_id]: 'idle' | 'voting' | 'voted' | 'error' }
   const [voteStates, setVoteStates] = useState<Record<string, 'idle' | 'voting' | 'voted' | 'error'>>({})
@@ -184,6 +189,20 @@ export default function RodeoDetailPage() {
       setRodeo(json.rodeo)
       setMyVotes(json.myVotes ?? [])
       setIsSubscribed(json.isSubscribed ?? false)
+
+      // Build my ratings map
+      const ratingsMap: Record<string, number> = {}
+      for (const r of (json.myRatings ?? []) as { song_id: string; rating: number }[]) {
+        ratingsMap[r.song_id] = r.rating
+      }
+      setMyRatings(ratingsMap)
+
+      // Initialise per-entry song order from API data
+      const orders: Record<string, EntrySong[]> = {}
+      for (const entry of (json.rodeo?.rodeo_entries ?? []) as Entry[]) {
+        orders[entry.id] = [...(entry.rodeo_entry_songs ?? [])]
+      }
+      setSongOrders(orders)
 
       // Pre-populate voteStates with already-cast votes
       const initial: Record<string, 'idle' | 'voting' | 'voted' | 'error'> = {}
@@ -223,6 +242,29 @@ export default function RodeoDetailPage() {
       setVoteError('Network error. Please try again.')
     }
   }, [id, load])
+
+  const rateSong = useCallback(async (circleId: string, songId: string, rating: number) => {
+    // Optimistic update
+    setMyRatings((prev) => ({ ...prev, [songId]: rating }))
+    try {
+      await fetch(`/api/circles/${circleId}/songs/${songId}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating }),
+      })
+    } catch {
+      // silent — optimistic value stays
+    }
+  }, [])
+
+  const reorderSongs = useCallback((entryId: string, fromIndex: number, toIndex: number) => {
+    setSongOrders((prev) => {
+      const songs = [...(prev[entryId] ?? [])]
+      const [moved] = songs.splice(fromIndex, 1)
+      songs.splice(toIndex, 0, moved)
+      return { ...prev, [entryId]: songs }
+    })
+  }, [])
 
   // ── Render states ────────────────────────────────────────────
 
@@ -400,7 +442,11 @@ export default function RodeoDetailPage() {
             voteStates={voteStates}
             songScores={songScores}
             isFinished={isFinished}
+            myRatings={myRatings}
+            songOrders={songOrders}
             onVote={castVote}
+            onRate={rateSong}
+            onReorder={reorderSongs}
           />
         ))}
       </div>
@@ -541,6 +587,58 @@ function VoteTallies({
   )
 }
 
+// ── StarRating ────────────────────────────────────────────────
+
+function StarRating({
+  songId,
+  circleId,
+  myRating,
+  avgRating,
+  ratingCount,
+  onRate,
+}: {
+  songId: string
+  circleId: string | null
+  myRating: number | undefined
+  avgRating: number
+  ratingCount: number
+  onRate: (circleId: string, songId: string, rating: number) => void
+}) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const hasMyRating = myRating !== undefined && myRating > 0
+  const displayRating = hovered ?? (hasMyRating ? myRating : avgRating)
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(null)}
+          onClick={() => { if (circleId) onRate(circleId, songId, star) }}
+          disabled={!circleId}
+          className="p-0.5 transition-transform hover:scale-110 disabled:cursor-default"
+          title={circleId ? `Rate ${star} star${star !== 1 ? 's' : ''}` : undefined}
+        >
+          <Star
+            className={`w-3.5 h-3.5 transition-colors ${
+              star <= displayRating
+                ? 'text-yellow-400 fill-yellow-400'
+                : 'text-gray-200 fill-gray-100'
+            }`}
+          />
+        </button>
+      ))}
+      {(hasMyRating || (avgRating > 0 && ratingCount > 0)) && (
+        <span className="text-xs text-gray-400 ml-1 whitespace-nowrap">
+          {hasMyRating ? `${myRating}/5 · your rating` : `${avgRating.toFixed(1)} avg (${ratingCount})`}
+        </span>
+      )}
+    </div>
+  )
+}
+
 // ── EntrySongsCard ────────────────────────────────────────────
 
 function EntrySongsCard({
@@ -551,7 +649,11 @@ function EntrySongsCard({
   voteStates,
   songScores,
   isFinished,
+  myRatings,
+  songOrders,
   onVote,
+  onRate,
+  onReorder,
 }: {
   entry: Entry
   isVoting: boolean
@@ -560,10 +662,48 @@ function EntrySongsCard({
   voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
   songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
   isFinished: boolean
+  myRatings: Record<string, number>
+  songOrders: Record<string, EntrySong[]>
   onVote: (song_id: string, entry_id: string) => void
+  onRate: (circleId: string, songId: string, rating: number) => void
+  onReorder: (entryId: string, fromIndex: number, toIndex: number) => void
 }) {
   const name = entryDisplayName(entry)
-  const songs = entry.rodeo_entry_songs ?? []
+  const songs = songOrders[entry.id] ?? entry.rodeo_entry_songs ?? []
+
+  // ── Drag-to-reorder ──────────────────────────────────────────
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+
+  const startDrag = (e: React.PointerEvent<HTMLButtonElement>, index: number) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDragIndex(index)
+    setDropIndex(index)
+  }
+
+  const moveDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (dragIndex === null || !listRef.current) return
+    const items = Array.from(listRef.current.children) as HTMLElement[]
+    let newDropIndex = songs.length - 1
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect()
+      if (e.clientY <= rect.top + rect.height / 2) {
+        newDropIndex = i
+        break
+      }
+    }
+    if (newDropIndex !== dropIndex) setDropIndex(newDropIndex)
+  }
+
+  const endDrag = () => {
+    if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+      onReorder(entry.id, dragIndex, dropIndex)
+    }
+    setDragIndex(null)
+    setDropIndex(null)
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -582,15 +722,39 @@ function EntrySongsCard({
       {songs.length === 0 ? (
         <div className="px-5 py-4 text-sm text-gray-400">No songs added yet.</div>
       ) : (
-        <ul className="divide-y divide-gray-100">
-          {songs.map((es) => {
+        <ul ref={listRef} className="divide-y divide-gray-100">
+          {songs.map((es, index) => {
             const song = es.circle_songs
             const voteState = voteStates[es.song_id] ?? 'idle'
             const hasVoted = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
             const songResult = songScores.get(es.song_id)
+            const isDragging = dragIndex === index
+            const isDropTarget = dropIndex === index && dragIndex !== null && dragIndex !== index
 
             return (
-              <li key={es.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+              <li
+                key={es.id}
+                className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${
+                  isDragging
+                    ? 'opacity-40 bg-orange-50'
+                    : isDropTarget
+                    ? 'bg-orange-50 border-t-2 border-orange-400'
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                {/* Drag grip */}
+                <button
+                  type="button"
+                  className="touch-none cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none"
+                  onPointerDown={(e) => startDrag(e, index)}
+                  onPointerMove={moveDrag}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  title="Drag to reorder"
+                >
+                  <GripVertical className="w-4 h-4" />
+                </button>
+
                 {/* Icon */}
                 <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
                   <Music className="w-4 h-4 text-orange-500" />
@@ -611,6 +775,18 @@ function EntrySongsCard({
                   </div>
                   <div className="text-xs text-gray-400 truncate mt-0.5">
                     {song?.artist ?? 'Unknown artist'}
+                  </div>
+
+                  {/* Star rating */}
+                  <div className="mt-1.5">
+                    <StarRating
+                      songId={es.song_id}
+                      circleId={entry.circle_id}
+                      myRating={myRatings[es.song_id]}
+                      avgRating={song?.avg_rating ?? 0}
+                      ratingCount={song?.rating_count ?? 0}
+                      onRate={onRate}
+                    />
                   </div>
 
                   {/* Song score (finished) */}

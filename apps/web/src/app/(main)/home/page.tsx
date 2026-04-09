@@ -49,18 +49,28 @@ export default async function HomePage() {
     .filter(Boolean) as string[]
 
   let memberCountByCircle: Record<string, number> = {}
+  let artistsFollowingCount = 0
   if (memberCircleIds.length > 0) {
-    const { data: activeMemberships } = await supabase
-      .from('circle_members')
-      .select('circle_id')
-      .in('circle_id', memberCircleIds)
-      .eq('status', 'active')
+    const [{ data: activeMemberships }, { count: artistCount }] = await Promise.all([
+      supabase
+        .from('circle_members')
+        .select('circle_id')
+        .in('circle_id', memberCircleIds)
+        .eq('status', 'active'),
+      supabase
+        .from('circle_artists')
+        .select('id', { count: 'exact', head: true })
+        .in('circle_id', memberCircleIds)
+        .eq('status', 'active'),
+    ])
 
     memberCountByCircle = ((activeMemberships ?? []) as Array<{ circle_id: string }>)
       .reduce<Record<string, number>>((acc, row) => {
         acc[row.circle_id] = (acc[row.circle_id] ?? 0) + 1
         return acc
       }, {})
+
+    artistsFollowingCount = artistCount ?? 0
   }
 
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'there'
@@ -159,7 +169,7 @@ export default async function HomePage() {
           </div>
           <div>
             <p className="text-sm text-zinc-500">Artists following</p>
-            <p className="text-xl font-bold text-white">0</p>
+            <p className="text-xl font-bold text-white">{artistsFollowingCount}</p>
           </div>
         </div>
       </div>

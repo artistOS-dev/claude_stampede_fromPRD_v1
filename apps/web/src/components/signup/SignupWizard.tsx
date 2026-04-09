@@ -208,9 +208,9 @@ export default function SignupWizard({
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div
-          className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"
           aria-label="Loading"
           role="status"
         />
@@ -221,16 +221,16 @@ export default function SignupWizard({
   const { step, email, userId, displayName, avatarUrl, role, personalityTypes } = state
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 py-4 px-4 sm:px-6">
+      <header className="bg-zinc-900 border-b border-zinc-800 py-4 px-4 sm:px-6">
         <div className="max-w-lg mx-auto flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center" aria-hidden="true">
+          <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center" aria-hidden="true">
             <Music2 className="w-4 h-4 text-white" />
           </div>
-          <span className="text-base font-bold text-gray-900">Stampede</span>
+          <span className="text-base font-bold text-white">Stampede</span>
           {entryPoint && (
-            <span className="ml-auto text-xs text-gray-400">
+            <span className="ml-auto text-xs text-zinc-600">
               via {entryPoint}
             </span>
           )}
@@ -258,7 +258,7 @@ export default function SignupWizard({
           )}
 
           {/* Step card */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-700 shadow-sm p-6 sm:p-8">
             {step === 1 && (
               <Step1Credentials
                 initialEmail={email}
@@ -322,7 +322,7 @@ export default function SignupWizard({
             <button
               type="button"
               onClick={() => goToStep((step - 1) as Step)}
-              className="mt-4 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors py-2 text-center"
+              className="mt-4 w-full text-sm text-zinc-600 hover:text-zinc-400 transition-colors py-2 text-center"
               aria-label="Go back to previous step"
             >
               ← Back

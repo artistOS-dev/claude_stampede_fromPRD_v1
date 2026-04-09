@@ -113,20 +113,20 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
     <div className="text-center">
       {/* Animated envelope */}
       <div
-        className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 mb-6 animate-envelope-float"
+        className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-pink-900/30 mb-6 animate-envelope-float"
         aria-hidden="true"
       >
-        <Mail className="w-10 h-10 text-orange-500" />
+        <Mail className="w-10 h-10 text-pink-400" />
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your inbox</h2>
-      <p className="text-gray-600 mb-2">
+      <h2 className="text-2xl font-bold text-white mb-2">Check your inbox</h2>
+      <p className="text-zinc-400 mb-2">
         We sent a verification link to:
       </p>
-      <p className="text-gray-900 font-semibold mb-6 break-all">{email}</p>
+      <p className="text-white font-semibold mb-6 break-all">{email}</p>
 
-      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 text-left">
-        <p className="text-sm text-orange-800">
+      <div className="bg-pink-950/20 border border-pink-800 rounded-xl p-4 mb-6 text-left">
+        <p className="text-sm text-pink-200">
           <span className="font-medium">Next step:</span> Open the email and click the link
           to verify your address. This page will update automatically.
         </p>
@@ -135,21 +135,21 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
       {/* Status messages */}
       {resendError && (
         <div
-          className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200"
+          className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-800"
           role="alert"
         >
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-red-600">{resendError}</p>
+          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-red-400">{resendError}</p>
         </div>
       )}
 
       {resendSuccess && (
         <div
-          className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-green-50 border border-green-200"
+          className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-green-950/30 border border-green-800"
           role="status"
         >
-          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-green-700">Verification email resent successfully.</p>
+          <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-green-400">Verification email resent successfully.</p>
         </div>
       )}
 
@@ -183,7 +183,7 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
             )}
           </Button>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-500">
             Maximum resends reached. Check your spam folder.
           </p>
         )}
@@ -191,14 +191,14 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
         <button
           type="button"
           onClick={onChangeEmail}
-          className="w-full text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors py-2"
+          className="w-full text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors py-2"
         >
           Change email address
         </button>
       </div>
 
       {/* Spam note */}
-      <p className="mt-4 text-xs text-gray-400">
+      <p className="mt-4 text-xs text-zinc-600">
         Can&apos;t find it? Check your spam or junk folder.
       </p>
     </div>

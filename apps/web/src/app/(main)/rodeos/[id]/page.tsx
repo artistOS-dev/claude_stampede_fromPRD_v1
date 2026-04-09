@@ -121,8 +121,8 @@ const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   pending: { dot: 'bg-yellow-400',              label: 'Pending' },
   open:    { dot: 'bg-blue-400',                label: 'Open' },
   voting:  { dot: 'bg-green-950/300 animate-pulse', label: 'Voting Live' },
-  closed:  { dot: 'bg-gray-400',                label: 'Closed' },
-  archived:{ dot: 'bg-gray-300',                label: 'Archived' },
+  closed:  { dot: 'bg-zinc-500',                label: 'Closed' },
+  archived:{ dot: 'bg-zinc-600',                label: 'Archived' },
 }
 
 const RECIPIENT_LABELS: Record<string, string> = {
@@ -437,7 +437,7 @@ export default function RodeoDetailPage() {
                       </div>
                       <div className="h-1.5 bg-zinc-900/50 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${isTop ? 'bg-pink-500' : 'bg-gray-300'}`}
+                          className={`h-full rounded-full transition-all duration-500 ${isTop ? 'bg-pink-500' : 'bg-zinc-600'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -699,7 +699,7 @@ function StarRating({
             className={`w-3.5 h-3.5 transition-colors ${
               star <= displayRating
                 ? 'text-yellow-400 fill-yellow-400'
-                : 'text-gray-200 fill-gray-100'
+                : 'text-zinc-300 fill-zinc-700'
             }`}
           />
         </button>

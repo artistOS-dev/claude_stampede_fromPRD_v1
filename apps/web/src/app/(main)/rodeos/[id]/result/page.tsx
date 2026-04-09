@@ -238,7 +238,7 @@ export default function RodeoResultPage() {
       </button>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-orange-500 to-amber-400 rounded-3xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-pink-500 to-pink-400 rounded-3xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-semibold bg-zinc-900/20 px-2.5 py-1 rounded-full">
             {TYPE_LABELS[rodeo.type] ?? rodeo.type}
@@ -278,7 +278,7 @@ export default function RodeoResultPage() {
       )}
 
       {!result && (
-        <div className="bg-yellow-950/20 border border-yellow-200 rounded-2xl p-5 flex items-center gap-3">
+        <div className="bg-yellow-950/20 border border-yellow-700 rounded-2xl p-5 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
           <p className="text-yellow-300 text-sm">This rodeo hasn&#39;t been finalized yet.</p>
         </div>
@@ -463,7 +463,7 @@ export default function RodeoResultPage() {
           onClick={() => router.push('/rodeos/challenge')}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-pink-700 hover:shadow-md transition-all text-left group"
         >
-          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-900/50 transition-colors">
             <Swords className="w-5 h-5 text-pink-400" />
           </div>
           <div className="flex-1">

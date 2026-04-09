@@ -98,7 +98,7 @@ export default async function HomePage() {
   return (
     <div className="space-y-8">
       {/* Welcome hero */}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-8 text-white">
         <div className="flex items-center gap-4">
           <div className="flex-shrink-0">
             {avatarUrl ? (
@@ -107,11 +107,11 @@ export default async function HomePage() {
                 alt={displayName}
                 width={64}
                 height={64}
-                className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+                className="w-16 h-16 rounded-full object-cover border-2 border-zinc-700/30"
               />
             ) : (
               <div
-                className="w-16 h-16 rounded-full bg-zinc-900/20 flex items-center justify-center text-xl font-bold border-2 border-white/30"
+                className="w-16 h-16 rounded-full bg-zinc-900/20 flex items-center justify-center text-xl font-bold border-2 border-zinc-700/30"
                 aria-label={`Avatar for ${displayName}`}
               >
                 {initials}
@@ -120,7 +120,7 @@ export default async function HomePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Welcome to Stampede, {displayName}!</h1>
-            <p className="text-orange-100 mt-1">
+            <p className="text-pink-200 mt-1">
               {tier === 'superfan'
                 ? 'Superfan member — you have full access'
                 : tier === 'fan'

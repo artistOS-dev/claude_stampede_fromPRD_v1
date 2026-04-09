@@ -205,10 +205,10 @@ export default function ChallengePage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <BackBtn onClick={() => router.push('/rodeos')} />
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center space-y-3">
-          <Crown className="w-10 h-10 text-amber-500 mx-auto" />
-          <p className="font-semibold text-amber-900">Board access required</p>
-          <p className="text-sm text-amber-700">
+        <div className="bg-zinc-900 border border-yellow-700 rounded-2xl p-8 text-center space-y-3">
+          <Crown className="w-10 h-10 text-yellow-400 mx-auto" />
+          <p className="font-semibold text-yellow-300">Board access required</p>
+          <p className="text-sm text-yellow-400">
             Only board members or founders of a Circle can initiate a challenge.
           </p>
         </div>
@@ -307,7 +307,7 @@ export default function ChallengePage() {
               placeholder="Search circles by name, sound, or artist…"
               value={browseSearch}
               onChange={(e) => setBrowseSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
 
@@ -323,7 +323,7 @@ export default function ChallengePage() {
                   onClick={() => update({ targetCircleId: c.id, targetCircleName: c.name })}
                   className={`w-full text-left rounded-xl border p-4 transition-all ${
                     selected
-                      ? 'border-pink-600 bg-pink-950/20 ring-1 ring-orange-300'
+                      ? 'border-pink-600 bg-pink-950/20 ring-1 ring-pink-400'
                       : 'border-zinc-700 bg-zinc-900 hover:border-pink-800'
                   }`}
                 >
@@ -370,7 +370,7 @@ export default function ChallengePage() {
                 value={state.title}
                 onChange={(e) => update({ title: e.target.value })}
                 placeholder="e.g. Morgan Wallen Nation vs New Country Discoveries"
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                 maxLength={120}
               />
               <p className="text-xs text-zinc-600 mt-1">{state.title.length}/120</p>
@@ -382,7 +382,7 @@ export default function ChallengePage() {
                 onChange={(e) => update({ storyline: e.target.value })}
                 placeholder="Explain the narrative. Why is this matchup compelling? What's the musical storyline? The board needs this to approve."
                 rows={5}
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
                 maxLength={600}
               />
               <p className="text-xs text-zinc-600 mt-1">{state.storyline.length}/600</p>
@@ -436,7 +436,7 @@ export default function ChallengePage() {
                         update({ selectedSongIds: ids })
                       }}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                        selected ? 'bg-pink-500 border-pink-500' : 'border-gray-300'
+                        selected ? 'bg-pink-500 border-pink-500' : 'border-zinc-700'
                       }`}
                       aria-label={selected ? 'Deselect' : 'Select'}
                     >
@@ -457,7 +457,7 @@ export default function ChallengePage() {
                             onClick={() => update({ songLabels: { ...state.songLabels, [song.id]: l } })}
                             className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${
                               label === l
-                                ? l === 'live' ? 'bg-red-950/300 text-white' : 'bg-gray-700 text-white'
+                                ? l === 'live' ? 'bg-red-950/300 text-white' : 'bg-zinc-800 text-white'
                                 : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
                             }`}
                           >
@@ -482,7 +482,7 @@ export default function ChallengePage() {
       {step === 4 && (
         <StepCard title="Internal Confidence Check" icon={<Star className="w-5 h-5 text-pink-400" />}>
           <div className="bg-pink-950/20 border border-pink-800 rounded-xl p-4 space-y-2">
-            <p className="font-semibold text-orange-900 text-sm">
+            <p className="font-semibold text-pink-200 text-sm">
               "{state.challengerCircleName} stands behind these songs."
             </p>
             <p className="text-xs text-pink-300">
@@ -516,11 +516,11 @@ export default function ChallengePage() {
             className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
               state.confidenceConfirmed
                 ? 'border-green-400 bg-green-950/30'
-                : 'border-dashed border-gray-300 hover:border-pink-600'
+                : 'border-dashed border-zinc-700 hover:border-pink-600'
             }`}
           >
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-              state.confidenceConfirmed ? 'bg-green-950/300 border-green-500' : 'border-gray-300'
+              state.confidenceConfirmed ? 'bg-green-950/300 border-green-500' : 'border-zinc-700'
             }`}>
               {state.confidenceConfirmed && <CheckCircle2 className="w-4 h-4 text-white" />}
             </div>
@@ -547,7 +547,7 @@ export default function ChallengePage() {
                 max={100000}
                 value={state.creditBuyIn}
                 onChange={(e) => update({ creditBuyIn: Math.max(1, parseInt(e.target.value) || 0) })}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
               <span className="text-sm text-zinc-500 shrink-0">credits</span>
             </div>
@@ -608,7 +608,7 @@ export default function ChallengePage() {
               type="datetime-local"
               value={state.endDate}
               onChange={(e) => update({ endDate: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
         </StepCard>
@@ -617,9 +617,9 @@ export default function ChallengePage() {
       {/* ── STEP 6: Confirm & Submit ── */}
       {step === 6 && (
         <StepCard title="Submit for Board Approval" icon={<Lock className="w-5 h-5 text-pink-400" />}>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 space-y-1">
+          <div className="bg-yellow-950/20 border border-yellow-700 rounded-xl p-4 text-sm text-yellow-300 space-y-1">
             <p className="font-semibold">This challenge goes to your board first.</p>
-            <p className="text-amber-700">
+            <p className="text-yellow-400">
               A majority of board members must vote <strong>Approve</strong> before
               it's sent to <strong>{state.targetCircleName}</strong>.
             </p>

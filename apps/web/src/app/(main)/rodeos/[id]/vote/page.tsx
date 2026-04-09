@@ -211,7 +211,7 @@ export default function VotingPage() {
       <BackButton onClick={() => router.push(`/rodeos/${id}`)} label="Back to Rodeo" />
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-orange-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -349,7 +349,7 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
 
 function SubscriptionGate() {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
+    <div className="relative overflow-hidden bg-gradient-to-br from-zinc-950 to-zinc-900 rounded-2xl p-6 text-white">
       {/* Decorative blur */}
       <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-pink-500/20 blur-2xl pointer-events-none" />
       <div className="relative space-y-3">
@@ -361,7 +361,7 @@ function SubscriptionGate() {
           Voting in Rodeos is reserved for Stampede subscribers. Upgrade to cast your vote,
           earn credits, and shape which music wins.
         </p>
-        <div className="bg-zinc-900/10 rounded-xl p-3 text-sm text-gray-200">
+        <div className="bg-zinc-800/50 rounded-xl p-3 text-sm text-zinc-300">
           <strong className="text-white">You can still watch</strong> — live tallies below are
           always visible. No weighting hidden.
         </div>
@@ -380,19 +380,19 @@ function SubscriptionGate() {
 
 function GrantedCreditsBanner({ credits }: { credits: number }) {
   return (
-    <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-        <Coins className="w-5 h-5 text-amber-600" />
+    <div className="flex items-center gap-4 bg-zinc-900 border border-yellow-700 rounded-2xl p-4">
+      <div className="w-10 h-10 rounded-full bg-yellow-950/30 flex items-center justify-center shrink-0">
+        <Coins className="w-5 h-5 text-yellow-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-amber-900">
+        <p className="text-sm font-semibold text-yellow-300">
           Fresh ears welcome — you&apos;ve been granted {credits} Stampede credits
         </p>
-        <p className="text-xs text-amber-700 mt-0.5">
+        <p className="text-xs text-yellow-400 mt-0.5">
           Vote as general public. Circle members carry 2× weight, but your voice counts.
         </p>
       </div>
-      <span className="text-2xl font-bold text-amber-600 tabular-nums shrink-0">+{credits}</span>
+      <span className="text-2xl font-bold text-yellow-400 tabular-nums shrink-0">+{credits}</span>
     </div>
   )
 }
@@ -600,7 +600,7 @@ function SongTallyBar({ song, songPct }: { song: SongTally; songPct: number }) {
       {/* Progress bar */}
       <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className="h-full bg-orange-300 rounded-full transition-all duration-700"
+          className="h-full bg-pink-400 rounded-full transition-all duration-700"
           style={{ width: `${songPct}%` }}
         />
       </div>

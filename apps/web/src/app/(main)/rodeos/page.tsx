@@ -67,8 +67,8 @@ const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   pending: { dot: 'bg-yellow-400', label: 'Pending' },
   open: { dot: 'bg-blue-400', label: 'Open' },
   voting: { dot: 'bg-green-950/300 animate-pulse', label: 'Voting Live' },
-  closed: { dot: 'bg-gray-400', label: 'Closed' },
-  archived: { dot: 'bg-gray-300', label: 'Archived' },
+  closed: { dot: 'bg-zinc-500', label: 'Closed' },
+  archived: { dot: 'bg-zinc-600', label: 'Archived' },
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -183,7 +183,7 @@ export default function RodeoFeedPage() {
             placeholder="Search rodeos, circles, or artists…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             aria-label="Search rodeos"
           />
         </div>
@@ -192,7 +192,7 @@ export default function RodeoFeedPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500"
           aria-label="Filter by type"
         >
           {TYPE_OPTIONS.map((o) => (
@@ -204,7 +204,7 @@ export default function RodeoFeedPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500"
           aria-label="Filter by status"
         >
           {STATUS_OPTIONS.map((o) => (
@@ -273,7 +273,7 @@ function RodeoCard({ rodeo, onClick }: { rodeo: RodeoFeedItem; onClick: () => vo
       type="button"
       onClick={onClick}
       className={`w-full text-left bg-zinc-900 rounded-2xl border shadow-sm p-5 transition-all hover:shadow-md group ${
-        isLive ? 'border-pink-700 ring-1 ring-orange-100' : 'border-zinc-700 hover:border-pink-800'
+        isLive ? 'border-pink-700 ring-1 ring-pink-500/20' : 'border-zinc-700 hover:border-pink-800'
       }`}
       aria-label={`View rodeo: ${rodeo.title}`}
     >

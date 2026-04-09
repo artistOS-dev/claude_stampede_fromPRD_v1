@@ -306,13 +306,33 @@ export default function RodeoDetailPage() {
     ? (result.circle_member_votes ?? 0) + (result.general_public_votes ?? 0)
     : 0
 
-  // Build song→score lookup for finished rodeos
+  // Build song→score lookup for finished/voting rodeos
   const songScores = new Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>()
   if (result?.rodeo_song_results) {
     for (const sr of result.rodeo_song_results) {
       songScores.set(sr.song_id, sr)
     }
   }
+
+  // Current standing: vote-weighted scores if available, else avg-rating × count fallback
+  const entryScores = entries.map((e) => {
+    const songs = songOrders[e.id] ?? e.rodeo_entry_songs ?? []
+    let score = 0
+    for (const es of songs) {
+      const voteScore = songScores.get(es.song_id)?.weighted_score
+      if (voteScore !== undefined) {
+        score += voteScore
+      } else {
+        const cs = es.circle_songs
+        score += (cs?.avg_rating ?? 0) * (cs?.rating_count ?? 0)
+      }
+    }
+    return { entry: e, score }
+  })
+  const hasAnyScore = entryScores.some((x) => x.score > 0)
+  const leadingEntry = hasAnyScore && entryScores.length >= 2
+    ? [...entryScores].sort((a, b) => b.score - a.score)[0]
+    : null
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -360,29 +380,74 @@ export default function RodeoDetailPage() {
 
         {/* Matchup row */}
         {entries.length >= 2 && (
-          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/50 flex-wrap">
-            <EntryChip entry={entries[0]} isWinner={result?.winner_circle_id === entries[0].circle_id || result?.winner_artist_id === entries[0].artist_id} />
-            <span className="text-sm font-bold text-gray-500 shrink-0">VS</span>
-            <EntryChip entry={entries[1]} isWinner={result?.winner_circle_id === entries[1].circle_id || result?.winner_artist_id === entries[1].artist_id} />
-            {isVoting && (
-              <button
-                type="button"
-                onClick={() => router.push(`/rodeos/${rodeo.id}/vote`)}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
-              >
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                Vote Now
-              </button>
-            )}
-            {isFinished && (
-              <button
-                type="button"
-                onClick={() => router.push(`/rodeos/${rodeo.id}/result`)}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                View Result
-              </button>
+          <div className="mt-5 pt-4 border-t border-white/50 space-y-3">
+            {/* VS chips */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <EntryChip
+                entry={entries[0]}
+                isWinner={result?.winner_circle_id === entries[0].circle_id || result?.winner_artist_id === entries[0].artist_id}
+                isLeading={leadingEntry?.entry.id === entries[0].id}
+              />
+              <span className="text-sm font-bold text-gray-500 shrink-0">VS</span>
+              <EntryChip
+                entry={entries[1]}
+                isWinner={result?.winner_circle_id === entries[1].circle_id || result?.winner_artist_id === entries[1].artist_id}
+                isLeading={leadingEntry?.entry.id === entries[1].id}
+              />
+              {isVoting && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/rodeos/${rodeo.id}/vote`)}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                >
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  Vote Now
+                </button>
+              )}
+              {isFinished && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/rodeos/${rodeo.id}/result`)}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  View Result
+                </button>
+              )}
+            </div>
+
+            {/* Current standing score bars */}
+            {hasAnyScore && (
+              <div className="space-y-1.5">
+                {[...entryScores].sort((a, b) => b.score - a.score).map(({ entry: e, score }, rank) => {
+                  const maxScore = Math.max(...entryScores.map((x) => x.score), 1)
+                  const pct = (score / maxScore) * 100
+                  const isTop = rank === 0
+                  return (
+                    <div key={e.id}>
+                      <div className="flex items-center justify-between text-xs mb-0.5">
+                        <div className="flex items-center gap-1.5">
+                          {isTop && <Flame className="w-3.5 h-3.5 text-orange-500" />}
+                          <span className={`font-semibold truncate max-w-[160px] ${isTop ? 'text-gray-900' : 'text-gray-500'}`}>
+                            {entryDisplayName(e)}
+                          </span>
+                          {isTop && <span className="text-orange-500 font-bold text-[10px] uppercase tracking-wide">Leading</span>}
+                        </div>
+                        <span className="tabular-nums font-bold text-gray-700 ml-2">{score.toFixed(1)}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/50 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${isTop ? 'bg-orange-500' : 'bg-gray-300'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="text-[10px] text-gray-400 text-right">
+                  {result?.rodeo_song_results ? 'based on votes' : 'based on song ratings'}
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -499,12 +564,21 @@ export default function RodeoDetailPage() {
 
 // ── EntryChip ─────────────────────────────────────────────────
 
-function EntryChip({ entry, isWinner }: { entry: Entry; isWinner: boolean }) {
+function EntryChip({ entry, isWinner, isLeading }: { entry: Entry; isWinner: boolean; isLeading?: boolean }) {
   const name = entryDisplayName(entry)
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${isWinner ? 'bg-yellow-100 border border-yellow-300' : 'bg-white/60'}`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+      isWinner
+        ? 'bg-yellow-100 border-yellow-300'
+        : isLeading
+        ? 'bg-orange-100 border-orange-300'
+        : 'bg-white/60 border-transparent'
+    }`}>
       {isWinner && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-400" />}
-      <span className={`text-sm font-semibold truncate max-w-[140px] ${isWinner ? 'text-yellow-800' : 'text-gray-800'}`}>
+      {!isWinner && isLeading && <Flame className="w-3.5 h-3.5 text-orange-500" />}
+      <span className={`text-sm font-semibold truncate max-w-[140px] ${
+        isWinner ? 'text-yellow-800' : isLeading ? 'text-orange-800' : 'text-gray-800'
+      }`}>
         {name}
       </span>
     </div>
@@ -713,9 +787,17 @@ function EntrySongsCard({
           <Users className="w-3.5 h-3.5 text-orange-600" />
         </div>
         <span className="font-semibold text-gray-800">{name}</span>
-        <span className="ml-auto text-xs text-gray-400">
-          {songs.length} song{songs.length !== 1 ? 's' : ''}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          {songs.length > 1 && (
+            <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              <GripVertical className="w-3 h-3" />
+              drag to rank
+            </span>
+          )}
+          <span className="text-xs text-gray-400">
+            {songs.length} song{songs.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
       {/* Songs list */}
@@ -745,14 +827,14 @@ function EntrySongsCard({
                 {/* Drag grip */}
                 <button
                   type="button"
-                  className="touch-none cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none"
+                  className="touch-none cursor-grab active:cursor-grabbing shrink-0 select-none rounded-md p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 active:bg-orange-100 transition-colors"
                   onPointerDown={(e) => startDrag(e, index)}
                   onPointerMove={moveDrag}
                   onPointerUp={endDrag}
                   onPointerCancel={endDrag}
                   title="Drag to reorder"
                 >
-                  <GripVertical className="w-4 h-4" />
+                  <GripVertical className="w-5 h-5" />
                 </button>
 
                 {/* Icon */}

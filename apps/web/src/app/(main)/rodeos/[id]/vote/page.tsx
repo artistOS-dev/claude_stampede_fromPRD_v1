@@ -78,10 +78,10 @@ function pct(part: number, total: number): number {
 function LoadingSkeleton() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-pulse">
-      <div className="h-8 w-40 bg-gray-200 rounded" />
-      <div className="h-32 bg-gray-200 rounded-2xl" />
-      <div className="h-24 bg-gray-200 rounded-2xl" />
-      {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
+      <div className="h-8 w-40 bg-zinc-700 rounded" />
+      <div className="h-32 bg-zinc-700 rounded-2xl" />
+      <div className="h-24 bg-zinc-700 rounded-2xl" />
+      {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-zinc-700 rounded-2xl" />)}
     </div>
   )
 }
@@ -185,7 +185,7 @@ export default function VotingPage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <BackButton onClick={() => router.back()} />
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-600">
+        <div className="bg-red-950/30 border border-red-800 rounded-xl p-6 text-center text-red-400">
           {fetchError ?? 'Could not load voting data.'}
         </div>
       </div>
@@ -215,7 +215,7 @@ export default function VotingPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-300 animate-pulse' : 'bg-white/50'}`} />
+              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-300 animate-pulse' : 'bg-zinc-900/50'}`} />
               <span className="text-xs font-medium text-white/80 uppercase tracking-wide">
                 {isOpen ? 'Voting Live' : 'Voting Closed'}
               </span>
@@ -223,7 +223,7 @@ export default function VotingPage() {
             <h1 className="text-xl font-bold leading-tight">{meta?.title ?? 'Rodeo'}</h1>
           </div>
           {countdown && isOpen && (
-            <div className="flex items-center gap-2 bg-white/20 backdrop-blur rounded-xl px-4 py-2 shrink-0">
+            <div className="flex items-center gap-2 bg-zinc-900/20 backdrop-blur rounded-xl px-4 py-2 shrink-0">
               <Timer className="w-4 h-4" />
               <span className="text-sm font-bold tabular-nums">{countdown}</span>
             </div>
@@ -234,9 +234,9 @@ export default function VotingPage() {
         <div className="mt-4 text-xs text-white/70">
           {votedCount} / {allSongs.length} songs voted
         </div>
-        <div className="mt-1.5 h-1.5 bg-white/20 rounded-full overflow-hidden">
+        <div className="mt-1.5 h-1.5 bg-zinc-900/20 rounded-full overflow-hidden">
           <div
-            className="h-full bg-white rounded-full transition-all duration-500"
+            className="h-full bg-zinc-900 rounded-full transition-all duration-500"
             style={{ width: allSongs.length ? `${(votedCount / allSongs.length) * 100}%` : '0%' }}
           />
         </div>
@@ -254,8 +254,8 @@ export default function VotingPage() {
 
       {/* Circle member badge */}
       {tally.voter_type === 'circle_member' && (
-        <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-700">
-          <Crown className="w-4 h-4 text-purple-500 shrink-0" />
+        <div className="flex items-center gap-3 bg-purple-950/30 border border-purple-800 rounded-xl p-3 text-sm text-purple-400">
+          <Crown className="w-4 h-4 text-purple-400 shrink-0" />
           <span>Your votes carry <strong>2× weight</strong> as a Circle member.</span>
         </div>
       )}
@@ -271,20 +271,20 @@ export default function VotingPage() {
 
       {/* ── Ballot ──────────────────────────────────────────── */}
       {entries.length === 0 ? (
-        <div className="text-center text-gray-400 py-12">No songs in this rodeo yet.</div>
+        <div className="text-center text-zinc-600 py-12">No songs in this rodeo yet.</div>
       ) : (
         <div className="space-y-4">
-          <h2 className="font-bold text-gray-900 flex items-center gap-2">
-            <Music className="w-5 h-5 text-orange-500" />
+          <h2 className="font-bold text-white flex items-center gap-2">
+            <Music className="w-5 h-5 text-pink-400" />
             Ballot
-            <span className="text-xs font-normal text-gray-400 ml-1">
+            <span className="text-xs font-normal text-zinc-600 ml-1">
               — vote for any song across both entries
             </span>
           </h2>
 
           {/* Vote error */}
           {voteError && (
-            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">
+            <div className="flex items-center gap-3 bg-red-950/30 border border-red-800 rounded-xl p-3 text-sm text-red-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {voteError}
               <button type="button" className="ml-auto text-xs underline" onClick={() => setVoteError(null)}>
@@ -310,16 +310,16 @@ export default function VotingPage() {
 
       {/* ── Done state ──────────────────────────────────────── */}
       {tally.is_subscribed && isOpen && votedCount === allSongs.length && allSongs.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center space-y-2">
+        <div className="bg-green-950/30 border border-green-800 rounded-2xl p-5 text-center space-y-2">
           <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto" />
           <p className="font-semibold text-green-800">All votes cast!</p>
-          <p className="text-sm text-green-600">
+          <p className="text-sm text-green-400">
             Results will be finalized when voting closes. Check back soon.
           </p>
           <button
             type="button"
             onClick={() => router.push(`/rodeos/${id}`)}
-            className="mt-2 inline-flex items-center gap-1.5 text-sm text-green-700 font-medium hover:text-green-900"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm text-green-400 font-medium hover:text-green-900"
           >
             View rodeo details <ChevronRight className="w-4 h-4" />
           </button>
@@ -337,7 +337,7 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 text-sm text-gray-500 hover:text-orange-600 transition-colors"
+      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400 transition-colors"
     >
       <ArrowLeft className="w-4 h-4" />
       {label}
@@ -351,23 +351,23 @@ function SubscriptionGate() {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
       {/* Decorative blur */}
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-orange-500/20 blur-2xl pointer-events-none" />
+      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-pink-500/20 blur-2xl pointer-events-none" />
       <div className="relative space-y-3">
         <div className="flex items-center gap-2">
-          <Lock className="w-5 h-5 text-orange-400" />
+          <Lock className="w-5 h-5 text-pink-400" />
           <span className="font-bold text-lg">Subscription Required to Vote</span>
         </div>
-        <p className="text-sm text-gray-300 leading-relaxed">
+        <p className="text-sm text-zinc-700 leading-relaxed">
           Voting in Rodeos is reserved for Stampede subscribers. Upgrade to cast your vote,
           earn credits, and shape which music wins.
         </p>
-        <div className="bg-white/10 rounded-xl p-3 text-sm text-gray-200">
+        <div className="bg-zinc-900/10 rounded-xl p-3 text-sm text-gray-200">
           <strong className="text-white">You can still watch</strong> — live tallies below are
           always visible. No weighting hidden.
         </div>
         <button
           type="button"
-          className="w-full mt-2 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 font-semibold text-sm transition-colors"
+          className="w-full mt-2 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 font-semibold text-sm transition-colors"
         >
           Upgrade to Stampede Pro
         </button>
@@ -415,27 +415,27 @@ function LiveTallies({
   const tied = totalW === 0
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-5">
+    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 p-5 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-gray-900 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-orange-500" />
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Zap className="w-5 h-5 text-pink-400" />
           Live Tallies
         </h2>
-        <span className="text-xs text-gray-400">{totalW.toFixed(0)} weighted pts total</span>
+        <span className="text-xs text-zinc-600">{totalW.toFixed(0)} weighted pts total</span>
       </div>
 
       {/* ── Tug-of-war credit flow bar ── */}
       <div className="space-y-2">
-        <div className="flex justify-between text-xs font-semibold text-gray-600 px-0.5">
+        <div className="flex justify-between text-xs font-semibold text-zinc-400 px-0.5">
           <span className="truncate max-w-[40%]">{entries[0]?.name ?? '—'}</span>
           <span className="truncate max-w-[40%] text-right">{entries[1]?.name ?? '—'}</span>
         </div>
 
         {/* Animated bar */}
-        <div className="relative h-8 rounded-full bg-gray-100 overflow-hidden">
+        <div className="relative h-8 rounded-full bg-zinc-800 overflow-hidden">
           {/* Left entry fill */}
           <div
-            className="absolute inset-y-0 left-0 bg-orange-400 transition-all duration-700 ease-in-out"
+            className="absolute inset-y-0 left-0 bg-pink-500 transition-all duration-700 ease-in-out"
             style={{ width: tied ? '50%' : `${leaderPct}%` }}
           />
           {/* Right entry fill */}
@@ -452,7 +452,7 @@ function LiveTallies({
           {/* Credit particles (decorative) */}
           {!tied && (
             <div
-              className="absolute top-1.5 bottom-1.5 w-5 rounded-full bg-white/30 animate-bounce"
+              className="absolute top-1.5 bottom-1.5 w-5 rounded-full bg-zinc-900/30 animate-bounce"
               style={{ left: `calc(${leaderPct}% - 10px)` }}
             />
           )}
@@ -460,8 +460,8 @@ function LiveTallies({
 
         {/* Credits flowing label */}
         {!tied && leader && (
-          <p className="text-xs text-center text-gray-400">
-            Credits flowing toward <strong className="text-gray-600">{leader.name}</strong>
+          <p className="text-xs text-center text-zinc-600">
+            Credits flowing toward <strong className="text-zinc-400">{leader.name}</strong>
           </p>
         )}
       </div>
@@ -474,40 +474,40 @@ function LiveTallies({
           return (
             <div
               key={entry.id}
-              className={`rounded-xl border p-4 ${isLeading ? 'border-orange-300 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}
+              className={`rounded-xl border p-4 ${isLeading ? 'border-pink-700 bg-pink-950/20' : 'border-zinc-800 bg-zinc-950'}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  {isLeading && <Crown className="w-3.5 h-3.5 text-orange-500 shrink-0" />}
-                  <span className="font-semibold text-gray-800 truncate text-sm">{entry.name}</span>
+                  {isLeading && <Crown className="w-3.5 h-3.5 text-pink-400 shrink-0" />}
+                  <span className="font-semibold text-zinc-100 truncate text-sm">{entry.name}</span>
                 </div>
-                <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-orange-600' : 'text-gray-600'}`}>
+                <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-pink-400' : 'text-zinc-400'}`}>
                   {entry.weighted_score.toFixed(1)}
-                  <span className="text-xs font-normal text-gray-400 ml-1">pts</span>
+                  <span className="text-xs font-normal text-zinc-600 ml-1">pts</span>
                 </span>
               </div>
 
               {/* Score bar */}
-              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
+              <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mb-3">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-orange-400' : 'bg-blue-400'}`}
+                  className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-pink-500' : 'bg-blue-400'}`}
                   style={{ width: `${entryPct}%` }}
                 />
               </div>
 
               {/* Circle member / general public split — always visible */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                   <Users className="w-3 h-3 text-purple-400 shrink-0" />
-                  <span className="font-semibold text-purple-700">{entry.circle_member_votes}</span>
+                  <span className="font-semibold text-purple-400">{entry.circle_member_votes}</span>
                   <span>Circle member</span>
-                  <span className="text-gray-400">(2×)</span>
+                  <span className="text-zinc-600">(2×)</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                   <Users className="w-3 h-3 text-blue-400 shrink-0" />
-                  <span className="font-semibold text-blue-700">{entry.general_public_votes}</span>
+                  <span className="font-semibold text-blue-400">{entry.general_public_votes}</span>
                   <span>General public</span>
-                  <span className="text-gray-400">(1×)</span>
+                  <span className="text-zinc-600">(1×)</span>
                 </div>
               </div>
             </div>
@@ -536,20 +536,20 @@ function EntryBallotSection({
   onVote: (song_id: string, entry_id: string) => void
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 overflow-hidden">
       {/* Entry header */}
-      <div className="flex items-center gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100">
-        <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-          <Users className="w-3.5 h-3.5 text-orange-600" />
+      <div className="flex items-center gap-3 px-5 py-3 bg-zinc-950 border-b border-zinc-800">
+        <div className="w-7 h-7 rounded-full bg-pink-900/30 flex items-center justify-center shrink-0">
+          <Users className="w-3.5 h-3.5 text-pink-400" />
         </div>
-        <span className="font-semibold text-gray-800">{entry.name}</span>
-        <span className="ml-auto text-xs text-gray-400">
+        <span className="font-semibold text-zinc-100">{entry.name}</span>
+        <span className="ml-auto text-xs text-zinc-600">
           {entry.songs.length} song{entry.songs.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Songs */}
-      <ul className="divide-y divide-gray-100">
+      <ul className="divide-y divide-zinc-800">
         {entry.songs.map((song) => {
           const isVoted  = voted.has(song.song_id)
           const state    = voteStates[song.song_id] ?? 'idle'
@@ -559,17 +559,17 @@ function EntryBallotSection({
             <li key={song.song_id} className="p-4 space-y-3">
               {/* Song info row */}
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
-                  <Music className="w-4 h-4 text-orange-500" />
+                <div className="w-9 h-9 rounded-lg bg-pink-950/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Music className="w-4 h-4 text-pink-400" />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-gray-900 text-sm">{song.title}</span>
+                    <span className="font-medium text-white text-sm">{song.title}</span>
                     {song.label && <SongLabelBadge label={song.label} />}
-                    {song.locked && <span title="Locked"><Lock className="w-3 h-3 text-gray-400" /></span>}
+                    {song.locked && <span title="Locked"><Lock className="w-3 h-3 text-zinc-600" /></span>}
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{song.artist}</p>
+                  <p className="text-xs text-zinc-600 mt-0.5">{song.artist}</p>
                 </div>
 
                 {/* Vote button */}
@@ -598,7 +598,7 @@ function SongTallyBar({ song, songPct }: { song: SongTally; songPct: number }) {
   return (
     <div className="space-y-1.5 pt-1">
       {/* Progress bar */}
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
         <div
           className="h-full bg-orange-300 rounded-full transition-all duration-700"
           style={{ width: `${songPct}%` }}
@@ -606,20 +606,20 @@ function SongTallyBar({ song, songPct }: { song: SongTally; songPct: number }) {
       </div>
 
       {/* Tally detail — circle member and general public always shown */}
-      <div className="flex items-center gap-4 text-xs text-gray-400">
+      <div className="flex items-center gap-4 text-xs text-zinc-600">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
           <span className="font-medium text-purple-600">{song.circle_member_votes}</span>
           <span>circle</span>
-          <span className="text-gray-300">(2×)</span>
+          <span className="text-zinc-700">(2×)</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-          <span className="font-medium text-blue-600">{song.general_public_votes}</span>
+          <span className="font-medium text-blue-400">{song.general_public_votes}</span>
           <span>public</span>
-          <span className="text-gray-300">(1×)</span>
+          <span className="text-zinc-700">(1×)</span>
         </span>
-        <span className="ml-auto font-semibold text-gray-500">
+        <span className="ml-auto font-semibold text-zinc-500">
           {song.weighted_score.toFixed(1)} pts
         </span>
       </div>
@@ -644,7 +644,7 @@ function SongVoteButton({
         type="button"
         disabled
         title="Subscription required"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-400 cursor-not-allowed"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-600 cursor-not-allowed"
       >
         <Lock className="w-3 h-3" /> Vote
       </button>
@@ -653,7 +653,7 @@ function SongVoteButton({
 
   if (state === 'pending') {
     return (
-      <button type="button" disabled className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-100 text-orange-400 flex items-center gap-1.5">
+      <button type="button" disabled className="px-3 py-1.5 rounded-lg text-xs font-medium bg-pink-900/30 text-pink-400 flex items-center gap-1.5">
         <Loader2 className="w-3 h-3 animate-spin" /> Voting…
       </button>
     )
@@ -661,7 +661,7 @@ function SongVoteButton({
 
   if (state === 'done') {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-100 text-green-700">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-900/30 text-green-400">
         <CheckCircle2 className="w-3.5 h-3.5" /> Voted
       </div>
     )
@@ -672,7 +672,7 @@ function SongVoteButton({
       <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-600 hover:bg-red-200"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-900/30 text-red-400 hover:bg-red-200"
       >
         <AlertCircle className="w-3 h-3" /> Retry
       </button>
@@ -683,7 +683,7 @@ function SongVoteButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 active:scale-95 transition-all"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-pink-500 text-white hover:bg-pink-600 active:scale-95 transition-all"
     >
       <Star className="w-3 h-3" /> Vote
     </button>
@@ -694,7 +694,7 @@ function SongVoteButton({
 
 function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
   if (label === 'live') {
-    return <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">Live</span>
+    return <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 font-medium">Live</span>
   }
-  return <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">Studio</span>
+  return <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-medium">Studio</span>
 }

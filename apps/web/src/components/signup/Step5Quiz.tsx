@@ -72,29 +72,29 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
               <button
                 type="button"
                 onClick={handleBack}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800 transition-colors"
                 aria-label="Previous question"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
             )}
-            <span className="text-sm font-medium text-gray-500">
+            <span className="text-sm font-medium text-zinc-500">
               Question {currentQuestion + 1} of {totalQuestions}
             </span>
           </div>
           <button
             type="button"
             onClick={onSkip}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-sm text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             Skip quiz
           </button>
         </div>
 
         {/* Question progress bar */}
-        <div className="w-full h-1.5 bg-gray-100 rounded-full mb-8 overflow-hidden">
+        <div className="w-full h-1.5 bg-zinc-800 rounded-full mb-8 overflow-hidden">
           <div
-            className="h-full bg-orange-400 rounded-full transition-all duration-300"
+            className="h-full bg-pink-500 rounded-full transition-all duration-300"
             style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
             role="progressbar"
             aria-valuenow={currentQuestion + 1}
@@ -104,7 +104,7 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
           />
         </div>
 
-        <h2 className="text-xl font-bold text-gray-900 mb-6">{question.question}</h2>
+        <h2 className="text-xl font-bold text-white mb-6">{question.question}</h2>
 
         <div className="space-y-3" role="group" aria-label="Answer options">
           {question.options.map((option, idx) => {
@@ -117,8 +117,8 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
                 onClick={() => handleAnswer(idx)}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-orange-500 bg-orange-50 text-gray-900'
-                    : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/40 text-gray-700'
+                    ? 'border-pink-500 bg-pink-950/20 text-white'
+                    : 'border-zinc-700 bg-zinc-900 hover:border-pink-700 hover:bg-pink-950/20/40 text-zinc-300'
                 }`}
                 aria-pressed={isSelected}
               >
@@ -137,7 +137,7 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
       <button
         type="button"
         onClick={handleBack}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors"
+        className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-200 mb-6 transition-colors"
         aria-label="Back to questions"
       >
         <ChevronLeft className="w-4 h-4" aria-hidden="true" />
@@ -146,15 +146,15 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
 
       <div className="text-center mb-6">
         <div
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4"
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-900/30 mb-4"
           aria-hidden="true"
         >
           <span className="text-3xl">🎸</span>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-white mb-2">
           You&apos;re a country music fan!
         </h2>
-        <p className="text-gray-600">
+        <p className="text-zinc-400">
           Pick up to 3 personality types that describe how you experience country music.
         </p>
       </div>
@@ -174,20 +174,20 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
               onClick={() => togglePersonality(type.id)}
               className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                 isSelected
-                  ? 'border-orange-500 bg-orange-50'
-                  : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30'
+                  ? 'border-pink-500 bg-pink-950/20'
+                  : 'border-zinc-700 bg-zinc-900 hover:border-pink-800 hover:bg-pink-950/20/30'
               }`}
               aria-pressed={isSelected}
               aria-label={`${type.label}: ${type.description}`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-sm text-gray-900">{type.label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{type.description}</p>
+                  <p className="font-semibold text-sm text-white">{type.label}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{type.description}</p>
                 </div>
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    isSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                    isSelected ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
                   }`}
                   aria-hidden="true"
                 >
@@ -199,7 +199,7 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
         })}
       </div>
 
-      <div className="text-center text-xs text-gray-400 mb-4" aria-live="polite" aria-atomic="true">
+      <div className="text-center text-xs text-zinc-600 mb-4" aria-live="polite" aria-atomic="true">
         {selectedPersonalities.length === 0
           ? 'Select up to 3 types'
           : selectedPersonalities.length === 1
@@ -221,7 +221,7 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
       <button
         type="button"
         onClick={onSkip}
-        className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors py-2"
+        className="w-full mt-3 text-sm text-zinc-500 hover:text-zinc-200 font-medium transition-colors py-2"
       >
         Skip this step
       </button>

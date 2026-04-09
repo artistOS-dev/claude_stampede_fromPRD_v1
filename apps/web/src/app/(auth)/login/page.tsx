@@ -49,25 +49,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-pink-500 mb-4">
             <Music2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Stampede</h1>
-          <p className="text-gray-600 mt-1">The home of country music</p>
+          <h1 className="text-3xl font-bold text-white">Stampede</h1>
+          <p className="text-zinc-400 mt-1">The home of country music</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Welcome back</h2>
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-700 shadow-sm p-8">
+          <h2 className="text-xl font-bold text-white mb-6">Welcome back</h2>
 
           {error && (
-            <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-800">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
@@ -98,7 +98,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-8 text-zinc-600 hover:text-zinc-400 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -108,7 +108,7 @@ export default function LoginPage() {
               <div className="flex justify-end">
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                  className="text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -125,9 +125,9 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-sm text-zinc-400 mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-orange-600 hover:text-orange-700 font-medium transition-colors">
+            <Link href="/signup" className="text-pink-400 hover:text-pink-300 font-medium transition-colors">
               Join Stampede
             </Link>
           </p>

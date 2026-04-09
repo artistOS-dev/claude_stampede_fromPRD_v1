@@ -67,10 +67,10 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
 
   return (
     <div
-      className={`bg-white rounded-xl border shadow-sm p-5 transition-all ${
+      className={`bg-zinc-900 rounded-xl border shadow-sm p-5 transition-all ${
         circle.isHighlighted
-          ? 'border-orange-400 ring-2 ring-orange-100'
-          : 'border-gray-200 hover:border-orange-200'
+          ? 'border-pink-600 ring-2 ring-orange-100'
+          : 'border-zinc-700 hover:border-pink-800'
       }`}
       aria-label={`Circle: ${circle.name}`}
     >
@@ -82,28 +82,28 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
               <button
                 type="button"
                 onClick={() => router.push(`/circles/${circle.id}`)}
-                className="font-bold text-gray-900 text-base leading-tight hover:text-orange-600 transition-colors text-left"
+                className="font-bold text-white text-base leading-tight hover:text-pink-400 transition-colors text-left"
               >
                 {circle.name}
               </button>
             ) : (
-              <h3 className="font-bold text-gray-900 text-base leading-tight">{circle.name}</h3>
+              <h3 className="font-bold text-white text-base leading-tight">{circle.name}</h3>
             )}
             {circle.isHighlighted && circle.inviterName && (
-              <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-pink-900/30 text-pink-300 font-semibold px-2 py-0.5 rounded-full">
                 Invited by {circle.inviterName}
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{circle.description}</p>
+          <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{circle.description}</p>
         </div>
 
         {/* Decorative icon */}
         <div
-          className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0"
+          className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0"
           aria-hidden="true"
         >
-          <Music2 className="w-5 h-5 text-orange-500" />
+          <Music2 className="w-5 h-5 text-pink-400" />
         </div>
       </div>
 
@@ -113,19 +113,19 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
           {circle.core_artists.slice(0, 3).map((artist) => (
             <span
               key={artist}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+              className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full"
             >
               {artist}
             </span>
           ))}
           {circle.core_artists.length > 3 && (
-            <span className="text-xs text-gray-400">+{circle.core_artists.length - 3} more</span>
+            <span className="text-xs text-zinc-600">+{circle.core_artists.length - 3} more</span>
           )}
         </div>
       )}
 
       {/* Stats */}
-      <div className="flex items-center gap-4 mb-4 text-xs text-gray-500">
+      <div className="flex items-center gap-4 mb-4 text-xs text-zinc-500">
         <span className="flex items-center gap-1">
           <Users className="w-3.5 h-3.5" aria-hidden="true" />
           <span aria-label={`${circle.member_count} members`}>
@@ -142,7 +142,7 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
 
       {/* Error */}
       {error && (
-        <p className="text-xs text-red-600 mb-3 flex items-center gap-1" role="alert">
+        <p className="text-xs text-red-400 mb-3 flex items-center gap-1" role="alert">
           <svg
             className="w-3.5 h-3.5"
             fill="currentColor"
@@ -163,7 +163,7 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
       {joined ? (
         <div className="flex items-center gap-2">
           <div
-            className="flex items-center gap-2 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-semibold flex-1"
+            className="flex items-center gap-2 py-2 px-4 rounded-xl bg-green-950/30 border border-green-800 text-green-400 text-sm font-semibold flex-1"
             role="status"
             aria-label={`You have joined ${circle.name}`}
           >

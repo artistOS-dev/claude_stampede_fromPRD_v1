@@ -41,7 +41,7 @@ function getPasswordStrength(password: string): PasswordStrength {
     { score: 1, label: 'Weak', color: 'bg-red-400', width: '25%' },
     { score: 2, label: 'Fair', color: 'bg-yellow-400', width: '50%' },
     { score: 3, label: 'Good', color: 'bg-blue-400', width: '75%' },
-    { score: 3, label: 'Strong', color: 'bg-green-500', width: '100%' },
+    { score: 3, label: 'Strong', color: 'bg-green-950/300', width: '100%' },
   ]
 
   return levels[Math.min(score, 4)] as PasswordStrength
@@ -135,13 +135,13 @@ export default function Step1Credentials({ initialEmail = '', onSuccess }: Step1
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h2>
-      <p className="text-gray-600 mb-8">Join thousands of country music fans on Stampede.</p>
+      <h2 className="text-2xl font-bold text-white mb-1">Create your account</h2>
+      <p className="text-zinc-400 mb-8">Join thousands of country music fans on Stampede.</p>
 
       {serverError && (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200" role="alert">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-red-600">{serverError}</p>
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-800" role="alert">
+          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-red-400">{serverError}</p>
         </div>
       )}
 
@@ -200,7 +200,7 @@ export default function Step1Credentials({ initialEmail = '', onSuccess }: Step1
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-9 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-3 top-9 text-zinc-600 hover:text-zinc-400 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
@@ -215,22 +215,22 @@ export default function Step1Credentials({ initialEmail = '', onSuccess }: Step1
           {password && (
             <div className="mt-2" aria-live="polite" aria-atomic="true">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-500">Password strength</span>
+                <span className="text-xs text-zinc-500">Password strength</span>
                 <span
                   className={`text-xs font-medium ${
                     strength.label === 'Weak'
                       ? 'text-red-500'
                       : strength.label === 'Fair'
-                      ? 'text-yellow-500'
+                      ? 'text-yellow-400'
                       : strength.label === 'Good'
-                      ? 'text-blue-500'
-                      : 'text-green-600'
+                      ? 'text-blue-400'
+                      : 'text-green-400'
                   }`}
                 >
                   {strength.label}
                 </span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${strength.color}`}
                   style={{ width: strength.width }}
@@ -261,11 +261,11 @@ export default function Step1Credentials({ initialEmail = '', onSuccess }: Step1
         </Button>
       </form>
 
-      <p className="text-center text-sm text-gray-600 mt-6">
+      <p className="text-center text-sm text-zinc-400 mt-6">
         Already have an account?{' '}
         <Link
           href="/login"
-          className="text-orange-600 hover:text-orange-700 font-medium transition-colors"
+          className="text-pink-400 hover:text-pink-300 font-medium transition-colors"
         >
           Sign in
         </Link>
@@ -284,12 +284,12 @@ function RequirementItem({ met, text }: { met: boolean; text: string }) {
         />
       ) : (
         <XCircle
-          className="w-3.5 h-3.5 text-gray-300 flex-shrink-0"
+          className="w-3.5 h-3.5 text-zinc-700 flex-shrink-0"
           aria-hidden="true"
         />
       )}
       <span
-        className={`text-xs transition-colors ${met ? 'text-green-700' : 'text-gray-400'}`}
+        className={`text-xs transition-colors ${met ? 'text-green-400' : 'text-zinc-600'}`}
         aria-label={`${text}: ${met ? 'met' : 'not met'}`}
       >
         {text}

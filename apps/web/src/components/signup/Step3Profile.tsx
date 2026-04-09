@@ -221,13 +221,13 @@ export default function Step3Profile({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">Set up your profile</h2>
-      <p className="text-gray-600 mb-8">How should the Stampede community know you?</p>
+      <h2 className="text-2xl font-bold text-white mb-1">Set up your profile</h2>
+      <p className="text-zinc-400 mb-8">How should the Stampede community know you?</p>
 
       {serverError && (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200" role="alert">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-red-600">{serverError}</p>
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-800" role="alert">
+          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-red-400">{serverError}</p>
         </div>
       )}
 
@@ -245,8 +245,8 @@ export default function Step3Profile({
             }}
           >
             {isUploadingAvatar ? (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-orange-500 animate-spin" aria-hidden="true" />
+              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-pink-400 animate-spin" aria-hidden="true" />
               </div>
             ) : avatarDisplay ? (
               <Image
@@ -257,8 +257,8 @@ export default function Step3Profile({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <Upload className="w-8 h-8 text-gray-400" aria-hidden="true" />
+              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                <Upload className="w-8 h-8 text-zinc-600" aria-hidden="true" />
               </div>
             )}
           </div>
@@ -275,7 +275,7 @@ export default function Step3Profile({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="mt-3 text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+          className="mt-3 text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors"
         >
           {avatarPreview ? 'Change photo' : 'Upload photo'}
         </button>
@@ -318,7 +318,7 @@ export default function Step3Profile({
             >
               {usernameStatus === 'checking' && (
                 <Loader2
-                  className="w-4 h-4 text-gray-400 animate-spin"
+                  className="w-4 h-4 text-zinc-600 animate-spin"
                   aria-label="Checking availability"
                 />
               )}
@@ -338,7 +338,7 @@ export default function Step3Profile({
           )}
         </div>
         {usernameStatus === 'available' && (
-          <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1" role="status">
+          <p className="mt-1.5 text-xs text-green-400 flex items-center gap-1" role="status">
             <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
             That name is available!
           </p>
@@ -347,7 +347,7 @@ export default function Step3Profile({
 
       {/* Role selector */}
       <fieldset className="mb-8">
-        <legend className="block text-sm font-medium text-gray-700 mb-3">
+        <legend className="block text-sm font-medium text-zinc-300 mb-3">
           I am a…
         </legend>
         <div className="space-y-3">
@@ -356,8 +356,8 @@ export default function Step3Profile({
               key={option.id}
               className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 role === option.id
-                  ? 'border-orange-500 bg-orange-50'
-                  : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30'
+                  ? 'border-pink-500 bg-pink-950/20'
+                  : 'border-zinc-700 bg-zinc-900 hover:border-pink-800 hover:bg-pink-950/20/30'
               }`}
             >
               <input
@@ -372,17 +372,17 @@ export default function Step3Profile({
                 {option.emoji}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">{option.label}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                <p className="text-sm font-semibold text-white">{option.label}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{option.description}</p>
               </div>
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  role === option.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                  role === option.id ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
                 }`}
                 aria-hidden="true"
               >
                 {role === option.id && (
-                  <div className="w-2 h-2 rounded-full bg-white" />
+                  <div className="w-2 h-2 rounded-full bg-zinc-900" />
                 )}
               </div>
             </label>

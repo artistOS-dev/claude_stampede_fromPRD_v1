@@ -69,10 +69,10 @@ interface FeedEvent {
 }
 
 const TIER_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  rising_star: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Rising Star' },
-  young_buck:  { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Young Buck' },
-  core:        { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Core' },
-  legacy:      { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Legacy' },
+  rising_star: { bg: 'bg-purple-900/30', text: 'text-purple-400', label: 'Rising Star' },
+  young_buck:  { bg: 'bg-yellow-950/30', text: 'text-yellow-300', label: 'Young Buck' },
+  core:        { bg: 'bg-pink-900/30', text: 'text-pink-300', label: 'Core' },
+  legacy:      { bg: 'bg-zinc-800',   text: 'text-zinc-400',   label: 'Legacy' },
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -97,22 +97,22 @@ function FeedEventCard({ event }: { event: FeedEvent }) {
   const payload = event.payload as Record<string, string>
 
   return (
-    <div className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
-      <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 text-base">
+    <div className="flex gap-3 py-3 border-b border-zinc-800 last:border-0">
+      <div className="w-8 h-8 rounded-full bg-zinc-950 flex items-center justify-center flex-shrink-0 text-base">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{label}</p>
+        <p className="text-sm font-medium text-white">{label}</p>
         {payload.artist_name && (
-          <p className="text-xs text-gray-500 truncate">Artist: {payload.artist_name}</p>
+          <p className="text-xs text-zinc-500 truncate">Artist: {payload.artist_name}</p>
         )}
         {payload.action && (
-          <p className="text-xs text-gray-400 truncate capitalize">{String(payload.action).replace(/_/g, ' ')}</p>
+          <p className="text-xs text-zinc-600 truncate capitalize">{String(payload.action).replace(/_/g, ' ')}</p>
         )}
-        <p className="text-xs text-gray-400 mt-0.5">{formatDate(event.created_at)}</p>
+        <p className="text-xs text-zinc-600 mt-0.5">{formatDate(event.created_at)}</p>
       </div>
       {event.board_only && (
-        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full h-fit self-center flex-shrink-0">
+        <span className="text-xs bg-purple-900/30 text-purple-400 px-2 py-0.5 rounded-full h-fit self-center flex-shrink-0">
           Board
         </span>
       )}
@@ -141,10 +141,10 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const RESULT_STYLES = {
-  win:     { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700',  badge: 'bg-green-100 text-green-700',  label: 'Win',     icon: TrendingUp },
-  loss:    { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    badge: 'bg-red-100 text-red-600',      label: 'Loss',    icon: TrendingDown },
-  draw:    { bg: 'bg-gray-50',   border: 'border-gray-200',   text: 'text-gray-600',   badge: 'bg-gray-100 text-gray-600',    label: 'Draw',    icon: Minus },
-  pending: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-700',label: 'Pending', icon: Loader2 },
+  win:     { bg: 'bg-green-950/30',  border: 'border-green-800',  text: 'text-green-400',  badge: 'bg-green-900/30 text-green-400',  label: 'Win',     icon: TrendingUp },
+  loss:    { bg: 'bg-red-950/30',    border: 'border-red-800',    text: 'text-red-400',    badge: 'bg-red-900/30 text-red-400',      label: 'Loss',    icon: TrendingDown },
+  draw:    { bg: 'bg-zinc-950',   border: 'border-zinc-700',   text: 'text-zinc-400',   badge: 'bg-zinc-800 text-zinc-400',    label: 'Draw',    icon: Minus },
+  pending: { bg: 'bg-yellow-950/20', border: 'border-yellow-200', text: 'text-yellow-300', badge: 'bg-yellow-950/30 text-yellow-300',label: 'Pending', icon: Loader2 },
 }
 
 // ── RodeoHistoryTab ───────────────────────────────────────────
@@ -165,14 +165,14 @@ function RodeoHistoryTab({
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-pink-400 animate-spin" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-600">
+      <div className="bg-red-950/30 border border-red-800 rounded-xl p-5 text-sm text-red-400">
         {error}
       </div>
     )
@@ -199,7 +199,7 @@ function RodeoHistoryTab({
             { label: 'Losses', value: record.losses, sub: `${record.total} total` },
             { label: 'Draws', value: record.draws, sub: record.draws === 1 ? '1 draw' : `${record.draws} draws` },
           ].map((s) => (
-            <div key={s.label} className="bg-white/20 rounded-xl p-3 text-center">
+            <div key={s.label} className="bg-zinc-900/20 rounded-xl p-3 text-center">
               <div className="text-2xl font-bold">{s.value}</div>
               <div className="text-xs text-white/80 mt-0.5">{s.label}</div>
               <div className="text-xs text-white/60 mt-0.5">{s.sub}</div>
@@ -214,7 +214,7 @@ function RodeoHistoryTab({
             { label: 'Credits Staked', value: formatCredits(record.credits_contributed), positive: null },
             { label: 'Net Credits', value: `${record.credits_net >= 0 ? '+' : ''}${formatCredits(record.credits_net)}`, positive: record.credits_net >= 0 },
           ].map((s) => (
-            <div key={s.label} className="bg-white/10 rounded-xl p-3 text-center">
+            <div key={s.label} className="bg-zinc-900/10 rounded-xl p-3 text-center">
               <div className={`text-lg font-bold ${s.positive === true ? 'text-green-300' : s.positive === false ? 'text-red-300' : 'text-white'}`}>
                 {s.value}
               </div>
@@ -227,33 +227,33 @@ function RodeoHistoryTab({
       {/* ── Artist records ── */}
       {artist_records.length > 0 && (
         <div className="space-y-3">
-          <h2 className="font-bold text-gray-900 flex items-center gap-2">
-            <Crown className="w-5 h-5 text-orange-500" />
+          <h2 className="font-bold text-white flex items-center gap-2">
+            <Crown className="w-5 h-5 text-pink-400" />
             Artist Rodeo Records
           </h2>
           <div className="grid gap-3">
             {artist_records.map((a) => (
-              <div key={a.artist_name} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                  <Music2 className="w-5 h-5 text-orange-500" />
+              <div key={a.artist_name} className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-pink-950/20 flex items-center justify-center shrink-0">
+                  <Music2 className="w-5 h-5 text-pink-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 truncate">{a.artist_name}</span>
+                    <span className="font-semibold text-white truncate">{a.artist_name}</span>
                     {a.is_core_artist && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">Core Artist</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-pink-900/30 text-pink-300 font-medium">Core Artist</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-500">
-                    <span className="font-semibold text-green-600">{a.wins}W</span>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-zinc-500">
+                    <span className="font-semibold text-green-400">{a.wins}W</span>
                     <span className="font-semibold text-red-500">{a.losses}L</span>
-                    <span className="text-gray-400">·</span>
+                    <span className="text-zinc-600">·</span>
                     <span>{a.songs_fielded} song{a.songs_fielded !== 1 ? 's' : ''} fielded</span>
-                    <span className="text-gray-400">·</span>
+                    <span className="text-zinc-600">·</span>
                     <span>Avg {a.avg_score.toFixed(1)} pts</span>
                     {a.credits_earned > 0 && (
                       <>
-                        <span className="text-gray-400">·</span>
+                        <span className="text-zinc-600">·</span>
                         <span className="text-yellow-600 flex items-center gap-0.5">
                           <Coins className="w-3 h-3" />{formatCredits(a.credits_earned)}
                         </span>
@@ -263,12 +263,12 @@ function RodeoHistoryTab({
                 </div>
                 {/* Win pct bar */}
                 <div className="w-16 shrink-0">
-                  <div className="text-xs text-gray-400 text-right mb-1">
+                  <div className="text-xs text-zinc-600 text-right mb-1">
                     {a.rodeos > 0 ? `${Math.round((a.wins / a.rodeos) * 100)}%` : '—'}
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-orange-400 rounded-full"
+                      className="h-full bg-pink-500 rounded-full"
                       style={{ width: a.rodeos > 0 ? `${(a.wins / a.rodeos) * 100}%` : '0%' }}
                     />
                   </div>
@@ -281,14 +281,14 @@ function RodeoHistoryTab({
 
       {/* ── Per-rodeo history ── */}
       <div className="space-y-3">
-        <h2 className="font-bold text-gray-900 flex items-center gap-2">
-          <Flame className="w-5 h-5 text-orange-500" />
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Flame className="w-5 h-5 text-pink-400" />
           Rodeo Log
-          <span className="text-sm font-normal text-gray-400">({rodeos.length} rodeo{rodeos.length !== 1 ? 's' : ''})</span>
+          <span className="text-sm font-normal text-zinc-600">({rodeos.length} rodeo{rodeos.length !== 1 ? 's' : ''})</span>
         </h2>
 
         {rodeos.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-zinc-600">
             <Trophy className="w-10 h-10 mx-auto mb-2" />
             <p className="font-medium">No rodeo history yet</p>
             <p className="text-sm mt-1">Completed rodeos will appear here</p>
@@ -343,22 +343,22 @@ function RodeoHistoryCard({
         <div className="flex-1 min-w-0">
           {/* Title + type */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900 truncate">{rodeo.title}</span>
-            <span className="text-xs text-gray-400">{TYPE_LABELS[rodeo.type] ?? rodeo.type}</span>
+            <span className="font-semibold text-white truncate">{rodeo.title}</span>
+            <span className="text-xs text-zinc-600">{TYPE_LABELS[rodeo.type] ?? rodeo.type}</span>
             {rodeo.archived && (
-              <span className="flex items-center gap-1 text-xs text-gray-400">
+              <span className="flex items-center gap-1 text-xs text-zinc-600">
                 <Archive className="w-3 h-3" />Archived
               </span>
             )}
           </div>
 
           {/* Opponent + date */}
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+          <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 flex-wrap">
             {rodeo.opponent ? (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onNavigateCircle(rodeo.opponent!.id) }}
-                className="flex items-center gap-1 hover:text-orange-600 transition-colors"
+                className="flex items-center gap-1 hover:text-pink-400 transition-colors"
               >
                 <span>vs {rodeo.opponent.name}</span>
                 <ChevronRight className="w-3 h-3" />
@@ -366,71 +366,71 @@ function RodeoHistoryCard({
             ) : (
               <span>vs —</span>
             )}
-            <span className="text-gray-300">·</span>
+            <span className="text-zinc-700">·</span>
             <span>{formatDate(rodeo.date)}</span>
           </div>
         </div>
 
         {/* Credits net */}
         <div className="shrink-0 text-right">
-          <div className={`text-sm font-bold ${rodeo.credits_net >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+          <div className={`text-sm font-bold ${rodeo.credits_net >= 0 ? 'text-green-400' : 'text-red-500'}`}>
             {rodeo.credits_net >= 0 ? '+' : ''}{formatCredits(rodeo.credits_net)}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">credits</div>
+          <div className="text-xs text-zinc-600 mt-0.5">credits</div>
         </div>
 
-        <ChevronRight className={`w-4 h-4 text-gray-400 shrink-0 mt-0.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-zinc-600 shrink-0 mt-0.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="bg-white border-t border-gray-100 p-4 space-y-4">
+        <div className="bg-zinc-900 border-t border-zinc-800 p-4 space-y-4">
 
           {/* Vote breakdown */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-purple-50 rounded-xl p-3 text-center">
-              <div className="text-xl font-bold text-purple-700">{rodeo.votes.circle_member}</div>
-              <div className="text-xs text-purple-500 mt-0.5">Circle Member Votes (2×)</div>
+            <div className="bg-purple-950/30 rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-purple-400">{rodeo.votes.circle_member}</div>
+              <div className="text-xs text-purple-400 mt-0.5">Circle Member Votes (2×)</div>
             </div>
-            <div className="bg-blue-50 rounded-xl p-3 text-center">
-              <div className="text-xl font-bold text-blue-700">{rodeo.votes.general_public}</div>
-              <div className="text-xs text-blue-500 mt-0.5">General Public Votes (1×)</div>
+            <div className="bg-blue-950/30 rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-blue-400">{rodeo.votes.general_public}</div>
+              <div className="text-xs text-blue-400 mt-0.5">General Public Votes (1×)</div>
             </div>
           </div>
 
           {/* Songs fielded */}
           {rodeo.songs.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Songs Fielded</h4>
+              <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Songs Fielded</h4>
               <div className="space-y-2">
                 {rodeo.songs
                   .sort((a, b) => b.weighted_score - a.weighted_score)
                   .map((song, i) => (
                     <div key={song.song_id} className="flex items-center gap-3">
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-yellow-950/30 text-yellow-300' : 'bg-zinc-800 text-zinc-500'}`}>
                         {i === 0 ? <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> : i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm font-medium text-gray-900 truncate">{song.title}</span>
+                          <span className="text-sm font-medium text-white truncate">{song.title}</span>
                           {song.label && (
-                            <span className={`text-xs px-1 py-0.5 rounded font-medium ${song.label === 'live' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`text-xs px-1 py-0.5 rounded font-medium ${song.label === 'live' ? 'bg-red-900/30 text-red-400' : 'bg-zinc-800 text-zinc-500'}`}>
                               {song.label === 'live' ? 'Live' : 'Studio'}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-orange-300 rounded-full"
                               style={{ width: `${(song.weighted_score / maxScore) * 100}%` }}
                             />
                           </div>
-                          <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums">
+                          <span className="text-xs text-zinc-600 whitespace-nowrap tabular-nums">
                             {song.circle_member_votes}cm · {song.general_public_votes}gp · {song.weighted_score.toFixed(1)}pts
                           </span>
                         </div>
-                        <div className="text-xs text-gray-400">{song.artist}</div>
+                        <div className="text-xs text-zinc-600">{song.artist}</div>
                       </div>
                     </div>
                   ))}
@@ -439,21 +439,21 @@ function RodeoHistoryCard({
           )}
 
           {/* Credits breakdown */}
-          <div className="flex items-center gap-4 text-sm pt-2 border-t border-gray-100 flex-wrap">
+          <div className="flex items-center gap-4 text-sm pt-2 border-t border-zinc-800 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Coins className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-500">Staked:</span>
-              <span className="font-medium text-gray-700">{formatCredits(rodeo.credits_contributed)}</span>
+              <Coins className="w-4 h-4 text-zinc-600" />
+              <span className="text-zinc-500">Staked:</span>
+              <span className="font-medium text-zinc-300">{formatCredits(rodeo.credits_contributed)}</span>
             </div>
             {rodeo.credits_won > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-gray-500">Won:</span>
-                <span className="font-medium text-green-600">{formatCredits(rodeo.credits_won)}</span>
+                <span className="text-zinc-500">Won:</span>
+                <span className="font-medium text-green-400">{formatCredits(rodeo.credits_won)}</span>
               </div>
             )}
             {rodeo.finalized_at && (
-              <span className="ml-auto text-xs text-gray-400">
+              <span className="ml-auto text-xs text-zinc-600">
                 Finalized {formatDate(rodeo.finalized_at)}
               </span>
             )}
@@ -463,7 +463,7 @@ function RodeoHistoryCard({
           <button
             type="button"
             onClick={() => onNavigate(rodeo.rodeo_id)}
-            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-orange-600 hover:text-orange-700 font-medium border border-orange-200 rounded-xl hover:bg-orange-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-pink-400 hover:text-pink-300 font-medium border border-pink-800 rounded-xl hover:bg-pink-950/20 transition-colors"
           >
             View full rodeo <ChevronRight className="w-4 h-4" />
           </button>
@@ -541,7 +541,7 @@ function BoardInboxTab({
   }
 
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>
+    return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-pink-400 animate-spin" /></div>
   }
 
   if (isBoardMember === false) {
@@ -555,7 +555,7 @@ function BoardInboxTab({
   }
 
   if (error) {
-    return <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-600">{error}</div>
+    return <div className="bg-red-950/30 border border-red-800 rounded-xl p-5 text-sm text-red-400">{error}</div>
   }
 
   if (!data) return null
@@ -566,29 +566,29 @@ function BoardInboxTab({
   return (
     <div className="space-y-6">
       {/* Board management */}
-      <div className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 space-y-3 shadow-sm">
+      <div className="rounded-2xl border-2 border-pink-800 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-orange-900 uppercase tracking-wide">🤠 Board management</h3>
           {myRole && (
-            <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 capitalize">
+            <span className="text-xs px-2 py-1 rounded-full bg-pink-950/20 text-pink-300 border border-pink-800 capitalize">
               You are {myRole}
             </span>
           )}
         </div>
 
         {membersLoading && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading members…
           </div>
         )}
 
         {membersError && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{membersError}</div>
+          <div className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-3">{membersError}</div>
         )}
 
         {!membersLoading && boardMembers.length > 0 && (
           <div className="space-y-2">
-            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-orange-500 font-semibold">
+            <div className="grid grid-cols-12 gap-2 px-3 text-[11px] uppercase tracking-wide text-pink-400 font-semibold">
               <div className="col-span-4">Display name</div>
               <div className="col-span-4">Email</div>
               <div className="col-span-2">Role</div>
@@ -600,22 +600,22 @@ function BoardInboxTab({
               const demote = member.role === 'board'
 
               return (
-                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-orange-100 bg-white/90 px-3 py-2">
+                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-orange-100 bg-zinc-900/90 px-3 py-2">
                   <div className="col-span-4 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {member.display_name}
                     </p>
                   </div>
                   <div className="col-span-4 min-w-0">
-                    <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>
+                    <p className="text-xs text-zinc-500 truncate">{member.email ?? '—'}</p>
                   </div>
                   <div className="col-span-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
                       member.role === 'founder'
-                        ? 'bg-yellow-100 text-yellow-700'
+                        ? 'bg-yellow-950/30 text-yellow-300'
                         : member.role === 'board'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'bg-purple-900/30 text-purple-400'
+                        : 'bg-zinc-800 text-zinc-400'
                     }`}>
                       {member.role}
                     </span>
@@ -626,7 +626,7 @@ function BoardInboxTab({
                         type="button"
                         onClick={() => updateBoardRole(member.user_id, 'board')}
                         disabled={updatingUserId === member.user_id}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+                        className="text-xs px-2.5 py-1 rounded-lg bg-pink-500 text-white hover:bg-pink-600 disabled:opacity-50"
                       >
                         Make board
                       </button>
@@ -636,13 +636,13 @@ function BoardInboxTab({
                         type="button"
                         onClick={() => updateBoardRole(member.user_id, 'member')}
                         disabled={updatingUserId === member.user_id}
-                        className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                        className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
                       >
                         Remove board
                       </button>
                     )}
                     {!canEdit && (
-                      <span className="text-xs text-gray-400">—</span>
+                      <span className="text-xs text-zinc-600">—</span>
                     )}
                   </div>
                 </div>
@@ -652,7 +652,7 @@ function BoardInboxTab({
         )}
 
         {myRole !== 'founder' && !membersLoading && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-zinc-500">
             Only founders can change board roles.
           </p>
         )}
@@ -660,14 +660,14 @@ function BoardInboxTab({
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-gray-900 flex items-center gap-2">
-          <Crown className="w-5 h-5 text-orange-500" />
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Crown className="w-5 h-5 text-pink-400" />
           Board Inbox
         </h2>
         <button
           type="button"
           onClick={onNewChallenge}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold transition-colors"
         >
           <Swords className="w-4 h-4" /> New Challenge
         </button>
@@ -675,7 +675,7 @@ function BoardInboxTab({
 
       {/* Pending proposals */}
       {pending.length === 0 && past.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-zinc-600">
           <Crown className="w-10 h-10 mx-auto mb-2" />
           <p className="font-medium">No pending challenge proposals</p>
           <p className="text-sm mt-1">Start a new challenge to put it before the board.</p>
@@ -684,8 +684,8 @@ function BoardInboxTab({
 
       {pending.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+          <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
             Pending approval ({pending.length})
           </h3>
           {pending.map((p) => (
@@ -704,7 +704,7 @@ function BoardInboxTab({
 
       {past.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Past proposals</h3>
+          <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">Past proposals</h3>
           {past.map((p) => (
             <ProposalCard
               key={p.id}
@@ -725,11 +725,11 @@ function BoardInboxTab({
 // ── ProposalCard ──────────────────────────────────────────────
 
 const STATUS_STYLE: Record<string, { bg: string; border: string; badge: string; label: string }> = {
-  pending:  { bg: 'bg-orange-50', border: 'border-orange-200', badge: 'bg-orange-100 text-orange-700', label: 'Pending' },
-  approved: { bg: 'bg-green-50',  border: 'border-green-200',  badge: 'bg-green-100 text-green-700',   label: 'Approved' },
-  held:     { bg: 'bg-yellow-50', border: 'border-yellow-200', badge: 'bg-yellow-100 text-yellow-700', label: 'Held' },
-  declined: { bg: 'bg-red-50',    border: 'border-red-200',    badge: 'bg-red-100 text-red-600',       label: 'Declined' },
-  sent:     { bg: 'bg-blue-50',   border: 'border-blue-200',   badge: 'bg-blue-100 text-blue-700',     label: 'Sent' },
+  pending:  { bg: 'bg-pink-950/20', border: 'border-pink-800', badge: 'bg-pink-900/30 text-pink-300', label: 'Pending' },
+  approved: { bg: 'bg-green-950/30',  border: 'border-green-800',  badge: 'bg-green-900/30 text-green-400',   label: 'Approved' },
+  held:     { bg: 'bg-yellow-950/20', border: 'border-yellow-200', badge: 'bg-yellow-950/30 text-yellow-300', label: 'Held' },
+  declined: { bg: 'bg-red-950/30',    border: 'border-red-800',    badge: 'bg-red-900/30 text-red-400',       label: 'Declined' },
+  sent:     { bg: 'bg-blue-950/30',   border: 'border-blue-800',   badge: 'bg-blue-900/30 text-blue-400',     label: 'Sent' },
 }
 
 function ProposalCard({
@@ -794,13 +794,13 @@ function ProposalCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.badge}`}>{style.label}</span>
-            <span className="font-semibold text-gray-900 truncate text-sm">{proposal.title}</span>
+            <span className="font-semibold text-white truncate text-sm">{proposal.title}</span>
           </div>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+          <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 flex-wrap">
             <span>vs <strong>{proposal.target?.name ?? '—'}</strong></span>
-            <span className="text-gray-300">·</span>
+            <span className="text-zinc-700">·</span>
             <span>{formatCredits(proposal.credit_buy_in)} credits per side</span>
-            <span className="text-gray-300">·</span>
+            <span className="text-zinc-700">·</span>
             <span>by {proposal.profiles?.display_name ?? '—'}</span>
           </div>
         </div>
@@ -810,33 +810,33 @@ function ProposalCard({
           <TallyPill count={tally.hold}    needed={majority} icon="hold" />
           <TallyPill count={tally.decline} needed={majority} icon="decline" />
         </div>
-        <ChevronRight className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-zinc-600 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {/* Expanded */}
       {expanded && (
-        <div className="bg-white border-t border-gray-100 p-4 space-y-4">
+        <div className="bg-zinc-900 border-t border-zinc-800 p-4 space-y-4">
 
           {/* Storyline */}
           {proposal.description && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Storyline</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{proposal.description}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Storyline</p>
+              <p className="text-sm text-zinc-300 leading-relaxed">{proposal.description}</p>
             </div>
           )}
 
           {/* Songs */}
           {proposal.challenge_proposal_songs.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Songs on the Line</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Songs on the Line</p>
               <div className="space-y-1.5">
                 {proposal.challenge_proposal_songs.map((s) => (
                   <div key={s.song_id} className="flex items-center gap-2 text-sm">
-                    <Music2 className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                    <span className="font-medium text-gray-800 truncate">{s.circle_songs?.title ?? 'Untitled'}</span>
-                    <span className="text-gray-400 truncate">{s.circle_songs?.artist}</span>
+                    <Music2 className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                    <span className="font-medium text-zinc-100 truncate">{s.circle_songs?.title ?? 'Untitled'}</span>
+                    <span className="text-zinc-600 truncate">{s.circle_songs?.artist}</span>
                     {s.label && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${s.label === 'live' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${s.label === 'live' ? 'bg-red-900/30 text-red-400' : 'bg-zinc-800 text-zinc-500'}`}>
                         {s.label === 'live' ? 'Live' : 'Studio'}
                       </span>
                     )}
@@ -848,22 +848,22 @@ function ProposalCard({
 
           {/* Board vote breakdown — always visible */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
               Board vote ({proposal.challenge_proposal_votes.length}/{boardSeatCount} cast · majority = {majority})
             </p>
             <div className="grid grid-cols-3 gap-2">
               {(['approve', 'hold', 'decline'] as const).map((v) => (
                 <div key={v} className={`rounded-xl p-3 text-center ${
-                  v === 'approve' ? 'bg-green-50' : v === 'hold' ? 'bg-yellow-50' : 'bg-red-50'
+                  v === 'approve' ? 'bg-green-950/30' : v === 'hold' ? 'bg-yellow-950/20' : 'bg-red-950/30'
                 }`}>
-                  <div className={`text-xl font-bold ${v === 'approve' ? 'text-green-700' : v === 'hold' ? 'text-yellow-700' : 'text-red-600'}`}>
+                  <div className={`text-xl font-bold ${v === 'approve' ? 'text-green-400' : v === 'hold' ? 'text-yellow-300' : 'text-red-400'}`}>
                     {tally[v]}
                   </div>
-                  <div className={`text-xs mt-0.5 capitalize ${v === 'approve' ? 'text-green-600' : v === 'hold' ? 'text-yellow-600' : 'text-red-500'}`}>
+                  <div className={`text-xs mt-0.5 capitalize ${v === 'approve' ? 'text-green-400' : v === 'hold' ? 'text-yellow-600' : 'text-red-500'}`}>
                     {v}
                   </div>
                   {tally[v] >= majority && (
-                    <div className="text-xs text-gray-400 mt-0.5">✓ majority</div>
+                    <div className="text-xs text-zinc-600 mt-0.5">✓ majority</div>
                   )}
                 </div>
               ))}
@@ -872,8 +872,8 @@ function ProposalCard({
 
           {/* Board comment (hold/decline) */}
           {proposal.board_comment && (
-            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
-              <span className="font-medium text-gray-700">Board note: </span>
+            <div className="bg-zinc-950 rounded-xl p-3 text-sm text-zinc-400">
+              <span className="font-medium text-zinc-300">Board note: </span>
               {proposal.board_comment}
             </div>
           )}
@@ -883,7 +883,7 @@ function ProposalCard({
             <button
               type="button"
               onClick={() => onViewRodeo(proposal.rodeo_id!)}
-              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-blue-400 hover:text-blue-400 font-medium border border-blue-800 rounded-xl hover:bg-blue-950/30 transition-colors"
             >
               View Rodeo <ChevronRight className="w-4 h-4" />
             </button>
@@ -891,8 +891,8 @@ function ProposalCard({
 
           {/* Vote UI (pending only) */}
           {isPending && (
-            <div className="space-y-3 pt-2 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="space-y-3 pt-2 border-t border-zinc-800">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">
                 Your vote {myVote ? `(current: ${myVote.vote})` : ''}
               </p>
 
@@ -901,11 +901,11 @@ function ProposalCard({
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Optional comment (required for Decline)…"
                 rows={2}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-3 py-2 rounded-xl border border-zinc-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
               />
 
               {voteError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-xl p-3">
+                <div className="flex items-center gap-2 text-sm text-red-400 bg-red-950/30 rounded-xl p-3">
                   <AlertCircle className="w-4 h-4 shrink-0" />{voteError}
                 </div>
               )}
@@ -938,7 +938,7 @@ function ProposalCard({
               </div>
 
               {votingState === 'pending' && (
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center justify-center gap-2 text-sm text-zinc-500">
                   <Loader2 className="w-4 h-4 animate-spin" /> Recording vote…
                 </div>
               )}
@@ -953,9 +953,9 @@ function ProposalCard({
 function TallyPill({ count, needed, icon }: { count: number; needed: number; label?: string; icon: 'approve' | 'hold' | 'decline' }) {
   const reached = count >= needed
   const colors = {
-    approve: reached ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700',
-    hold:    reached ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700',
-    decline: reached ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600',
+    approve: reached ? 'bg-green-950/300 text-white' : 'bg-green-900/30 text-green-400',
+    hold:    reached ? 'bg-yellow-950/200 text-white' : 'bg-yellow-950/30 text-yellow-300',
+    decline: reached ? 'bg-red-950/300 text-white' : 'bg-red-900/30 text-red-400',
   }
   return (
     <span className={`text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${colors[icon]}`}>
@@ -976,9 +976,9 @@ function VoteButton({
 }) {
   const base = 'flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold border-2 transition-all'
   const styles = {
-    approve: active ? 'bg-green-500 border-green-500 text-white' : 'border-green-200 text-green-700 hover:bg-green-50',
-    hold:    active ? 'bg-yellow-500 border-yellow-500 text-white' : 'border-yellow-200 text-yellow-700 hover:bg-yellow-50',
-    decline: active ? 'bg-red-500 border-red-500 text-white' : 'border-red-200 text-red-600 hover:bg-red-50',
+    approve: active ? 'bg-green-950/300 border-green-500 text-white' : 'border-green-800 text-green-400 hover:bg-green-950/30',
+    hold:    active ? 'bg-yellow-950/200 border-yellow-500 text-white' : 'border-yellow-200 text-yellow-300 hover:bg-yellow-950/20',
+    decline: active ? 'bg-red-950/300 border-red-500 text-white' : 'border-red-800 text-red-400 hover:bg-red-950/30',
   }
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -1414,58 +1414,58 @@ export default function CircleDetailPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-orange-600 transition-colors"
+        className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to circles
       </button>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-zinc-800 rounded-xl p-1 w-fit">
         <button
           type="button"
           onClick={() => setTab('songs')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'songs' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'songs' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5"><Music2 className="w-4 h-4" />Songs</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('artists')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'artists' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'artists' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5"><Users className="w-4 h-4" />Artists</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('rodeos')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'rodeos' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'rodeos' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4" />Rodeo History</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('nominations')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'nominations' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'nominations' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5"><Star className="w-4 h-4" />Nominate</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('feed')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'feed' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'feed' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5"><Flame className="w-4 h-4" />Feed</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('board')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'board' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'board' ? 'bg-zinc-900 text-pink-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-200'}`}
         >
           <span className="flex items-center gap-1.5">
             <Crown className="w-4 h-4" />Board
             {boardData && boardData.proposals.filter((p) => p.status === 'pending').length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">
+              <span className="w-4 h-4 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center font-bold">
                 {boardData.proposals.filter((p) => p.status === 'pending').length}
               </span>
             )}
@@ -1477,8 +1477,8 @@ export default function CircleDetailPage() {
       {tab === 'songs' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">
-              Shared Songs <span className="text-gray-400 font-normal text-base">({songs.length})</span>
+            <h2 className="text-lg font-bold text-white">
+              Shared Songs <span className="text-zinc-600 font-normal text-base">({songs.length})</span>
             </h2>
             <Button variant="primary" onClick={() => setShowAddSong((v) => !v)}>
               <Plus className="w-4 h-4" />
@@ -1488,8 +1488,8 @@ export default function CircleDetailPage() {
 
           {/* Add song form */}
           {showAddSong && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
-              <h3 className="font-semibold text-gray-900 text-sm">Share a new song</h3>
+            <div className="bg-pink-950/20 border border-pink-800 rounded-2xl p-5 space-y-3">
+              <h3 className="font-semibold text-white text-sm">Share a new song</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="Song title *"
@@ -1525,7 +1525,7 @@ export default function CircleDetailPage() {
                 />
               </div>
               {addSongError && (
-                <p className="text-sm text-red-600">{addSongError}</p>
+                <p className="text-sm text-red-400">{addSongError}</p>
               )}
               <div className="flex gap-2">
                 <Button
@@ -1545,16 +1545,16 @@ export default function CircleDetailPage() {
 
           {songsLoading && (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+              <Loader2 className="w-6 h-6 text-pink-400 animate-spin" />
             </div>
           )}
 
           {songsError && !songsLoading && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{songsError}</p>
+            <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-4">{songsError}</p>
           )}
 
           {!songsLoading && !songsError && songs.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-zinc-600">
               <Music2 className="w-10 h-10 mx-auto mb-2" />
               <p className="font-medium">No songs yet</p>
               <p className="text-sm mt-1">Be the first to share a song with this circle</p>
@@ -1564,25 +1564,25 @@ export default function CircleDetailPage() {
           {!songsLoading && songs.map((song) => (
             <div
               key={song.id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-start gap-4"
+              className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-4 flex items-start gap-4"
             >
               {/* Cover placeholder */}
-              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <Music2 className="w-6 h-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-lg bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+                <Music2 className="w-6 h-6 text-pink-400" />
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{song.title}</p>
-                    <p className="text-sm text-gray-500 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
+                    <p className="font-semibold text-white truncate">{song.title}</p>
+                    <p className="text-sm text-zinc-500 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
                   </div>
                   {song.spotify_url && (
                     <a
                       href={song.spotify_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-shrink-0 text-green-600 hover:text-green-700"
+                      className="flex-shrink-0 text-green-400 hover:text-green-400"
                       aria-label="Open in Spotify"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -1594,7 +1594,7 @@ export default function CircleDetailPage() {
                   {/* Community avg */}
                   <div className="flex items-center gap-1.5">
                     <StarRating value={Math.round(song.avg_rating)} />
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-zinc-600">
                       {song.avg_rating > 0 ? song.avg_rating.toFixed(1) : '—'}
                       {song.rating_count > 0 && ` (${song.rating_count})`}
                     </span>
@@ -1602,7 +1602,7 @@ export default function CircleDetailPage() {
 
                   {/* My rating */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-400">My rating:</span>
+                    <span className="text-xs text-zinc-600">My rating:</span>
                     <StarRating
                       value={song.my_rating ?? 0}
                       interactive
@@ -1612,7 +1612,7 @@ export default function CircleDetailPage() {
                 </div>
 
                 {song.profiles && (
-                  <p className="text-xs text-gray-400 mt-1.5">
+                  <p className="text-xs text-zinc-600 mt-1.5">
                     Shared by {song.profiles.display_name}
                   </p>
                 )}
@@ -1641,43 +1641,43 @@ export default function CircleDetailPage() {
         <div className="space-y-6">
           {/* Rodeo Surface Summary Widget */}
           {rodeoHistory && (
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-5">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-orange-500" />
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-pink-800 rounded-2xl p-5">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-pink-400" />
                 Circle Rodeo Record
               </h3>
               <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
-                  <div className="text-2xl font-bold text-green-600">{rodeoHistory.record.wins}</div>
-                  <div className="text-xs text-gray-500 font-medium">Wins</div>
+                <div className="text-center bg-zinc-900 rounded-xl p-3 shadow-sm">
+                  <div className="text-2xl font-bold text-green-400">{rodeoHistory.record.wins}</div>
+                  <div className="text-xs text-zinc-500 font-medium">Wins</div>
                 </div>
-                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
+                <div className="text-center bg-zinc-900 rounded-xl p-3 shadow-sm">
                   <div className="text-2xl font-bold text-red-500">{rodeoHistory.record.losses}</div>
-                  <div className="text-xs text-gray-500 font-medium">Losses</div>
+                  <div className="text-xs text-zinc-500 font-medium">Losses</div>
                 </div>
-                <div className="text-center bg-white rounded-xl p-3 shadow-sm">
-                  <div className="text-2xl font-bold text-gray-700">{rodeoHistory.record.total}</div>
-                  <div className="text-xs text-gray-500 font-medium">Total</div>
+                <div className="text-center bg-zinc-900 rounded-xl p-3 shadow-sm">
+                  <div className="text-2xl font-bold text-zinc-300">{rodeoHistory.record.total}</div>
+                  <div className="text-xs text-zinc-500 font-medium">Total</div>
                 </div>
               </div>
               {/* Last 5 results (pending rodeos = active) */}
               {rodeoHistory.rodeos.filter((r) => r.result === 'pending').length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-2">LIVE NOW</p>
+                  <p className="text-xs font-semibold text-zinc-400 mb-2">LIVE NOW</p>
                   {rodeoHistory.rodeos
                     .filter((r) => r.result === 'pending')
                     .map((r) => (
-                      <div key={r.rodeo_id} className="flex items-center gap-2 bg-white rounded-xl p-3 mb-2 shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-                        <span className="text-sm font-medium text-gray-900 flex-1 truncate">{r.title}</span>
-                        <span className="text-xs text-gray-400">Active</span>
+                      <div key={r.rodeo_id} className="flex items-center gap-2 bg-zinc-900 rounded-xl p-3 mb-2 shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-red-950/300 animate-pulse flex-shrink-0" />
+                        <span className="text-sm font-medium text-white flex-1 truncate">{r.title}</span>
+                        <span className="text-xs text-zinc-600">Active</span>
                       </div>
                     ))}
                 </div>
               )}
               {/* Last 5 results */}
               <div>
-                <p className="text-xs font-semibold text-gray-600 mb-2">RECENT RESULTS</p>
+                <p className="text-xs font-semibold text-zinc-400 mb-2">RECENT RESULTS</p>
                 <div className="space-y-1">
                   {rodeoHistory.rodeos.slice(0, 5).map((r) => {
                     const style = RESULT_STYLES[r.result ?? 'pending']
@@ -1687,8 +1687,8 @@ export default function CircleDetailPage() {
                         <span className={`${style.badge} px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1`}>
                           <Icon className="w-3 h-3" />{style.label}
                         </span>
-                        <span className="text-gray-700 truncate flex-1">{r.title}</span>
-                        <span className="text-gray-400 text-xs flex-shrink-0">{formatDate(r.date)}</span>
+                        <span className="text-zinc-300 truncate flex-1">{r.title}</span>
+                        <span className="text-zinc-600 text-xs flex-shrink-0">{formatDate(r.date)}</span>
                       </div>
                     )
                   })}
@@ -1696,22 +1696,22 @@ export default function CircleDetailPage() {
               </div>
               {/* Top performing artist */}
               {rodeoHistory.artist_records && rodeoHistory.artist_records.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-orange-200">
-                  <p className="text-xs font-semibold text-gray-600 mb-2">TOP PERFORMER</p>
+                <div className="mt-4 pt-4 border-t border-pink-800">
+                  <p className="text-xs font-semibold text-zinc-400 mb-2">TOP PERFORMER</p>
                   {(() => {
                     const top = [...rodeoHistory.artist_records].sort((a, b) => b.credits_earned - a.credits_earned)[0]
                     return (
-                      <div className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Music2 className="w-4 h-4 text-orange-500" />
+                      <div className="flex items-center gap-3 bg-zinc-900 rounded-xl p-3 shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-pink-900/30 flex items-center justify-center">
+                          <Music2 className="w-4 h-4 text-pink-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm truncate">{top.artist_name}</p>
-                          <p className="text-xs text-gray-400">{top.wins}W · {top.rodeos} rodeos</p>
+                          <p className="font-semibold text-white text-sm truncate">{top.artist_name}</p>
+                          <p className="text-xs text-zinc-600">{top.wins}W · {top.rodeos} rodeos</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold text-orange-600">{formatCredits(top.credits_earned)}</p>
-                          <p className="text-xs text-gray-400">credits</p>
+                          <p className="text-sm font-bold text-pink-400">{formatCredits(top.credits_earned)}</p>
+                          <p className="text-xs text-zinc-600">credits</p>
                         </div>
                       </div>
                     )
@@ -1719,9 +1719,9 @@ export default function CircleDetailPage() {
                 </div>
               )}
               {/* Credits earned total */}
-              <div className="mt-3 pt-3 border-t border-orange-200 flex items-center justify-between">
-                <span className="text-sm text-gray-600 font-medium">Total Credits Earned</span>
-                <span className="text-lg font-bold text-orange-600">
+              <div className="mt-3 pt-3 border-t border-pink-800 flex items-center justify-between">
+                <span className="text-sm text-zinc-400 font-medium">Total Credits Earned</span>
+                <span className="text-lg font-bold text-pink-400">
                   {formatCredits(rodeoHistory.rodeos.reduce((sum, r) => sum + (r.credits_won ?? 0), 0))}
                 </span>
               </div>
@@ -1741,7 +1741,7 @@ export default function CircleDetailPage() {
       {tab === 'nominations' && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Artist Nominations</h2>
+            <h2 className="text-lg font-bold text-white">Artist Nominations</h2>
             <Button variant="primary" onClick={() => setShowNomForm((v) => !v)}>
               <Plus className="w-4 h-4" />Nominate
             </Button>
@@ -1749,37 +1749,37 @@ export default function CircleDetailPage() {
 
           {/* Budget widget */}
           {budget && (
-            <div className="bg-gradient-to-br from-purple-50 to-yellow-50 border border-purple-200 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-purple-50 to-yellow-50 border border-purple-800 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-purple-500" />
-                <h3 className="font-semibold text-gray-900 text-sm">Your Nomination Budget</h3>
-                <span className="text-xs text-gray-400 ml-auto">Resets {formatDate(budget.period_end)}</span>
+                <Star className="w-5 h-5 text-purple-400" />
+                <h3 className="font-semibold text-white text-sm">Your Nomination Budget</h3>
+                <span className="text-xs text-zinc-600 ml-auto">Resets {formatDate(budget.period_end)}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl p-3 shadow-sm">
-                  <p className="text-xs text-gray-500 mb-1 font-medium">Young Buck Slots</p>
+                <div className="bg-zinc-900 rounded-xl p-3 shadow-sm">
+                  <p className="text-xs text-zinc-500 mb-1 font-medium">Young Buck Slots</p>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
                       <div
                         className="bg-yellow-400 h-2 rounded-full transition-all"
                         style={{ width: budget.young_buck_slots > 0 ? `${((budget.young_buck_slots - budget.young_buck_used) / budget.young_buck_slots) * 100}%` : '0%' }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                    <span className="text-sm font-bold text-white flex-shrink-0">
                       {budget.young_buck_slots - budget.young_buck_used}/{budget.young_buck_slots}
                     </span>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3 shadow-sm">
-                  <p className="text-xs text-gray-500 mb-1 font-medium">Rising Star Slots</p>
+                <div className="bg-zinc-900 rounded-xl p-3 shadow-sm">
+                  <p className="text-xs text-zinc-500 mb-1 font-medium">Rising Star Slots</p>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
                       <div
                         className="bg-purple-400 h-2 rounded-full transition-all"
                         style={{ width: budget.rising_star_slots > 0 ? `${((budget.rising_star_slots - budget.rising_star_used) / budget.rising_star_slots) * 100}%` : '0%' }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                    <span className="text-sm font-bold text-white flex-shrink-0">
                       {budget.rising_star_slots - budget.rising_star_used}/{budget.rising_star_slots}
                     </span>
                   </div>
@@ -1790,8 +1790,8 @@ export default function CircleDetailPage() {
 
           {/* Nomination form */}
           {showNomForm && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 space-y-3">
-              <h3 className="font-semibold text-gray-900 text-sm">Submit a Nomination</h3>
+            <div className="bg-pink-950/20 border border-pink-800 rounded-2xl p-5 space-y-3">
+              <h3 className="font-semibold text-white text-sm">Submit a Nomination</h3>
               <Input
                 label="Artist Name"
                 type="text"
@@ -1801,14 +1801,14 @@ export default function CircleDetailPage() {
                 placeholder="e.g. Zach Bryan"
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nominate for tier</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Nominate for tier</label>
                 <div className="flex gap-2">
                   {(['young_buck', 'core'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setNomTierTarget(t)}
-                      className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${nomTierTarget === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'}`}
+                      className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${nomTierTarget === t ? 'bg-pink-500 text-white border-pink-500' : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-pink-700'}`}
                     >
                       {t === 'young_buck' ? 'Young Buck' : 'Core Artist'}
                     </button>
@@ -1816,16 +1816,16 @@ export default function CircleDetailPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Pitch (optional)</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Pitch (optional)</label>
                 <textarea
                   value={nomMessage}
                   onChange={(e) => setNomMessage(e.target.value)}
                   placeholder="Why should this artist join the circle?"
-                  className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  className="w-full border border-zinc-700 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-300"
                   rows={3}
                 />
               </div>
-              {nomError && <p className="text-sm text-red-600">{nomError}</p>}
+              {nomError && <p className="text-sm text-red-400">{nomError}</p>}
               <div className="flex gap-2 justify-end">
                 <Button variant="secondary" onClick={() => setShowNomForm(false)}>Cancel</Button>
                 <Button variant="primary" loading={submittingNom} onClick={handleSubmitNomination} disabled={!nomArtistName.trim()}>
@@ -1835,11 +1835,11 @@ export default function CircleDetailPage() {
             </div>
           )}
 
-          {nominationsLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>}
-          {nominationsError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{nominationsError}</p>}
+          {nominationsLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-pink-400 animate-spin" /></div>}
+          {nominationsError && <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-4">{nominationsError}</p>}
 
           {!nominationsLoading && nominations.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-zinc-600">
               <Star className="w-10 h-10 mx-auto mb-2" />
               <p className="font-medium">No nominations yet</p>
               <p className="text-sm mt-1">Nominate an artist to grow the circle</p>
@@ -1851,38 +1851,38 @@ export default function CircleDetailPage() {
               const total = nom.votes_for + nom.votes_against
               const forPct = total > 0 ? Math.round((nom.votes_for / total) * 100) : 0
               const statusColors: Record<string, string> = {
-                pending_vote: 'bg-yellow-100 text-yellow-700',
-                passed: 'bg-green-100 text-green-700',
-                board_review: 'bg-blue-100 text-blue-700',
+                pending_vote: 'bg-yellow-950/30 text-yellow-300',
+                passed: 'bg-green-900/30 text-green-400',
+                board_review: 'bg-blue-900/30 text-blue-400',
                 approved: 'bg-emerald-100 text-emerald-700',
-                declined: 'bg-red-100 text-red-600',
-                held: 'bg-gray-100 text-gray-600',
+                declined: 'bg-red-900/30 text-red-400',
+                held: 'bg-zinc-800 text-zinc-400',
               }
               return (
-                <div key={nom.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                <div key={nom.id} className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className="font-semibold text-gray-900">{nom.artist_name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="font-semibold text-white">{nom.artist_name}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">
                         Nominating for <span className="font-medium">{nom.tier_target === 'young_buck' ? 'Young Buck' : 'Core Artist'}</span>
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ${statusColors[nom.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ${statusColors[nom.status] ?? 'bg-zinc-800 text-zinc-400'}`}>
                       {nom.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                     </span>
                   </div>
-                  {nom.message && <p className="text-sm text-gray-600 italic mb-2">&#34;{nom.message}&#34;</p>}
+                  {nom.message && <p className="text-sm text-zinc-400 italic mb-2">&#34;{nom.message}&#34;</p>}
                   {nom.status === 'pending_vote' && (
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
                           <div className="bg-green-400 h-2 rounded-full" style={{ width: `${forPct}%` }} />
                         </div>
-                        <span className="text-xs text-gray-500 flex-shrink-0">{nom.votes_for}↑ {nom.votes_against}↓</span>
+                        <span className="text-xs text-zinc-500 flex-shrink-0">{nom.votes_for}↑ {nom.votes_against}↓</span>
                       </div>
                     </div>
                   )}
-                  <p className="text-xs text-gray-400 mt-2">{formatDate(nom.created_at)}</p>
+                  <p className="text-xs text-zinc-600 mt-2">{formatDate(nom.created_at)}</p>
                 </div>
               )
             })}
@@ -1894,17 +1894,17 @@ export default function CircleDetailPage() {
       {tab === 'feed' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Activity Feed</h2>
-            <button type="button" onClick={loadFeed} className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+            <h2 className="text-lg font-bold text-white">Activity Feed</h2>
+            <button type="button" onClick={loadFeed} className="text-sm text-pink-400 hover:text-pink-300 font-medium">
               Refresh
             </button>
           </div>
 
-          {feedLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>}
-          {feedError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{feedError}</p>}
+          {feedLoading && <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-pink-400 animate-spin" /></div>}
+          {feedError && <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-4">{feedError}</p>}
 
           {!feedLoading && feedEvents.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-zinc-600">
               <Flame className="w-10 h-10 mx-auto mb-2" />
               <p className="font-medium">No events yet</p>
               <p className="text-sm mt-1">Circle activity will appear here</p>
@@ -1912,7 +1912,7 @@ export default function CircleDetailPage() {
           )}
 
           {!feedLoading && feedEvents.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm divide-y divide-gray-50 px-4">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-sm divide-y divide-gray-50 px-4">
               {feedEvents.map((event) => (
                 <FeedEventCard key={event.id} event={event} />
               ))}
@@ -1925,8 +1925,8 @@ export default function CircleDetailPage() {
       {tab === 'artists' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">
-              Favourite Artists <span className="text-gray-400 font-normal text-base">({artists.length})</span>
+            <h2 className="text-lg font-bold text-white">
+              Favourite Artists <span className="text-zinc-600 font-normal text-base">({artists.length})</span>
             </h2>
           </div>
 
@@ -1957,21 +1957,21 @@ export default function CircleDetailPage() {
             </div>
           </div>
           {addArtistError && (
-            <p className="text-sm text-red-600">{addArtistError}</p>
+            <p className="text-sm text-red-400">{addArtistError}</p>
           )}
 
           {artistsLoading && (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+              <Loader2 className="w-6 h-6 text-pink-400 animate-spin" />
             </div>
           )}
 
           {artistsError && !artistsLoading && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{artistsError}</p>
+            <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-4">{artistsError}</p>
           )}
 
           {!artistsLoading && !artistsError && artists.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-zinc-600">
               <Users className="w-10 h-10 mx-auto mb-2" />
               <p className="font-medium">No favourite artists yet</p>
               <p className="text-sm mt-1">Add artists this circle loves</p>
@@ -1983,36 +1983,36 @@ export default function CircleDetailPage() {
               {artists.map((artist) => (
                 <div
                   key={artist.id}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3"
+                  className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-4 flex items-center gap-3"
                 >
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Music2 className="w-5 h-5 text-orange-500" />
+                  <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+                    <Music2 className="w-5 h-5 text-pink-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-gray-900 truncate">{artist.artist_name}</p>
+                      <p className="font-semibold text-white truncate">{artist.artist_name}</p>
                       {artist.tier && TIER_STYLES[artist.tier] && (
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${TIER_STYLES[artist.tier].bg} ${TIER_STYLES[artist.tier].text}`}>
                           {TIER_STYLES[artist.tier].label}
                         </span>
                       )}
                       {artist.promotion_eligible && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700 flex-shrink-0">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-green-900/30 text-green-400 flex-shrink-0">
                           ↑ Eligible
                         </span>
                       )}
                     </div>
                     {artist.profiles && (
-                      <p className="text-xs text-gray-400">Added by {artist.profiles.display_name}</p>
+                      <p className="text-xs text-zinc-600">Added by {artist.profiles.display_name}</p>
                     )}
                     {artist.rodeo_wins !== undefined && artist.rodeo_appearances !== undefined && artist.rodeo_appearances > 0 && (
-                      <p className="text-xs text-gray-400">{artist.rodeo_wins}W · {artist.rodeo_appearances} rodeos</p>
+                      <p className="text-xs text-zinc-600">{artist.rodeo_wins}W · {artist.rodeo_appearances} rodeos</p>
                     )}
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveArtist(artist.id)}
-                    className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                    className="text-zinc-700 hover:text-red-500 transition-colors flex-shrink-0"
                     aria-label={`Remove ${artist.artist_name}`}
                   >
                     <Trash2 className="w-4 h-4" />

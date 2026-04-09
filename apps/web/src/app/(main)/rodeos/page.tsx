@@ -57,16 +57,16 @@ const STATUS_OPTIONS = [
 ]
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  showdown: { bg: 'bg-red-100', text: 'text-red-700', label: 'Showdown' },
-  whale: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Whale' },
-  grassroots: { bg: 'bg-green-100', text: 'text-green-700', label: 'Grassroots' },
-  artist_vs_artist: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Artist vs Artist' },
+  showdown: { bg: 'bg-red-900/30', text: 'text-red-400', label: 'Showdown' },
+  whale: { bg: 'bg-blue-900/30', text: 'text-blue-400', label: 'Whale' },
+  grassroots: { bg: 'bg-green-900/30', text: 'text-green-400', label: 'Grassroots' },
+  artist_vs_artist: { bg: 'bg-purple-900/30', text: 'text-purple-400', label: 'Artist vs Artist' },
 }
 
 const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   pending: { dot: 'bg-yellow-400', label: 'Pending' },
   open: { dot: 'bg-blue-400', label: 'Open' },
-  voting: { dot: 'bg-green-500 animate-pulse', label: 'Voting Live' },
+  voting: { dot: 'bg-green-950/300 animate-pulse', label: 'Voting Live' },
   closed: { dot: 'bg-gray-400', label: 'Closed' },
   archived: { dot: 'bg-gray-300', label: 'Archived' },
 }
@@ -156,15 +156,15 @@ export default function RodeoFeedPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rodeo Feed</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-white">Rodeo Feed</h1>
+          <p className="text-zinc-500 mt-1">
             Competitive events where Circles and artists put their music on the line
           </p>
         </div>
         <button
           type="button"
           onClick={() => router.push('/rodeos/challenge')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shrink-0 shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold transition-colors shrink-0 shadow-sm"
         >
           <Trophy className="w-4 h-4" /> Challenge
         </button>
@@ -175,7 +175,7 @@ export default function RodeoFeedPage() {
         {/* Search */}
         <div className="relative flex-1">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600"
             aria-hidden="true"
           />
           <input
@@ -183,7 +183,7 @@ export default function RodeoFeedPage() {
             placeholder="Search rodeos, circles, or artists…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
             aria-label="Search rodeos"
           />
         </div>
@@ -192,7 +192,7 @@ export default function RodeoFeedPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
           aria-label="Filter by type"
         >
           {TYPE_OPTIONS.map((o) => (
@@ -204,7 +204,7 @@ export default function RodeoFeedPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
           aria-label="Filter by status"
         >
           {STATUS_OPTIONS.map((o) => (
@@ -216,13 +216,13 @@ export default function RodeoFeedPage() {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" aria-label="Loading" />
+          <Loader2 className="w-8 h-8 text-pink-400 animate-spin" aria-label="Loading" />
         </div>
       )}
 
       {/* Error */}
       {error && !isLoading && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+        <div className="bg-red-950/30 border border-red-800 rounded-xl p-4 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -230,14 +230,14 @@ export default function RodeoFeedPage() {
       {/* Empty */}
       {!isLoading && !error && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Trophy className="w-12 h-12 text-gray-300 mb-3" aria-hidden="true" />
-          <p className="text-gray-500 font-medium">No rodeos found</p>
-          <p className="text-sm text-gray-400 mt-1">Check back later or adjust your filters</p>
+          <Trophy className="w-12 h-12 text-zinc-700 mb-3" aria-hidden="true" />
+          <p className="text-zinc-500 font-medium">No rodeos found</p>
+          <p className="text-sm text-zinc-600 mt-1">Check back later or adjust your filters</p>
           {(search || typeFilter || statusFilter) && (
             <button
               type="button"
               onClick={() => { setSearch(''); setTypeFilter(''); setStatusFilter('') }}
-              className="mt-3 text-sm text-orange-600 hover:text-orange-700 font-medium"
+              className="mt-3 text-sm text-pink-400 hover:text-pink-300 font-medium"
             >
               Clear all filters
             </button>
@@ -272,8 +272,8 @@ function RodeoCard({ rodeo, onClick }: { rodeo: RodeoFeedItem; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left bg-white rounded-2xl border shadow-sm p-5 transition-all hover:shadow-md group ${
-        isLive ? 'border-orange-300 ring-1 ring-orange-100' : 'border-gray-200 hover:border-orange-200'
+      className={`w-full text-left bg-zinc-900 rounded-2xl border shadow-sm p-5 transition-all hover:shadow-md group ${
+        isLive ? 'border-pink-700 ring-1 ring-orange-100' : 'border-zinc-700 hover:border-pink-800'
       }`}
       aria-label={`View rodeo: ${rodeo.title}`}
     >
@@ -283,13 +283,13 @@ function RodeoCard({ rodeo, onClick }: { rodeo: RodeoFeedItem; onClick: () => vo
           {typeStyle.label}
         </span>
 
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
           <span className={`w-2 h-2 rounded-full ${statusStyle.dot}`} aria-hidden="true" />
           {statusStyle.label}
         </span>
 
         {isLive && countdown && (
-          <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+          <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-pink-400 bg-pink-950/20 px-2 py-0.5 rounded-full">
             <Timer className="w-3 h-3" aria-hidden="true" />
             {countdown}
           </span>
@@ -297,25 +297,25 @@ function RodeoCard({ rodeo, onClick }: { rodeo: RodeoFeedItem; onClick: () => vo
       </div>
 
       {/* Title */}
-      <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-orange-600 transition-colors mb-1">
+      <h3 className="font-bold text-white text-lg leading-tight group-hover:text-pink-400 transition-colors mb-1">
         {rodeo.title}
       </h3>
 
       {/* Description */}
       {rodeo.description && (
-        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{rodeo.description}</p>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-3">{rodeo.description}</p>
       )}
 
       {/* Matchup */}
       {entryNames.length >= 2 && (
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm font-semibold text-gray-800 truncate max-w-[40%]">
+          <span className="text-sm font-semibold text-zinc-100 truncate max-w-[40%]">
             {entryNames[0]}
           </span>
-          <span className="flex-shrink-0 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
+          <span className="flex-shrink-0 text-xs font-bold text-pink-400 bg-pink-950/20 px-2 py-0.5 rounded-full">
             VS
           </span>
-          <span className="text-sm font-semibold text-gray-800 truncate max-w-[40%]">
+          <span className="text-sm font-semibold text-zinc-100 truncate max-w-[40%]">
             {entryNames[1]}
           </span>
         </div>
@@ -323,34 +323,34 @@ function RodeoCard({ rodeo, onClick }: { rodeo: RodeoFeedItem; onClick: () => vo
 
       {entryNames.length === 1 && (
         <div className="flex items-center gap-2 mb-4">
-          <Users className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
-          <span className="text-sm text-gray-600">{entryNames[0]}</span>
-          <span className="text-xs text-gray-400">— awaiting challenger</span>
+          <Users className="w-3.5 h-3.5 text-zinc-600" aria-hidden="true" />
+          <span className="text-sm text-zinc-400">{entryNames[0]}</span>
+          <span className="text-xs text-zinc-600">— awaiting challenger</span>
         </div>
       )}
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+      <div className="flex items-center gap-4 pt-3 border-t border-zinc-800">
         {/* Prize pool */}
         <div className="flex items-center gap-1.5">
-          <Coins className="w-4 h-4 text-yellow-500" aria-hidden="true" />
-          <span className="text-sm font-semibold text-gray-700">
+          <Coins className="w-4 h-4 text-yellow-400" aria-hidden="true" />
+          <span className="text-sm font-semibold text-zinc-300">
             {prizePool > 0 ? formatCredits(prizePool) : '—'}
           </span>
-          <span className="text-xs text-gray-400">pool</span>
+          <span className="text-xs text-zinc-600">pool</span>
         </div>
 
         {/* Vote tally */}
         {(rodeo.status === 'voting' || rodeo.status === 'closed' || rodeo.status === 'archived') && (
           <div className="flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-orange-500" aria-hidden="true" />
-            <span className="text-sm font-semibold text-gray-700">{totalVotes}</span>
-            <span className="text-xs text-gray-400">votes</span>
+            <Flame className="w-4 h-4 text-pink-400" aria-hidden="true" />
+            <span className="text-sm font-semibold text-zinc-300">{totalVotes}</span>
+            <span className="text-xs text-zinc-600">votes</span>
           </div>
         )}
 
         {/* Arrow */}
-        <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-orange-500 transition-colors" aria-hidden="true" />
+        <ChevronRight className="w-4 h-4 text-zinc-700 ml-auto group-hover:text-pink-400 transition-colors" aria-hidden="true" />
       </div>
     </button>
   )

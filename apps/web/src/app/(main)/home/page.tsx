@@ -111,7 +111,7 @@ export default async function HomePage() {
               />
             ) : (
               <div
-                className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold border-2 border-white/30"
+                className="w-16 h-16 rounded-full bg-zinc-900/20 flex items-center justify-center text-xl font-bold border-2 border-white/30"
                 aria-label={`Avatar for ${displayName}`}
               >
                 {initials}
@@ -133,43 +133,43 @@ export default async function HomePage() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a href="/circles" className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4 hover:border-orange-200 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <Users className="w-5 h-5 text-orange-600" aria-hidden="true" />
+        <a href="/circles" className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6 flex items-center gap-4 hover:border-pink-800 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+            <Users className="w-5 h-5 text-pink-400" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Your circles</p>
-            <p className="text-xl font-bold text-gray-900">{myCircles.length}</p>
+            <p className="text-sm text-zinc-500">Your circles</p>
+            <p className="text-xl font-bold text-white">{myCircles.length}</p>
           </div>
         </a>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <Headphones className="w-5 h-5 text-orange-600" aria-hidden="true" />
+        <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+            <Headphones className="w-5 h-5 text-pink-400" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Songs shared</p>
-            <p className="text-xl font-bold text-gray-900">{songsCount}</p>
+            <p className="text-sm text-zinc-500">Songs shared</p>
+            <p className="text-xl font-bold text-white">{songsCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <Star className="w-5 h-5 text-orange-600" aria-hidden="true" />
+        <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+            <Star className="w-5 h-5 text-pink-400" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Artists following</p>
-            <p className="text-xl font-bold text-gray-900">0</p>
+            <p className="text-sm text-zinc-500">Artists following</p>
+            <p className="text-xl font-bold text-white">0</p>
           </div>
         </div>
       </div>
 
       {/* My Circles */}
       {myCircles.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">My Circles</h2>
-            <a href="/circles" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+            <h2 className="text-lg font-bold text-white">My Circles</h2>
+            <a href="/circles" className="text-sm text-pink-400 hover:text-pink-300 font-medium">
               Browse more
             </a>
           </div>
@@ -178,23 +178,23 @@ export default async function HomePage() {
               <a
                 key={circle.id}
                 href={`/circles/${circle.id}`}
-                className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-colors group"
+                className="flex items-center gap-3 p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-pink-800 hover:bg-pink-950/20 transition-colors group"
               >
-                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
+                <div className="w-9 h-9 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+                  <Music2 className="w-4 h-4 text-pink-400" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                  <p className="text-sm font-semibold text-white group-hover:text-pink-400 transition-colors truncate">
                     {circle.name}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{circle.description}</p>
+                  <p className="text-xs text-zinc-500 truncate">{circle.description}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1 text-xs text-zinc-600">
                     <Users className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>{circle.member_count?.toLocaleString() ?? 0}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-orange-400 transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-pink-400 transition-colors" />
                 </div>
               </a>
             ))}
@@ -204,28 +204,28 @@ export default async function HomePage() {
 
       {/* Recently shared songs */}
       {myRecentSongs.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Songs I&apos;ve Shared</h2>
+        <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-white mb-4">Songs I&apos;ve Shared</h2>
           <div className="space-y-3">
             {myRecentSongs.map((song) => (
               <div key={song.id} className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <Music2 className="w-4 h-4 text-orange-600" aria-hidden="true" />
+                <div className="w-9 h-9 rounded-lg bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+                  <Music2 className="w-4 h-4 text-pink-400" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{song.title}</p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-sm font-semibold text-white truncate">{song.title}</p>
+                  <p className="text-xs text-zinc-500 truncate">
                     {song.artist}
                     {song.circles ? (
-                      <> · <a href={`/circles/${song.circles.id}`} className="text-orange-500 hover:text-orange-600">{song.circles.name}</a></>
+                      <> · <a href={`/circles/${song.circles.id}`} className="text-pink-400 hover:text-pink-400">{song.circles.name}</a></>
                     ) : null}
                   </p>
                 </div>
                 {song.avg_rating > 0 && (
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" />
-                    <span className="text-xs text-gray-500">{song.avg_rating.toFixed(1)}</span>
-                    <span className="text-xs text-gray-400">({song.rating_count})</span>
+                    <span className="text-xs text-zinc-500">{song.avg_rating.toFixed(1)}</span>
+                    <span className="text-xs text-zinc-600">({song.rating_count})</span>
                   </div>
                 )}
               </div>
@@ -235,20 +235,20 @@ export default async function HomePage() {
       )}
 
       {/* Getting started / Explore */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">
+      <div className="bg-zinc-900 rounded-xl border border-zinc-700 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-white mb-4">
           {myCircles.length === 0 ? 'Get started' : 'Explore more'}
         </h2>
         <div className="space-y-3">
-          <a href="/circles" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <Users className="w-4 h-4 text-orange-600" aria-hidden="true" />
+          <a href="/circles" className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors group">
+            <div className="w-9 h-9 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4 text-pink-400" aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors">Browse Circles</p>
-              <p className="text-xs text-gray-500">Find communities of fans who share your taste</p>
+              <p className="text-sm font-medium text-white group-hover:text-pink-400 transition-colors">Browse Circles</p>
+              <p className="text-xs text-zinc-500">Find communities of fans who share your taste</p>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
+            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-pink-400 transition-colors" />
           </a>
         </div>
       </div>

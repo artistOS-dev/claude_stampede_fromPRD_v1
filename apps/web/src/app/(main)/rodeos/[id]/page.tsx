@@ -824,17 +824,6 @@ function EntrySongsCard({
                     : 'hover:bg-zinc-800'
                 }`}
               >
-                {/* Rank number */}
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
-                  index === 0
-                    ? 'bg-pink-500 text-white'
-                    : index === 1
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'bg-zinc-800 text-zinc-500'
-                }`}>
-                  {index + 1}
-                </span>
-
                 {/* Drag grip */}
                 <button
                   type="button"
@@ -847,6 +836,17 @@ function EntrySongsCard({
                 >
                   <GripVertical className="w-5 h-5" />
                 </button>
+
+                {/* Rank number */}
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
+                  index === 0
+                    ? 'bg-pink-500 text-white'
+                    : index === 1
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {index + 1}
+                </span>
 
                 {/* Icon */}
                 <div className="w-8 h-8 rounded-lg bg-pink-950/20 flex items-center justify-center shrink-0">

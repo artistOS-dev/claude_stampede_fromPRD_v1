@@ -4,7 +4,7 @@
 // from specs/rodeos-spec.md
 // ============================================================
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import type {
   RodeoType,
   RodeoStatus,
@@ -901,7 +901,9 @@ export const RodeoService = {
   // getRodeo — Fetch a single rodeo with all related data
   // ────────────────────────────────────────────────────────────
   async getRodeo(rodeo_id: string) {
-    const supabase = createClient()
+    // Use service client so circle_songs are readable regardless of the
+    // viewer's circle membership (RLS on circle_songs requires membership)
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('rodeos')

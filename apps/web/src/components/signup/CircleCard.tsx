@@ -69,7 +69,7 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
     <div
       className={`bg-zinc-900 rounded-xl border shadow-sm p-5 transition-all ${
         circle.isHighlighted
-          ? 'border-pink-600 ring-2 ring-orange-100'
+          ? 'border-pink-600 ring-2 ring-pink-500/20'
           : 'border-zinc-700 hover:border-pink-800'
       }`}
       aria-label={`Circle: ${circle.name}`}

@@ -146,13 +146,13 @@ export default function Step1Credentials({ initialEmail = '', onSuccess }: Step1
       )}
 
       {emailExists && (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200" role="alert">
-          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-amber-700">
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-yellow-950/20 border border-yellow-700" role="alert">
+          <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-yellow-300">
             An account with this email exists.{' '}
             <Link
               href={`/login?email=${encodeURIComponent(email)}`}
-              className="font-semibold underline underline-offset-2 hover:text-amber-800 transition-colors"
+              className="font-semibold underline underline-offset-2 hover:text-yellow-200 transition-colors"
             >
               Log in instead &rarr;
             </Link>

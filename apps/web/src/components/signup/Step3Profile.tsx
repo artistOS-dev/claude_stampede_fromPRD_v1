@@ -235,7 +235,7 @@ export default function Step3Profile({
       <div className="flex flex-col items-center mb-8">
         <div className="relative group">
           <div
-            className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md cursor-pointer"
+            className="w-24 h-24 rounded-full overflow-hidden border-4 border-zinc-700 shadow-md cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
             role="button"
             tabIndex={0}
@@ -377,7 +377,7 @@ export default function Step3Profile({
               </div>
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  role === option.id ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+                  role === option.id ? 'border-pink-500 bg-pink-500' : 'border-zinc-700'
                 }`}
                 aria-hidden="true"
               >

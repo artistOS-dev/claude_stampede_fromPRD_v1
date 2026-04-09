@@ -45,7 +45,7 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
                 isDone
                   ? 'bg-pink-500'
                   : isCurrent
-                  ? 'bg-pink-500 ring-2 ring-orange-200'
+                  ? 'bg-pink-500 ring-2 ring-pink-500/30'
                   : 'bg-zinc-700'
               }`}
             />

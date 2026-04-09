@@ -14,11 +14,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        'bg-pink-500 text-white hover:bg-pink-600 active:bg-orange-700 focus-visible:ring-pink-500',
+        'bg-pink-500 text-white hover:bg-pink-600 active:bg-pink-700 focus-visible:ring-pink-500',
       secondary:
-        'bg-zinc-900 text-zinc-100 border border-zinc-700 hover:bg-zinc-800 active:bg-zinc-800 focus-visible:ring-gray-400',
+        'bg-zinc-900 text-zinc-100 border border-zinc-700 hover:bg-zinc-800 active:bg-zinc-800 focus-visible:ring-zinc-600',
       ghost:
-        'bg-transparent text-zinc-300 hover:bg-zinc-800 active:bg-zinc-700 focus-visible:ring-gray-400',
+        'bg-transparent text-zinc-300 hover:bg-zinc-800 active:bg-zinc-700 focus-visible:ring-zinc-600',
     }
 
     return (

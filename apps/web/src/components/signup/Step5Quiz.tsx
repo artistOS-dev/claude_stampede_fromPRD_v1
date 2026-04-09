@@ -187,7 +187,7 @@ export default function Step5Quiz({ onSuccess, onSkip }: Step5Props) {
                 </div>
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    isSelected ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+                    isSelected ? 'border-pink-500 bg-pink-500' : 'border-zinc-700'
                   }`}
                   aria-hidden="true"
                 >

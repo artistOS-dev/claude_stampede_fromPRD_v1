@@ -144,7 +144,7 @@ const RESULT_STYLES = {
   win:     { bg: 'bg-green-950/30',  border: 'border-green-800',  text: 'text-green-400',  badge: 'bg-green-900/30 text-green-400',  label: 'Win',     icon: TrendingUp },
   loss:    { bg: 'bg-red-950/30',    border: 'border-red-800',    text: 'text-red-400',    badge: 'bg-red-900/30 text-red-400',      label: 'Loss',    icon: TrendingDown },
   draw:    { bg: 'bg-zinc-950',   border: 'border-zinc-700',   text: 'text-zinc-400',   badge: 'bg-zinc-800 text-zinc-400',    label: 'Draw',    icon: Minus },
-  pending: { bg: 'bg-yellow-950/20', border: 'border-yellow-200', text: 'text-yellow-300', badge: 'bg-yellow-950/30 text-yellow-300',label: 'Pending', icon: Loader2 },
+  pending: { bg: 'bg-yellow-950/20', border: 'border-yellow-700', text: 'text-yellow-300', badge: 'bg-yellow-950/30 text-yellow-300',label: 'Pending', icon: Loader2 },
 }
 
 // ── RodeoHistoryTab ───────────────────────────────────────────
@@ -186,7 +186,7 @@ function RodeoHistoryTab({
     <div className="space-y-8">
 
       {/* ── Overall record ── */}
-      <div className="bg-gradient-to-br from-orange-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-2 mb-4">
           <Trophy className="w-5 h-5" />
           <h2 className="font-bold text-lg">Circle Rodeo Record</h2>
@@ -214,7 +214,7 @@ function RodeoHistoryTab({
             { label: 'Credits Staked', value: formatCredits(record.credits_contributed), positive: null },
             { label: 'Net Credits', value: `${record.credits_net >= 0 ? '+' : ''}${formatCredits(record.credits_net)}`, positive: record.credits_net >= 0 },
           ].map((s) => (
-            <div key={s.label} className="bg-zinc-900/10 rounded-xl p-3 text-center">
+            <div key={s.label} className="bg-zinc-800/50 rounded-xl p-3 text-center">
               <div className={`text-lg font-bold ${s.positive === true ? 'text-green-300' : s.positive === false ? 'text-red-300' : 'text-white'}`}>
                 {s.value}
               </div>
@@ -422,7 +422,7 @@ function RodeoHistoryCard({
                         <div className="flex items-center gap-2 mt-0.5">
                           <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-orange-300 rounded-full"
+                              className="h-full bg-pink-400 rounded-full"
                               style={{ width: `${(song.weighted_score / maxScore) * 100}%` }}
                             />
                           </div>
@@ -546,10 +546,10 @@ function BoardInboxTab({
 
   if (isBoardMember === false) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center space-y-2">
-        <Crown className="w-10 h-10 text-amber-400 mx-auto" />
-        <p className="font-semibold text-amber-900">Board access required</p>
-        <p className="text-sm text-amber-700">Only board members and founders can view the board inbox.</p>
+      <div className="bg-zinc-900 border border-yellow-700 rounded-2xl p-8 text-center space-y-2">
+        <Crown className="w-10 h-10 text-yellow-400 mx-auto" />
+        <p className="font-semibold text-yellow-300">Board access required</p>
+        <p className="text-sm text-yellow-400">Only board members and founders can view the board inbox.</p>
       </div>
     )
   }
@@ -566,9 +566,9 @@ function BoardInboxTab({
   return (
     <div className="space-y-6">
       {/* Board management */}
-      <div className="rounded-2xl border-2 border-pink-800 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 space-y-3 shadow-sm">
+      <div className="rounded-2xl border-2 border-pink-800 bg-gradient-to-br from-pink-950/20 via-zinc-900 to-zinc-900 p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-orange-900 uppercase tracking-wide">🤠 Board management</h3>
+          <h3 className="text-sm font-semibold text-pink-200 uppercase tracking-wide">🤠 Board management</h3>
           {myRole && (
             <span className="text-xs px-2 py-1 rounded-full bg-pink-950/20 text-pink-300 border border-pink-800 capitalize">
               You are {myRole}
@@ -600,7 +600,7 @@ function BoardInboxTab({
               const demote = member.role === 'board'
 
               return (
-                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-orange-100 bg-zinc-900/90 px-3 py-2">
+                <div key={member.user_id} className="grid grid-cols-12 gap-2 items-center rounded-xl border border-pink-900 bg-zinc-900/90 px-3 py-2">
                   <div className="col-span-4 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
                       {member.display_name}
@@ -636,7 +636,7 @@ function BoardInboxTab({
                         type="button"
                         onClick={() => updateBoardRole(member.user_id, 'member')}
                         disabled={updatingUserId === member.user_id}
-                        className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+                        className="text-xs px-2.5 py-1 rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
                       >
                         Remove board
                       </button>
@@ -727,7 +727,7 @@ function BoardInboxTab({
 const STATUS_STYLE: Record<string, { bg: string; border: string; badge: string; label: string }> = {
   pending:  { bg: 'bg-pink-950/20', border: 'border-pink-800', badge: 'bg-pink-900/30 text-pink-300', label: 'Pending' },
   approved: { bg: 'bg-green-950/30',  border: 'border-green-800',  badge: 'bg-green-900/30 text-green-400',   label: 'Approved' },
-  held:     { bg: 'bg-yellow-950/20', border: 'border-yellow-200', badge: 'bg-yellow-950/30 text-yellow-300', label: 'Held' },
+  held:     { bg: 'bg-yellow-950/20', border: 'border-yellow-700', badge: 'bg-yellow-950/30 text-yellow-300', label: 'Held' },
   declined: { bg: 'bg-red-950/30',    border: 'border-red-800',    badge: 'bg-red-900/30 text-red-400',       label: 'Declined' },
   sent:     { bg: 'bg-blue-950/30',   border: 'border-blue-800',   badge: 'bg-blue-900/30 text-blue-400',     label: 'Sent' },
 }
@@ -901,7 +901,7 @@ function ProposalCard({
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Optional comment (required for Decline)…"
                 rows={2}
-                className="w-full px-3 py-2 rounded-xl border border-zinc-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-3 py-2 rounded-xl border border-zinc-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
 
               {voteError && (
@@ -977,7 +977,7 @@ function VoteButton({
   const base = 'flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold border-2 transition-all'
   const styles = {
     approve: active ? 'bg-green-950/300 border-green-500 text-white' : 'border-green-800 text-green-400 hover:bg-green-950/30',
-    hold:    active ? 'bg-yellow-950/200 border-yellow-500 text-white' : 'border-yellow-200 text-yellow-300 hover:bg-yellow-950/20',
+    hold:    active ? 'bg-yellow-950/200 border-yellow-500 text-white' : 'border-yellow-700 text-yellow-300 hover:bg-yellow-950/20',
     decline: active ? 'bg-red-950/300 border-red-500 text-white' : 'border-red-800 text-red-400 hover:bg-red-950/30',
   }
   return (
@@ -1016,7 +1016,7 @@ function StarRating({
             className={`w-4 h-4 transition-colors ${
               star <= display
                 ? 'text-yellow-400 fill-yellow-400'
-                : 'text-gray-200 fill-gray-200'
+                : 'text-zinc-300 fill-zinc-600'
             }`}
           />
         </button>
@@ -1641,7 +1641,7 @@ export default function CircleDetailPage() {
         <div className="space-y-6">
           {/* Rodeo Surface Summary Widget */}
           {rodeoHistory && (
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-pink-800 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-pink-950/20 to-yellow-50 border border-pink-800 rounded-2xl p-5">
               <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-pink-400" />
                 Circle Rodeo Record
@@ -1821,7 +1821,7 @@ export default function CircleDetailPage() {
                   value={nomMessage}
                   onChange={(e) => setNomMessage(e.target.value)}
                   placeholder="Why should this artist join the circle?"
-                  className="w-full border border-zinc-700 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  className="w-full border border-zinc-700 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-400"
                   rows={3}
                 />
               </div>
@@ -1912,7 +1912,7 @@ export default function CircleDetailPage() {
           )}
 
           {!feedLoading && feedEvents.length > 0 && (
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-sm divide-y divide-gray-50 px-4">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-sm divide-y divide-zinc-800 px-4">
               {feedEvents.map((event) => (
                 <FeedEventCard key={event.id} event={event} />
               ))}

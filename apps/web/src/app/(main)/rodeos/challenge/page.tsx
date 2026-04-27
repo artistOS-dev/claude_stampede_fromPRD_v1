@@ -224,7 +224,7 @@ export default function ChallengePage() {
         <div className="bg-green-950/30 border border-green-800 rounded-2xl p-8 text-center space-y-4">
           <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
           <div>
-            <p className="font-bold text-green-900 text-lg">Submitted for Board Approval</p>
+            <p className="font-bold text-green-300 text-lg">Submitted for Board Approval</p>
             <p className="text-sm text-green-400 mt-2">
               Your board members have been notified. A majority must vote{' '}
               <strong>Approve</strong> before the challenge is sent to{' '}
@@ -287,7 +287,7 @@ export default function ChallengePage() {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   state.challengerCircleId === c.id
                     ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-zinc-900 border border-zinc-700 text-zinc-300 hover:border-pink-700'
+                    : 'bg-zinc-700 border border-zinc-600 text-zinc-200 hover:border-pink-500'
                 }`}
               >
                 {c.name}
@@ -307,7 +307,7 @@ export default function ChallengePage() {
               placeholder="Search circles by name, sound, or artist…"
               value={browseSearch}
               onChange={(e) => setBrowseSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
 
@@ -324,7 +324,7 @@ export default function ChallengePage() {
                   className={`w-full text-left rounded-xl border p-4 transition-all ${
                     selected
                       ? 'border-pink-600 bg-pink-950/20 ring-1 ring-pink-400'
-                      : 'border-zinc-700 bg-zinc-900 hover:border-pink-800'
+                      : 'border-zinc-600 bg-zinc-700 hover:border-pink-600'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -370,7 +370,7 @@ export default function ChallengePage() {
                 value={state.title}
                 onChange={(e) => update({ title: e.target.value })}
                 placeholder="e.g. Morgan Wallen Nation vs New Country Discoveries"
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                 maxLength={120}
               />
               <p className="text-xs text-zinc-600 mt-1">{state.title.length}/120</p>
@@ -382,7 +382,7 @@ export default function ChallengePage() {
                 onChange={(e) => update({ storyline: e.target.value })}
                 placeholder="Explain the narrative. Why is this matchup compelling? What's the musical storyline? The board needs this to approve."
                 rows={5}
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
                 maxLength={600}
               />
               <p className="text-xs text-zinc-600 mt-1">{state.storyline.length}/600</p>
@@ -422,7 +422,7 @@ export default function ChallengePage() {
                       ? 'border-pink-600 bg-pink-950/20'
                       : disabled
                       ? 'border-zinc-800 bg-zinc-950 opacity-50'
-                      : 'border-zinc-700 bg-zinc-900 hover:border-pink-800'
+                      : 'border-zinc-600 bg-zinc-700 hover:border-pink-600'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -496,7 +496,7 @@ export default function ChallengePage() {
               if (!song) return null
               const label = state.songLabels[id] ?? 'studio'
               return (
-                <div key={id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3">
+                <div key={id} className="flex items-center gap-3 bg-zinc-700 border border-zinc-600 rounded-xl px-4 py-3">
                   <Music className="w-4 h-4 text-pink-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{song.title}</p>
@@ -524,7 +524,7 @@ export default function ChallengePage() {
             }`}>
               {state.confidenceConfirmed && <CheckCircle2 className="w-4 h-4 text-white" />}
             </div>
-            <span className={`text-sm font-semibold ${state.confidenceConfirmed ? 'text-green-800' : 'text-zinc-400'}`}>
+            <span className={`text-sm font-semibold ${state.confidenceConfirmed ? 'text-green-300' : 'text-zinc-400'}`}>
               {state.confidenceConfirmed
                 ? 'Standing behind these songs — ready for board review'
                 : 'I stand behind these songs and would back them with credits'}
@@ -547,7 +547,7 @@ export default function ChallengePage() {
                 max={100000}
                 value={state.creditBuyIn}
                 onChange={(e) => update({ creditBuyIn: Math.max(1, parseInt(e.target.value) || 0) })}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
               <span className="text-sm text-zinc-500 shrink-0">credits</span>
             </div>
@@ -557,7 +557,7 @@ export default function ChallengePage() {
           </div>
 
           {/* Pool preview */}
-          <div className="bg-zinc-950 rounded-xl p-4 space-y-3">
+          <div className="bg-zinc-900 rounded-xl p-4 space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-zinc-400">Your contribution</span>
               <span className="font-semibold">{formatCredits(state.creditBuyIn)} credits</span>
@@ -608,7 +608,7 @@ export default function ChallengePage() {
               type="datetime-local"
               value={state.endDate}
               onChange={(e) => update({ endDate: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
         </StepCard>
@@ -694,7 +694,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
 
 function StepCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 p-6 space-y-5 shadow-sm">
+    <div className="bg-zinc-800 rounded-2xl border border-zinc-600 p-6 space-y-5 shadow-sm">
       <h2 className="font-bold text-white text-lg flex items-center gap-2">
         {icon} {title}
       </h2>

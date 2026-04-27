@@ -11,18 +11,19 @@ export async function GET(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Check if user is a circle member
-  const { data: membership } = await supabase
-    .from('circle_members')
-    .select('role')
-    .eq('circle_id', params.id)
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
+  ])
 
-  if (!membership) {
+  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+
+  if (!membership && !canViewAll) {
     return NextResponse.json({ error: 'Not a circle member' }, { status: 403 })
   }
 
-  const isBoardMember = ['board', 'founder'].includes(membership.role)
+  // Board-only events visible to board members and superfan/super_admin viewers
+  const isBoardMember = canViewAll || ['board', 'founder'].includes(membership?.role ?? '')
 
   const url = new URL(req.url)
   const limit = parseInt(url.searchParams.get('limit') ?? '50')

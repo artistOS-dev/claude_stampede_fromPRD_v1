@@ -480,6 +480,7 @@ function BoardInboxTab({
   loading,
   error,
   isBoardMember,
+  readOnly,
   circleId,
   onVoted,
   onNewChallenge,
@@ -489,6 +490,7 @@ function BoardInboxTab({
   loading: boolean
   error: string | null
   isBoardMember: boolean | null
+  readOnly?: boolean
   circleId: string
   onVoted: () => void
   onNewChallenge: () => void
@@ -506,8 +508,8 @@ function BoardInboxTab({
     try {
       const res = await fetch(`/api/circles/${circleId}/board-members`)
       if (!res.ok) throw new Error('Failed to load board members')
-      const json: { my_role: 'member' | 'board' | 'founder'; members: CircleBoardMember[] } = await res.json()
-      setMyRole(json.my_role)
+      const json: { my_role: 'member' | 'board' | 'founder' | 'viewer'; members: CircleBoardMember[]; read_only?: boolean } = await res.json()
+      setMyRole(json.my_role === 'viewer' ? null : json.my_role)
       setBoardMembers(json.members ?? [])
     } catch {
       setMembersError('Could not load board management data.')
@@ -595,7 +597,7 @@ function BoardInboxTab({
               <div className="col-span-2 text-right">Action</div>
             </div>
             {boardMembers.map((member) => {
-              const canEdit = myRole === 'founder' && member.role !== 'founder'
+              const canEdit = !readOnly && myRole === 'founder' && member.role !== 'founder'
               const promote = member.role === 'member'
               const demote = member.role === 'board'
 
@@ -651,7 +653,7 @@ function BoardInboxTab({
           </div>
         )}
 
-        {myRole !== 'founder' && !membersLoading && (
+        {!readOnly && myRole !== 'founder' && !membersLoading && (
           <p className="text-xs text-zinc-500">
             Only founders can change board roles.
           </p>
@@ -663,14 +665,21 @@ function BoardInboxTab({
         <h2 className="font-bold text-white flex items-center gap-2">
           <Crown className="w-5 h-5 text-pink-400" />
           Board Inbox
+          {readOnly && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-950/30 text-yellow-400 border border-yellow-800 font-normal">
+              View only
+            </span>
+          )}
         </h2>
-        <button
-          type="button"
-          onClick={onNewChallenge}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold transition-colors"
-        >
-          <Swords className="w-4 h-4" /> New Challenge
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onNewChallenge}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold transition-colors"
+          >
+            <Swords className="w-4 h-4" /> New Challenge
+          </button>
+        )}
       </div>
 
       {/* Pending proposals */}
@@ -695,6 +704,7 @@ function BoardInboxTab({
               circleId={circleId}
               boardSeatCount={data.board_seat_count}
               myUserId={data.my_user_id}
+              readOnly={readOnly}
               onVoted={onVoted}
               onViewRodeo={onViewRodeo}
             />
@@ -712,6 +722,7 @@ function BoardInboxTab({
               circleId={circleId}
               boardSeatCount={data.board_seat_count}
               myUserId={data.my_user_id}
+              readOnly={readOnly}
               onVoted={onVoted}
               onViewRodeo={onViewRodeo}
             />
@@ -737,6 +748,7 @@ function ProposalCard({
   circleId,
   boardSeatCount,
   myUserId,
+  readOnly,
   onVoted,
   onViewRodeo,
 }: {
@@ -744,6 +756,7 @@ function ProposalCard({
   circleId: string
   boardSeatCount: number
   myUserId: string
+  readOnly?: boolean
   onVoted: () => void
   onViewRodeo: (id: string) => void
 }) {
@@ -889,8 +902,8 @@ function ProposalCard({
             </button>
           )}
 
-          {/* Vote UI (pending only) */}
-          {isPending && (
+          {/* Vote UI (pending only, not for read-only superfan viewers) */}
+          {isPending && !readOnly && (
             <div className="space-y-3 pt-2 border-t border-zinc-800">
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">
                 Your vote {myVote ? `(current: ${myVote.vote})` : ''}
@@ -1117,6 +1130,8 @@ interface BoardData {
   proposals: ChallengeProposal[]
   board_seat_count: number
   my_user_id: string
+  can_vote?: boolean
+  read_only?: boolean
 }
 
 interface CircleBoardMember {
@@ -1132,6 +1147,7 @@ export default function CircleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos' | 'nominations' | 'feed' | 'board'>('songs')
+  const [isViewAllUser, setIsViewAllUser] = useState(false)
 
   // Rodeo history state
   const [rodeoHistory, setRodeoHistory] = useState<RodeoHistoryData | null>(null)
@@ -1285,6 +1301,12 @@ export default function CircleDetailPage() {
       setFeedLoaded(true)
     }
   }, [id])
+
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(p => {
+      if (p) setIsViewAllUser(p.is_super_admin === true || p.subscription_tier === 'superfan')
+    })
+  }, [])
 
   useEffect(() => { loadSongs() }, [loadSongs])
   useEffect(() => { loadArtists() }, [loadArtists])
@@ -1629,6 +1651,7 @@ export default function CircleDetailPage() {
           loading={boardLoading}
           error={boardError}
           isBoardMember={isBoardMember}
+          readOnly={boardData?.read_only === true}
           circleId={id}
           onVoted={loadBoardInbox}
           onNewChallenge={() => router.push('/rodeos/challenge')}
@@ -1741,10 +1764,15 @@ export default function CircleDetailPage() {
       {tab === 'nominations' && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white">Artist Nominations</h2>
-            <Button variant="primary" onClick={() => setShowNomForm((v) => !v)}>
-              <Plus className="w-4 h-4" />Nominate
-            </Button>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              Artist Nominations
+              {isViewAllUser && <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-950/30 text-yellow-400 border border-yellow-800 font-normal">View only</span>}
+            </h2>
+            {!isViewAllUser && (
+              <Button variant="primary" onClick={() => setShowNomForm((v) => !v)}>
+                <Plus className="w-4 h-4" />Nominate
+              </Button>
+            )}
           </div>
 
           {/* Budget widget */}

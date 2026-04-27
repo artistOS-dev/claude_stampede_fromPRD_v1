@@ -18,9 +18,10 @@ export async function GET(
     supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
   ])
 
-  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+  const isSuperAdmin = profile?.is_super_admin === true
+  const isSuperfan = !isSuperAdmin && profile?.subscription_tier === 'superfan'
 
-  if (!membership && !canViewAll) {
+  if (!membership && !isSuperAdmin && !isSuperfan) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })
   }
 
@@ -38,8 +39,8 @@ export async function GET(
     proposals: data ?? [],
     board_seat_count: boardMembers?.length ?? 0,
     my_user_id: user.id,
-    can_vote: !!membership,
-    read_only: !membership && canViewAll,
+    can_vote: !!membership || isSuperAdmin,
+    read_only: !membership && isSuperfan,
   })
 }
 

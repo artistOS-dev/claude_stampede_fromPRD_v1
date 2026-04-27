@@ -16,14 +16,15 @@ export async function GET(
     supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
   ])
 
-  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+  const isSuperAdmin = profile?.is_super_admin === true
+  const isSuperfan = !isSuperAdmin && profile?.subscription_tier === 'superfan'
 
-  if (!membership && !canViewAll) {
+  if (!membership && !isSuperAdmin && !isSuperfan) {
     return NextResponse.json({ error: 'Not a circle member' }, { status: 403 })
   }
 
-  // Board-only events visible to board members and superfan/super_admin viewers
-  const isBoardMember = canViewAll || ['board', 'founder'].includes(membership?.role ?? '')
+  // super_admin always sees board-only events; superfan and actual board members also do
+  const isBoardMember = isSuperAdmin || isSuperfan || ['board', 'founder'].includes(membership?.role ?? '')
 
   const url = new URL(req.url)
   const limit = parseInt(url.searchParams.get('limit') ?? '50')

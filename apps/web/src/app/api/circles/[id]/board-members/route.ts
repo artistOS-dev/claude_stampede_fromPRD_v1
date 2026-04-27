@@ -11,15 +11,14 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: myMembership } = await supabase
-    .from('circle_members')
-    .select('role')
-    .eq('circle_id', params.id)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .maybeSingle()
+  const [{ data: myMembership }, { data: profile }] = await Promise.all([
+    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+    supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
+  ])
 
-  if (!myMembership || !['board', 'founder'].includes(myMembership.role)) {
+  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+
+  if ((!myMembership || !['board', 'founder'].includes(myMembership.role)) && !canViewAll) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })
   }
 
@@ -58,7 +57,8 @@ export async function GET(
     }
   })
 
-  return NextResponse.json({ my_role: myMembership.role, members })
+  const myRole = myMembership?.role ?? (canViewAll ? 'viewer' : null)
+  return NextResponse.json({ my_role: myRole, members, read_only: !myMembership && canViewAll })
 }
 
 export async function PATCH(

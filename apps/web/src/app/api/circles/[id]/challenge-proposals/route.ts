@@ -13,17 +13,14 @@ export async function GET(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Must be board/founder to view proposals
-  const { data: membership } = await supabase
-    .from('circle_members')
-    .select('role')
-    .eq('circle_id', params.id)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .in('role', ['board', 'founder'])
-    .maybeSingle()
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).eq('status', 'active').in('role', ['board', 'founder']).maybeSingle(),
+    supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
+  ])
 
-  if (!membership) {
+  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+
+  if (!membership && !canViewAll) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })
   }
 
@@ -41,6 +38,8 @@ export async function GET(
     proposals: data ?? [],
     board_seat_count: boardMembers?.length ?? 0,
     my_user_id: user.id,
+    can_vote: !!membership,
+    read_only: !membership && canViewAll,
   })
 }
 

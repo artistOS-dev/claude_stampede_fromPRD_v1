@@ -16,7 +16,9 @@ export async function GET(
     supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
   ])
 
-  const canViewAll = profile?.is_super_admin === true || profile?.subscription_tier === 'superfan'
+  const isSuperAdmin = profile?.is_super_admin === true
+  const isSuperfan = !isSuperAdmin && profile?.subscription_tier === 'superfan'
+  const canViewAll = isSuperAdmin || isSuperfan
 
   if ((!myMembership || !['board', 'founder'].includes(myMembership.role)) && !canViewAll) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })
@@ -57,8 +59,8 @@ export async function GET(
     }
   })
 
-  const myRole = myMembership?.role ?? (canViewAll ? 'viewer' : null)
-  return NextResponse.json({ my_role: myRole, members, read_only: !myMembership && canViewAll })
+  const myRole = myMembership?.role ?? (isSuperAdmin ? 'founder' : isSuperfan ? 'viewer' : null)
+  return NextResponse.json({ my_role: myRole, members, read_only: !myMembership && isSuperfan })
 }
 
 export async function PATCH(
@@ -69,15 +71,14 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: myMembership } = await supabase
-    .from('circle_members')
-    .select('role')
-    .eq('circle_id', params.id)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .maybeSingle()
+  const [{ data: myMembership }, { data: patchProfile }] = await Promise.all([
+    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+    supabase.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle(),
+  ])
 
-  if (!myMembership || myMembership.role !== 'founder') {
+  const patcherIsSuperAdmin = patchProfile?.is_super_admin === true
+
+  if (!patcherIsSuperAdmin && (!myMembership || myMembership.role !== 'founder')) {
     return NextResponse.json({ error: 'Founder access required' }, { status: 403 })
   }
 
@@ -96,7 +97,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'role must be member or board' }, { status: 422 })
   }
 
-  if (body.user_id === user.id) {
+  if (body.user_id === user.id && !patcherIsSuperAdmin) {
     return NextResponse.json({ error: 'Founders cannot change their own role' }, { status: 400 })
   }
 

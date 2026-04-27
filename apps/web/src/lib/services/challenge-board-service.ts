@@ -155,17 +155,28 @@ export const ChallengeBoardService = {
       return { data: null, error: new BoardError(`Proposal is already ${proposal.status}`, 'NOT_PENDING') }
     }
 
-    // Confirm voter is board/founder of the challenging circle
-    const { data: membership } = await supabase
-      .from('circle_members')
-      .select('role')
-      .eq('circle_id', proposal.circle_id)
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single()
+    // Check if user is super admin (bypasses circle membership requirement)
+    const { data: voterProfile } = await supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .maybeSingle()
 
-    if (!membership || !['board', 'founder'].includes(membership.role)) {
-      return { data: null, error: new BoardError('Only board members or founders can vote on proposals', 'NOT_AUTHORIZED', 403) }
+    const isSuperAdmin = voterProfile?.is_super_admin === true
+
+    if (!isSuperAdmin) {
+      // Confirm voter is board/founder of the challenging circle
+      const { data: membership } = await supabase
+        .from('circle_members')
+        .select('role')
+        .eq('circle_id', proposal.circle_id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single()
+
+      if (!membership || !['board', 'founder'].includes(membership.role)) {
+        return { data: null, error: new BoardError('Only board members or founders can vote on proposals', 'NOT_AUTHORIZED', 403) }
+      }
     }
 
     // Upsert vote (board member can change their vote while still pending)

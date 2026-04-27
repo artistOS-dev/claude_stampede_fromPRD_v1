@@ -745,30 +745,41 @@ function EntrySongsCard({
   const name = entryDisplayName(entry)
   const songs = songOrders[entry.id] ?? entry.rodeo_entry_songs ?? []
 
-  // ── Drag-to-reorder ──────────────────────────────────────────
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [dropIndex, setDropIndex] = useState<number | null>(null)
-  const listRef = useRef<HTMLUListElement>(null)
+  // ── Drag state ───────────────────────────────────────────────
+  const [dragIndex, setDragIndex]   = useState<number | null>(null)
+  const [dropIndex, setDropIndex]   = useState<number | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const listRef      = useRef<HTMLUListElement>(null)
+  const dragStartY   = useRef(0)
+  const itemHeights  = useRef<number[]>([])
 
   const startDrag = (e: React.PointerEvent<HTMLButtonElement>, index: number) => {
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
+    dragStartY.current = e.clientY
+    // Snapshot actual item heights so shift math is pixel-perfect
+    if (listRef.current) {
+      itemHeights.current = Array.from(listRef.current.children).map(
+        (c) => (c as HTMLElement).offsetHeight
+      )
+    }
     setDragIndex(index)
     setDropIndex(index)
+    setDragOffset(0)
   }
 
   const moveDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (dragIndex === null || !listRef.current) return
+    if (dragIndex === null) return
+    setDragOffset(e.clientY - dragStartY.current)
+    if (!listRef.current) return
+    // Compute drop target from raw DOM rects (items haven't physically moved)
     const items = Array.from(listRef.current.children) as HTMLElement[]
-    let newDropIndex = songs.length - 1
+    let newDrop = songs.length - 1
     for (let i = 0; i < items.length; i++) {
       const rect = items[i].getBoundingClientRect()
-      if (e.clientY <= rect.top + rect.height / 2) {
-        newDropIndex = i
-        break
-      }
+      if (e.clientY < rect.top + rect.height / 2) { newDrop = i; break }
     }
-    if (newDropIndex !== dropIndex) setDropIndex(newDropIndex)
+    if (newDrop !== dropIndex) setDropIndex(newDrop)
   }
 
   const endDrag = () => {
@@ -777,7 +788,24 @@ function EntrySongsCard({
     }
     setDragIndex(null)
     setDropIndex(null)
+    setDragOffset(0)
   }
+
+  // How much should item at `index` shift to make room for the drag?
+  const getShift = (index: number): number => {
+    if (dragIndex === null || dropIndex === null || index === dragIndex) return 0
+    const h = itemHeights.current[dragIndex] ?? 72
+    if (dragIndex < dropIndex) {
+      // Dragging down — items between drag+1..drop shift up
+      if (index > dragIndex && index <= dropIndex) return -h
+    } else {
+      // Dragging up — items between drop..drag-1 shift down
+      if (index >= dropIndex && index < dragIndex) return h
+    }
+    return 0
+  }
+
+  const isDragging = dragIndex !== null
 
   return (
     <div className="bg-zinc-900 rounded-2xl border border-zinc-700 overflow-hidden">
@@ -789,7 +817,7 @@ function EntrySongsCard({
         <span className="font-semibold text-zinc-100">{name}</span>
         <div className="ml-auto flex items-center gap-2">
           {songs.length > 1 && (
-            <span className="flex items-center gap-1 text-xs text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
               <GripVertical className="w-3 h-3" />
               drag to rank
             </span>
@@ -804,30 +832,46 @@ function EntrySongsCard({
       {songs.length === 0 ? (
         <div className="px-5 py-4 text-sm text-zinc-600">No songs added yet.</div>
       ) : (
-        <ul ref={listRef} className="divide-y divide-zinc-800">
+        <ul
+          ref={listRef}
+          className="flex flex-col gap-1.5 p-2"
+          style={{ userSelect: isDragging ? 'none' : 'auto' }}
+        >
           {songs.map((es, index) => {
-            const song = es.circle_songs
-            const voteState = voteStates[es.song_id] ?? 'idle'
-            const hasVoted = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
+            const song       = es.circle_songs
+            const voteState  = voteStates[es.song_id] ?? 'idle'
+            const hasVoted   = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
             const songResult = songScores.get(es.song_id)
-            const isDragging = dragIndex === index
-            const isDropTarget = dropIndex === index && dragIndex !== null && dragIndex !== index
+            const isThis     = dragIndex === index
+            const shift      = getShift(index)
+
+            // Rank badge: dragged item shows where it will land
+            const displayRank = isThis && dropIndex !== null ? dropIndex + 1 : index + 1
 
             return (
               <li
                 key={es.id}
-                className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${
-                  isDragging
-                    ? 'opacity-40 bg-pink-950/20'
-                    : isDropTarget
-                    ? 'bg-pink-950/20 border-t-2 border-pink-600'
-                    : 'hover:bg-zinc-800'
+                style={{
+                  transform: isThis
+                    ? `translateY(${dragOffset}px) scale(1.03)`
+                    : `translateY(${shift}px)`,
+                  transition: isThis ? 'box-shadow 150ms, border-color 150ms' : 'transform 180ms cubic-bezier(0.2,0,0,1)',
+                  zIndex: isThis ? 50 : 'auto',
+                  position: 'relative',
+                  boxShadow: isThis
+                    ? '0 16px 48px rgba(0,0,0,0.7), 0 0 0 2px rgba(236,72,153,0.5)'
+                    : undefined,
+                }}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl border transition-colors ${
+                  isThis
+                    ? 'bg-zinc-700 border-pink-500/60 cursor-grabbing'
+                    : 'bg-zinc-800/60 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
                 }`}
               >
                 {/* Drag grip */}
                 <button
                   type="button"
-                  className="touch-none cursor-grab active:cursor-grabbing shrink-0 select-none rounded-md p-1 text-zinc-600 hover:text-pink-400 hover:bg-pink-950/20 active:bg-pink-900/30 transition-colors"
+                  className="touch-none cursor-grab active:cursor-grabbing shrink-0 select-none rounded-md p-1 text-zinc-500 hover:text-pink-400 hover:bg-pink-950/30 transition-colors"
                   onPointerDown={(e) => startDrag(e, index)}
                   onPointerMove={moveDrag}
                   onPointerUp={endDrag}
@@ -837,15 +881,15 @@ function EntrySongsCard({
                   <GripVertical className="w-5 h-5" />
                 </button>
 
-                {/* Rank number */}
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
-                  index === 0
+                {/* Rank badge — shows live target position while dragging */}
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums transition-colors ${
+                  displayRank === 1
                     ? 'bg-pink-500 text-white'
-                    : index === 1
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'bg-zinc-800 text-zinc-500'
+                    : displayRank === 2
+                    ? 'bg-zinc-600 text-zinc-200'
+                    : 'bg-zinc-700 text-zinc-500'
                 }`}>
-                  {index + 1}
+                  {displayRank}
                 </span>
 
                 {/* Icon */}
@@ -859,14 +903,10 @@ function EntrySongsCard({
                     <span className="text-sm font-medium text-white truncate">
                       {song?.title ?? 'Untitled'}
                     </span>
-                    {es.label && (
-                      <SongLabelBadge label={es.label} />
-                    )}
-                    {es.locked && (
-                      <Lock className="w-3 h-3 text-zinc-600" />
-                    )}
+                    {es.label && <SongLabelBadge label={es.label} />}
+                    {es.locked && <Lock className="w-3 h-3 text-zinc-600" />}
                   </div>
-                  <div className="text-xs text-zinc-600 truncate mt-0.5">
+                  <div className="text-xs text-zinc-500 truncate mt-0.5">
                     {song?.artist ?? 'Unknown artist'}
                   </div>
 

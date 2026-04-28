@@ -55,7 +55,7 @@ const TIER_CONFIG: Record<Exclude<TierKey, 'free'> | 'free', TierConfig> = {
       'Exclusive fan content',
     ],
     badge: 'Most Popular',
-    icon: <Star className="w-6 h-6 text-pink-400" aria-hidden="true" />,
+    icon: <Star className="w-6 h-6 text-amber-400" aria-hidden="true" />,
   },
   superfan: {
     name: 'Superfan',
@@ -70,7 +70,7 @@ const TIER_CONFIG: Record<Exclude<TierKey, 'free'> | 'free', TierConfig> = {
       'Priority support',
       'Exclusive superfan events',
     ],
-    icon: <Zap className="w-6 h-6 text-pink-400" aria-hidden="true" />,
+    icon: <Zap className="w-6 h-6 text-amber-400" aria-hidden="true" />,
   },
 }
 
@@ -166,7 +166,7 @@ function PaymentForm({ selectedTier, billingPeriod, onSuccess, onCancel }: Payme
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-      <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-700 text-sm text-zinc-400">
+      <div className="p-3 bg-stone-950 rounded-xl border border-stone-700 text-sm text-stone-400">
         Subscribing to{' '}
         <span className="font-semibold text-white">{tier.name}</span> at{' '}
         <span className="font-semibold text-white">
@@ -185,10 +185,10 @@ function PaymentForm({ selectedTier, billingPeriod, onSuccess, onCancel }: Payme
       )}
 
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+        <label className="block text-sm font-medium text-stone-300 mb-1.5">
           Card details
         </label>
-        <div className="px-4 py-3 border border-zinc-700 rounded-xl bg-zinc-900 focus-within:ring-2 focus-within:ring-pink-500 focus-within:border-pink-600 transition-all">
+        <div className="px-4 py-3 border border-stone-700 rounded-xl bg-stone-900 focus-within:ring-2 focus-within:ring-amber-500 focus-within:border-amber-600 transition-all">
           <CardElement
             options={{
               style: {
@@ -203,7 +203,7 @@ function PaymentForm({ selectedTier, billingPeriod, onSuccess, onCancel }: Payme
             }}
           />
         </div>
-        <p className="mt-1.5 text-xs text-zinc-600 flex items-center gap-1">
+        <p className="mt-1.5 text-xs text-stone-600 flex items-center gap-1">
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path
               fillRule="evenodd"
@@ -257,7 +257,7 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-1">Choose your plan</h2>
-      <p className="text-zinc-400 mb-6">Upgrade anytime. Cancel anytime.</p>
+      <p className="text-stone-400 mb-6">Upgrade anytime. Cancel anytime.</p>
 
       {/* Billing toggle */}
       <div className="flex items-center justify-center gap-3 mb-6">
@@ -265,7 +265,7 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
           type="button"
           onClick={() => setBillingPeriod('monthly')}
           className={`text-sm font-medium transition-colors ${
-            billingPeriod === 'monthly' ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'
+            billingPeriod === 'monthly' ? 'text-white' : 'text-stone-600 hover:text-stone-400'
           }`}
           aria-pressed={billingPeriod === 'monthly'}
         >
@@ -277,13 +277,13 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
           role="switch"
           aria-checked={billingPeriod === 'annual'}
           onClick={() => setBillingPeriod((p) => (p === 'monthly' ? 'annual' : 'monthly'))}
-          className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
-            billingPeriod === 'annual' ? 'bg-pink-500' : 'bg-zinc-700'
+          className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+            billingPeriod === 'annual' ? 'bg-amber-500' : 'bg-stone-700'
           }`}
           aria-label="Toggle annual billing"
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-zinc-900 rounded-full shadow transition-transform ${
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-stone-900 rounded-full shadow transition-transform ${
               billingPeriod === 'annual' ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
@@ -293,7 +293,7 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
           type="button"
           onClick={() => setBillingPeriod('annual')}
           className={`text-sm font-medium transition-colors ${
-            billingPeriod === 'annual' ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'
+            billingPeriod === 'annual' ? 'text-white' : 'text-stone-600 hover:text-stone-400'
           }`}
           aria-pressed={billingPeriod === 'annual'}
         >
@@ -323,8 +323,8 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
                   onClick={() => setSelectedTier(tierKey)}
                   className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                     isSelected
-                      ? 'border-pink-500 bg-pink-950/20'
-                      : 'border-zinc-700 bg-zinc-900 hover:border-pink-800'
+                      ? 'border-amber-500 bg-amber-950/20'
+                      : 'border-stone-700 bg-stone-900 hover:border-amber-800'
                   }`}
                   aria-pressed={isSelected}
                   aria-label={`Select ${tier.name} plan`}
@@ -335,15 +335,15 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-white">{tier.name}</span>
                         {tier.badge && (
-                          <span className="text-xs font-bold text-pink-400 bg-pink-900/30 px-2 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded-full">
                             {tier.badge}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500 mt-0.5">{tier.description}</p>
+                      <p className="text-xs text-stone-500 mt-0.5">{tier.description}</p>
                       <ul className="mt-2 space-y-1">
                         {tier.features.map((f) => (
-                          <li key={f} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                          <li key={f} className="flex items-center gap-1.5 text-xs text-stone-400">
                             <Check className="w-3 h-3 text-green-500 flex-shrink-0" aria-hidden="true" />
                             {f}
                           </li>
@@ -356,7 +356,7 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
                       ) : (
                         <div>
                           <span className="text-lg font-bold text-white">${price}</span>
-                          <span className="text-xs text-zinc-500">/mo</span>
+                          <span className="text-xs text-stone-500">/mo</span>
                         </div>
                       )}
                     </div>
@@ -373,7 +373,7 @@ export default function Step4Subscription({ onSuccess, onSkip }: Step4Props) {
           <button
             type="button"
             onClick={onSkip}
-            className="w-full mt-3 text-sm text-zinc-500 hover:text-zinc-200 font-medium transition-colors py-2"
+            className="w-full mt-3 text-sm text-stone-500 hover:text-stone-200 font-medium transition-colors py-2"
           >
             Skip for now
           </button>

@@ -173,8 +173,8 @@ export default function RodeoResultPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <Loader2 className="w-8 h-8 text-pink-400 animate-spin" />
-        <p className="text-zinc-500">Loading result…</p>
+        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+        <p className="text-stone-500">Loading result…</p>
       </div>
     )
   }
@@ -182,7 +182,7 @@ export default function RodeoResultPage() {
   if (error || !rodeo) {
     return (
       <div className="space-y-4">
-        <button type="button" onClick={() => router.back()} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400">
+        <button type="button" onClick={() => router.back()} className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400">
           <ArrowLeft className="w-4 h-4" />Back
         </button>
         <div className="bg-red-950/30 border border-red-800 rounded-2xl p-6 flex items-center gap-3">
@@ -231,20 +231,20 @@ export default function RodeoResultPage() {
       <button
         type="button"
         onClick={() => router.push(`/rodeos/${id}`)}
-        className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400 transition-colors"
+        className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Rodeo
       </button>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-pink-500 to-pink-400 rounded-3xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 rounded-3xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold bg-zinc-900/20 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-semibold bg-stone-900/20 px-2.5 py-1 rounded-full">
             {TYPE_LABELS[rodeo.type] ?? rodeo.type}
           </span>
           {archived && (
-            <span className="text-xs font-semibold bg-zinc-900/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+            <span className="text-xs font-semibold bg-stone-900/20 px-2.5 py-1 rounded-full flex items-center gap-1">
               <Archive className="w-3 h-3" />Archived
             </span>
           )}
@@ -258,11 +258,11 @@ export default function RodeoResultPage() {
 
       {/* Winner reveal */}
       {result && (
-        <div className="bg-zinc-900 border-2 border-yellow-700 rounded-3xl p-6 shadow-md text-center">
+        <div className="bg-stone-900 border-2 border-yellow-700 rounded-3xl p-6 shadow-md text-center">
           <div className="w-16 h-16 rounded-full bg-yellow-950/30 flex items-center justify-center mx-auto mb-3">
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
-          <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wide mb-1">Winner</p>
+          <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-1">Winner</p>
           {winnerEntry ? (
             <h2 className="text-2xl font-bold text-white">
               {winnerEntry.circles?.name ?? winnerEntry.profiles?.display_name ?? 'Unknown'}
@@ -270,7 +270,7 @@ export default function RodeoResultPage() {
           ) : (
             <h2 className="text-2xl font-bold text-white">Draw</h2>
           )}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-zinc-500">
+          <div className="mt-4 flex justify-center gap-6 text-sm text-stone-500">
             <span><span className="font-bold text-white">{result.circle_member_votes}</span> circle votes</span>
             <span><span className="font-bold text-white">{result.general_public_votes}</span> public votes</span>
           </div>
@@ -287,7 +287,7 @@ export default function RodeoResultPage() {
       {/* Scorecard */}
       <div className="space-y-3">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Star className="w-5 h-5 text-pink-400" />
+          <Star className="w-5 h-5 text-amber-400" />
           Scorecard
         </h2>
         {sortedEntries.map((entry, i) => {
@@ -299,7 +299,7 @@ export default function RodeoResultPage() {
           return (
             <div
               key={entry.id}
-              className={`bg-zinc-900 border rounded-2xl p-5 shadow-sm ${isWinner ? 'border-yellow-700 ring-2 ring-yellow-200' : 'border-zinc-700'}`}
+              className={`bg-stone-900 border rounded-2xl p-5 shadow-sm ${isWinner ? 'border-yellow-700 ring-2 ring-yellow-200' : 'border-stone-700'}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -307,30 +307,30 @@ export default function RodeoResultPage() {
                   <h3 className="font-bold text-white">{entryName}</h3>
                 </div>
                 <div className="text-right">
-                  <div className="text-xl font-bold text-pink-400">{score.toFixed(1)}</div>
-                  <div className="text-xs text-zinc-600">weighted score</div>
+                  <div className="text-xl font-bold text-amber-400">{score.toFixed(1)}</div>
+                  <div className="text-xs text-stone-600">weighted score</div>
                 </div>
               </div>
 
               {/* Songs with scores */}
               {entry.rodeo_entry_songs.length > 0 && (
-                <div className="space-y-2 mt-3 pt-3 border-t border-zinc-800">
+                <div className="space-y-2 mt-3 pt-3 border-t border-stone-800">
                   {entry.rodeo_entry_songs.map((es) => {
                     const sr = songResults.find((r) => r.song_id === es.song_id)
                     return (
                       <div key={es.id} className="flex items-center gap-2 text-sm">
-                        <Music2 className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
-                        <span className="flex-1 text-zinc-300 truncate">
+                        <Music2 className="w-3.5 h-3.5 text-stone-600 flex-shrink-0" />
+                        <span className="flex-1 text-stone-300 truncate">
                           {es.circle_songs?.title ?? 'Unknown'}{' '}
-                          <span className="text-zinc-600">— {es.circle_songs?.artist}</span>
+                          <span className="text-stone-600">— {es.circle_songs?.artist}</span>
                         </span>
                         {es.label && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${es.label === 'live' ? 'bg-green-900/30 text-green-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${es.label === 'live' ? 'bg-green-900/30 text-green-400' : 'bg-teal-900/30 text-teal-400'}`}>
                             {es.label}
                           </span>
                         )}
                         {sr && (
-                          <span className="text-xs text-zinc-500 flex-shrink-0">
+                          <span className="text-xs text-stone-500 flex-shrink-0">
                             {sr.circle_member_votes + sr.general_public_votes} votes
                           </span>
                         )}
@@ -346,25 +346,25 @@ export default function RodeoResultPage() {
 
       {/* Credit distribution breakdown */}
       {pool && (
-        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 shadow-sm">
           <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-            <Coins className="w-5 h-5 text-pink-400" />
+            <Coins className="w-5 h-5 text-amber-400" />
             Credit Distribution
           </h2>
 
           {/* Pool total */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-800">
-            <span className="text-sm text-zinc-400">Total Pool</span>
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-stone-800">
+            <span className="text-sm text-stone-400">Total Pool</span>
             <span className="text-xl font-bold text-white">{formatCredits(pool.total)}</span>
           </div>
 
           {/* Platform fee */}
-          <div className="flex items-center justify-between text-sm mb-3 text-zinc-500">
+          <div className="flex items-center justify-between text-sm mb-3 text-stone-500">
             <span>Platform Fee ({pool.platform_fee_pct}%)</span>
             <span className="font-medium">− {formatCredits(platformFee)}</span>
           </div>
 
-          <div className="flex items-center justify-between text-sm mb-4 pb-4 border-b border-zinc-800 font-semibold text-zinc-100">
+          <div className="flex items-center justify-between text-sm mb-4 pb-4 border-b border-stone-800 font-semibold text-stone-100">
             <span>After Fee</span>
             <span>{formatCredits(afterFee)}</span>
           </div>
@@ -383,10 +383,10 @@ export default function RodeoResultPage() {
               }
               return (
                 <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-300">{recipientLabels[rule.recipient] ?? rule.recipient}</span>
+                  <span className="text-stone-300">{recipientLabels[rule.recipient] ?? rule.recipient}</span>
                   <div className="text-right">
                     <span className="font-semibold text-white">{formatCredits(amount)}</span>
-                    <span className="text-zinc-600 text-xs ml-1">({rule.percentage}%)</span>
+                    <span className="text-stone-600 text-xs ml-1">({rule.percentage}%)</span>
                   </div>
                 </div>
               )
@@ -397,16 +397,16 @@ export default function RodeoResultPage() {
           {distributions.length === 0 && (
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-300">🎤 Artists + Songwriters</span>
-                <span className="font-semibold">{formatCredits(afterFee * 0.45)} <span className="text-zinc-600 text-xs">(45%)</span></span>
+                <span className="text-stone-300">🎤 Artists + Songwriters</span>
+                <span className="font-semibold">{formatCredits(afterFee * 0.45)} <span className="text-stone-600 text-xs">(45%)</span></span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-300">⭐ Core + Young Buck members</span>
-                <span className="font-semibold">{formatCredits(afterFee * 0.45)} <span className="text-zinc-600 text-xs">(45%)</span></span>
+                <span className="text-stone-300">⭐ Core + Young Buck members</span>
+                <span className="font-semibold">{formatCredits(afterFee * 0.45)} <span className="text-stone-600 text-xs">(45%)</span></span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-300">👥 General Backers</span>
-                <span className="font-semibold">{formatCredits(afterFee * 0.10)} <span className="text-zinc-600 text-xs">(10%)</span></span>
+                <span className="text-stone-300">👥 General Backers</span>
+                <span className="font-semibold">{formatCredits(afterFee * 0.10)} <span className="text-stone-600 text-xs">(10%)</span></span>
               </div>
             </div>
           )}
@@ -414,12 +414,12 @@ export default function RodeoResultPage() {
       )}
 
       {/* Archive confirmation */}
-      <div className={`border rounded-2xl p-5 ${archived ? 'bg-green-950/30 border-green-800' : 'bg-zinc-950 border-zinc-700'}`}>
+      <div className={`border rounded-2xl p-5 ${archived ? 'bg-green-950/30 border-green-800' : 'bg-stone-950 border-stone-700'}`}>
         <div className="flex items-center gap-3 mb-2">
           {archived ? (
             <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
           ) : (
-            <Archive className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+            <Archive className="w-5 h-5 text-stone-500 flex-shrink-0" />
           )}
           <h3 className="font-semibold text-white">
             {archived ? 'Archived to Circle History' : 'Archive Rodeo'}
@@ -431,7 +431,7 @@ export default function RodeoResultPage() {
           </p>
         ) : (
           <>
-            <p className="text-sm text-zinc-400 ml-8 mb-4">
+            <p className="text-sm text-stone-400 ml-8 mb-4">
               Archive this result to both circles&#39; timelines. This is permanent and cannot be undone.
             </p>
             {(rodeo.is_creator || rodeo.is_winning_circle_board) && (
@@ -461,48 +461,48 @@ export default function RodeoResultPage() {
         <button
           type="button"
           onClick={() => router.push('/rodeos/challenge')}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-pink-700 hover:shadow-md transition-all text-left group"
+          className="w-full bg-stone-900 border border-stone-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-amber-700 hover:shadow-md transition-all text-left group"
         >
-          <div className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-900/50 transition-colors">
-            <Swords className="w-5 h-5 text-pink-400" />
+          <div className="w-10 h-10 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-900/50 transition-colors">
+            <Swords className="w-5 h-5 text-amber-400" />
           </div>
           <div className="flex-1">
             <p className="font-semibold text-white">Challenge Another Circle</p>
-            <p className="text-sm text-zinc-500">Start a new Circle-vs-Circle Showdown</p>
+            <p className="text-sm text-stone-500">Start a new Circle-vs-Circle Showdown</p>
           </div>
-          <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-pink-400 transition-colors" />
+          <ChevronRight className="w-5 h-5 text-stone-600 group-hover:text-amber-400 transition-colors" />
         </button>
 
         {rodeo.created_by_circle && (
           <button
             type="button"
             onClick={() => router.push(`/circles/${rodeo.created_by_circle}`)}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-pink-700 hover:shadow-md transition-all text-left group"
+            className="w-full bg-stone-900 border border-stone-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-amber-700 hover:shadow-md transition-all text-left group"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
-              <Users className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-200 transition-colors">
+              <Users className="w-5 h-5 text-amber-600" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-white">View Circle Rodeo History</p>
-              <p className="text-sm text-zinc-500">See the full timeline for your circle</p>
+              <p className="text-sm text-stone-500">See the full timeline for your circle</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-pink-400 transition-colors" />
+            <ChevronRight className="w-5 h-5 text-stone-600 group-hover:text-amber-400 transition-colors" />
           </button>
         )}
 
         <button
           type="button"
           onClick={() => router.push('/rodeos')}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-pink-700 hover:shadow-md transition-all text-left group"
+          className="w-full bg-stone-900 border border-stone-700 rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:border-amber-700 hover:shadow-md transition-all text-left group"
         >
           <div className="w-10 h-10 rounded-full bg-green-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
             <TrendingUp className="w-5 h-5 text-green-400" />
           </div>
           <div className="flex-1">
             <p className="font-semibold text-white">Browse All Rodeos</p>
-            <p className="text-sm text-zinc-500">Find upcoming events to enter</p>
+            <p className="text-sm text-stone-500">Find upcoming events to enter</p>
           </div>
-          <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-pink-400 transition-colors" />
+          <ChevronRight className="w-5 h-5 text-stone-600 group-hover:text-amber-400 transition-colors" />
         </button>
       </div>
     </div>

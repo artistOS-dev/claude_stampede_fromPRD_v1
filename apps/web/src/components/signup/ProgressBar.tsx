@@ -9,16 +9,16 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
   return (
     <div className="w-full" aria-label={`Step ${currentStep} of ${totalSteps}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-zinc-500">
+        <span className="text-xs font-medium text-stone-500">
           Step {currentStep} of {totalSteps}
         </span>
-        <span className="text-xs font-medium text-pink-400">
+        <span className="text-xs font-medium text-amber-400">
           {Math.round(percentage)}%
         </span>
       </div>
 
       <div
-        className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden"
+        className="w-full h-2 bg-stone-800 rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={currentStep}
         aria-valuemin={1}
@@ -26,7 +26,7 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
         aria-label={`Step ${currentStep} of ${totalSteps}`}
       >
         <div
-          className="h-full bg-pink-500 rounded-full transition-all duration-500 ease-out"
+          className="h-full bg-amber-500 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -43,10 +43,10 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
               key={stepNum}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 isDone
-                  ? 'bg-pink-500'
+                  ? 'bg-amber-500'
                   : isCurrent
-                  ? 'bg-pink-500 ring-2 ring-pink-500/30'
-                  : 'bg-zinc-700'
+                  ? 'bg-amber-500 ring-2 ring-amber-500/30'
+                  : 'bg-stone-700'
               }`}
             />
           )

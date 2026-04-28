@@ -79,9 +79,9 @@ const MAX_SONGS = 5
 // ── Default distribution preview ─────────────────────────────
 
 const DIST_PREVIEW = [
-  { label: 'Artist + Songwriter + Band', pct: 45, color: 'bg-pink-500' },
-  { label: 'Core Artists + Young Bucks', pct: 45, color: 'bg-purple-400' },
-  { label: 'Participating Voters',        pct: 10, color: 'bg-blue-400' },
+  { label: 'Artist + Songwriter + Band', pct: 45, color: 'bg-amber-500' },
+  { label: 'Core Artists + Young Bucks', pct: 45, color: 'bg-amber-400' },
+  { label: 'Participating Voters',        pct: 10, color: 'bg-teal-400' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -205,7 +205,7 @@ export default function ChallengePage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <BackBtn onClick={() => router.push('/rodeos')} />
-        <div className="bg-zinc-900 border border-yellow-700 rounded-2xl p-8 text-center space-y-3">
+        <div className="bg-stone-900 border border-yellow-700 rounded-2xl p-8 text-center space-y-3">
           <Crown className="w-10 h-10 text-yellow-400 mx-auto" />
           <p className="font-semibold text-yellow-300">Board access required</p>
           <p className="text-sm text-yellow-400">
@@ -242,7 +242,7 @@ export default function ChallengePage() {
             <button
               type="button"
               onClick={() => router.push('/rodeos')}
-              className="px-5 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 font-semibold text-sm hover:bg-zinc-800 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-stone-700 text-stone-300 font-semibold text-sm hover:bg-stone-800 transition-colors"
             >
               Back to Rodeo Feed
             </button>
@@ -260,13 +260,13 @@ export default function ChallengePage() {
 
       {/* Progress */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-zinc-500">
-          <span className="font-semibold text-pink-400">Step {step} of {STEPS.length}</span>
+        <div className="flex items-center justify-between text-xs text-stone-500">
+          <span className="font-semibold text-amber-400">Step {step} of {STEPS.length}</span>
           <span>{STEPS[step - 1]}</span>
         </div>
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-pink-500 rounded-full transition-all duration-500"
+            className="h-full bg-amber-500 rounded-full transition-all duration-500"
             style={{ width: `${(step / STEPS.length) * 100}%` }}
           />
         </div>
@@ -274,8 +274,8 @@ export default function ChallengePage() {
 
       {/* From Circle selector (shown when user has multiple) */}
       {myCircles.length > 1 && (
-        <div className="bg-pink-950/20 border border-pink-800 rounded-xl p-4">
-          <label className="block text-xs font-semibold text-pink-300 mb-2 uppercase tracking-wide">
+        <div className="bg-amber-950/20 border border-amber-800 rounded-xl p-4">
+          <label className="block text-xs font-semibold text-amber-300 mb-2 uppercase tracking-wide">
             Challenging on behalf of
           </label>
           <div className="flex flex-wrap gap-2">
@@ -286,8 +286,8 @@ export default function ChallengePage() {
                 onClick={() => update({ challengerCircleId: c.id, challengerCircleName: c.name })}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   state.challengerCircleId === c.id
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'bg-zinc-700 border border-zinc-600 text-zinc-200 hover:border-pink-500'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'bg-stone-700 border border-stone-600 text-stone-200 hover:border-amber-500'
                 }`}
               >
                 {c.name}
@@ -299,19 +299,19 @@ export default function ChallengePage() {
 
       {/* ── STEP 1: Target Selection ── */}
       {step === 1 && (
-        <StepCard title="Choose Your Opponent" icon={<Users className="w-5 h-5 text-pink-400" />}>
+        <StepCard title="Choose Your Opponent" icon={<Users className="w-5 h-5 text-amber-400" />}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-600" />
             <input
               type="search"
               placeholder="Search circles by name, sound, or artist…"
               value={browseSearch}
               onChange={(e) => setBrowseSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white placeholder:text-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
-          {browseLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-pink-400" /></div>}
+          {browseLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-400" /></div>}
 
           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
             {browseCircles.map((c) => {
@@ -323,32 +323,32 @@ export default function ChallengePage() {
                   onClick={() => update({ targetCircleId: c.id, targetCircleName: c.name })}
                   className={`w-full text-left rounded-xl border p-4 transition-all ${
                     selected
-                      ? 'border-pink-600 bg-pink-950/20 ring-1 ring-pink-400'
-                      : 'border-zinc-600 bg-zinc-700 hover:border-pink-600'
+                      ? 'border-amber-600 bg-amber-950/20 ring-1 ring-amber-400'
+                      : 'border-stone-600 bg-stone-700 hover:border-amber-600'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-white truncate">{c.name}</span>
-                        {selected && <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0" />}
+                        {selected && <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />}
                       </div>
-                      <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{c.description}</p>
+                      <p className="text-xs text-stone-500 mt-0.5 line-clamp-2">{c.description}</p>
                       {c.core_artists?.length > 0 && (
-                        <p className="text-xs text-zinc-600 mt-1 truncate">
+                        <p className="text-xs text-stone-600 mt-1 truncate">
                           {c.core_artists.slice(0, 3).join(' · ')}
                         </p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-medium text-zinc-300">{(c.member_count ?? 0).toLocaleString()}</div>
-                      <div className="text-xs text-zinc-600">members</div>
+                      <div className="text-sm font-medium text-stone-300">{(c.member_count ?? 0).toLocaleString()}</div>
+                      <div className="text-xs text-stone-600">members</div>
                     </div>
                   </div>
                   {c.personality_types?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {c.personality_types.slice(0, 3).map((t) => (
-                        <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-500">{t}</span>
+                        <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-stone-800 text-stone-500">{t}</span>
                       ))}
                     </div>
                   )}
@@ -361,31 +361,31 @@ export default function ChallengePage() {
 
       {/* ── STEP 2: Why This Matchup ── */}
       {step === 2 && (
-        <StepCard title="Why This Matchup?" icon={<Trophy className="w-5 h-5 text-pink-400" />}>
+        <StepCard title="Why This Matchup?" icon={<Trophy className="w-5 h-5 text-amber-400" />}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Rodeo title</label>
+              <label className="block text-sm font-medium text-stone-300 mb-1.5">Rodeo title</label>
               <input
                 type="text"
                 value={state.title}
                 onChange={(e) => update({ title: e.target.value })}
                 placeholder="e.g. Morgan Wallen Nation vs New Country Discoveries"
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white placeholder:text-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 maxLength={120}
               />
-              <p className="text-xs text-zinc-600 mt-1">{state.title.length}/120</p>
+              <p className="text-xs text-stone-600 mt-1">{state.title.length}/120</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Storyline justification</label>
+              <label className="block text-sm font-medium text-stone-300 mb-1.5">Storyline justification</label>
               <textarea
                 value={state.storyline}
                 onChange={(e) => update({ storyline: e.target.value })}
                 placeholder="Explain the narrative. Why is this matchup compelling? What's the musical storyline? The board needs this to approve."
                 rows={5}
-                className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white placeholder:text-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                 maxLength={600}
               />
-              <p className="text-xs text-zinc-600 mt-1">{state.storyline.length}/600</p>
+              <p className="text-xs text-stone-600 mt-1">{state.storyline.length}/600</p>
             </div>
           </div>
         </StepCard>
@@ -393,16 +393,16 @@ export default function ChallengePage() {
 
       {/* ── STEP 3: Song Selection ── */}
       {step === 3 && (
-        <StepCard title="Pick Your Songs" icon={<Music className="w-5 h-5 text-pink-400" />}>
-          <p className="text-sm text-zinc-500">
+        <StepCard title="Pick Your Songs" icon={<Music className="w-5 h-5 text-amber-400" />}>
+          <p className="text-sm text-stone-500">
             Select 1–{MAX_SONGS} songs from <strong>{state.challengerCircleName}</strong>'s roster.
             Label each as studio or live. Songs lock once the board approves.
           </p>
 
-          {songsLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-pink-400" /></div>}
+          {songsLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-400" /></div>}
 
           {!songsLoading && songs.length === 0 && (
-            <div className="text-center py-10 text-zinc-600">
+            <div className="text-center py-10 text-stone-600">
               <Music className="w-8 h-8 mx-auto mb-2" />
               <p className="text-sm">No songs in this circle yet. Add some first.</p>
             </div>
@@ -419,10 +419,10 @@ export default function ChallengePage() {
                   key={song.id}
                   className={`rounded-xl border p-3 transition-all ${
                     selected
-                      ? 'border-pink-600 bg-pink-950/20'
+                      ? 'border-amber-600 bg-amber-950/20'
                       : disabled
-                      ? 'border-zinc-800 bg-zinc-950 opacity-50'
-                      : 'border-zinc-600 bg-zinc-700 hover:border-pink-600'
+                      ? 'border-stone-800 bg-stone-950 opacity-50'
+                      : 'border-stone-600 bg-stone-700 hover:border-amber-600'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -436,7 +436,7 @@ export default function ChallengePage() {
                         update({ selectedSongIds: ids })
                       }}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                        selected ? 'bg-pink-500 border-pink-500' : 'border-zinc-700'
+                        selected ? 'bg-amber-500 border-amber-500' : 'border-stone-700'
                       }`}
                       aria-label={selected ? 'Deselect' : 'Select'}
                     >
@@ -445,7 +445,7 @@ export default function ChallengePage() {
 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{song.title}</p>
-                      <p className="text-xs text-zinc-600 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
+                      <p className="text-xs text-stone-600 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
                     </div>
 
                     {selected && (
@@ -457,8 +457,8 @@ export default function ChallengePage() {
                             onClick={() => update({ songLabels: { ...state.songLabels, [song.id]: l } })}
                             className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${
                               label === l
-                                ? l === 'live' ? 'bg-red-950/300 text-white' : 'bg-zinc-800 text-white'
-                                : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                                ? l === 'live' ? 'bg-red-600 text-white' : 'bg-stone-800 text-white'
+                                : 'bg-stone-800 text-stone-500 hover:bg-stone-700'
                             }`}
                           >
                             {l === 'live' ? 'Live' : 'Studio'}
@@ -472,7 +472,7 @@ export default function ChallengePage() {
             })}
           </div>
 
-          <p className="text-xs text-zinc-600 text-right">
+          <p className="text-xs text-stone-600 text-right">
             {state.selectedSongIds.length} / {MAX_SONGS} selected
           </p>
         </StepCard>
@@ -480,12 +480,12 @@ export default function ChallengePage() {
 
       {/* ── STEP 4: Confidence Check ── */}
       {step === 4 && (
-        <StepCard title="Internal Confidence Check" icon={<Star className="w-5 h-5 text-pink-400" />}>
-          <div className="bg-pink-950/20 border border-pink-800 rounded-xl p-4 space-y-2">
-            <p className="font-semibold text-pink-200 text-sm">
+        <StepCard title="Internal Confidence Check" icon={<Star className="w-5 h-5 text-amber-400" />}>
+          <div className="bg-amber-950/20 border border-amber-800 rounded-xl p-4 space-y-2">
+            <p className="font-semibold text-amber-200 text-sm">
               "{state.challengerCircleName} stands behind these songs."
             </p>
-            <p className="text-xs text-pink-300">
+            <p className="text-xs text-amber-300">
               Once the board approves and the challenge is sent, these songs are locked. No substitutions.
             </p>
           </div>
@@ -496,13 +496,13 @@ export default function ChallengePage() {
               if (!song) return null
               const label = state.songLabels[id] ?? 'studio'
               return (
-                <div key={id} className="flex items-center gap-3 bg-zinc-700 border border-zinc-600 rounded-xl px-4 py-3">
-                  <Music className="w-4 h-4 text-pink-400 shrink-0" />
+                <div key={id} className="flex items-center gap-3 bg-stone-700 border border-stone-600 rounded-xl px-4 py-3">
+                  <Music className="w-4 h-4 text-amber-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{song.title}</p>
-                    <p className="text-xs text-zinc-600">{song.artist}</p>
+                    <p className="text-xs text-stone-600">{song.artist}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${label === 'live' ? 'bg-red-900/30 text-red-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${label === 'live' ? 'bg-red-900/30 text-red-400' : 'bg-stone-800 text-stone-500'}`}>
                     {label === 'live' ? 'Live' : 'Studio'}
                   </span>
                 </div>
@@ -516,15 +516,15 @@ export default function ChallengePage() {
             className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
               state.confidenceConfirmed
                 ? 'border-green-400 bg-green-950/30'
-                : 'border-dashed border-zinc-700 hover:border-pink-600'
+                : 'border-dashed border-stone-700 hover:border-amber-600'
             }`}
           >
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-              state.confidenceConfirmed ? 'bg-green-950/300 border-green-500' : 'border-zinc-700'
+              state.confidenceConfirmed ? 'bg-green-950/30 border-green-500' : 'border-stone-700'
             }`}>
               {state.confidenceConfirmed && <CheckCircle2 className="w-4 h-4 text-white" />}
             </div>
-            <span className={`text-sm font-semibold ${state.confidenceConfirmed ? 'text-green-300' : 'text-zinc-400'}`}>
+            <span className={`text-sm font-semibold ${state.confidenceConfirmed ? 'text-green-300' : 'text-stone-400'}`}>
               {state.confidenceConfirmed
                 ? 'Standing behind these songs — ready for board review'
                 : 'I stand behind these songs and would back them with credits'}
@@ -537,7 +537,7 @@ export default function ChallengePage() {
       {step === 5 && (
         <StepCard title="Credit Pool" icon={<Coins className="w-5 h-5 text-yellow-400" />}>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-300 mb-1.5">
               Credits per Circle (equal buy-in enforced)
             </label>
             <div className="flex items-center gap-3">
@@ -547,34 +547,34 @@ export default function ChallengePage() {
                 max={100000}
                 value={state.creditBuyIn}
                 onChange={(e) => update({ creditBuyIn: Math.max(1, parseInt(e.target.value) || 0) })}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
-              <span className="text-sm text-zinc-500 shrink-0">credits</span>
+              <span className="text-sm text-stone-500 shrink-0">credits</span>
             </div>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-stone-600 mt-1">
               Each Circle contributes exactly this amount. Total pool = {formatCredits(state.creditBuyIn * 2)} before platform fee.
             </p>
           </div>
 
           {/* Pool preview */}
-          <div className="bg-zinc-900 rounded-xl p-4 space-y-3">
+          <div className="bg-stone-900 rounded-xl p-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Your contribution</span>
+              <span className="text-stone-400">Your contribution</span>
               <span className="font-semibold">{formatCredits(state.creditBuyIn)} credits</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Opponent contribution (equal)</span>
+              <span className="text-stone-400">Opponent contribution (equal)</span>
               <span className="font-semibold">{formatCredits(state.creditBuyIn)} credits</span>
             </div>
-            <div className="border-t border-zinc-700 pt-3 flex justify-between text-sm">
-              <span className="font-semibold text-zinc-100">Total pool</span>
-              <span className="font-bold text-pink-400">{formatCredits(state.creditBuyIn * 2)} credits</span>
+            <div className="border-t border-stone-700 pt-3 flex justify-between text-sm">
+              <span className="font-semibold text-stone-100">Total pool</span>
+              <span className="font-bold text-amber-400">{formatCredits(state.creditBuyIn * 2)} credits</span>
             </div>
-            <div className="flex justify-between text-xs text-zinc-600">
+            <div className="flex justify-between text-xs text-stone-600">
               <span>Platform fee (10%)</span>
               <span>−{formatCredits(state.creditBuyIn * 2 * 0.1)}</span>
             </div>
-            <div className="flex justify-between text-xs font-medium text-zinc-400">
+            <div className="flex justify-between text-xs font-medium text-stone-400">
               <span>Net prize pool</span>
               <span>{formatCredits(state.creditBuyIn * 2 * 0.9)}</span>
             </div>
@@ -582,7 +582,7 @@ export default function ChallengePage() {
 
           {/* Distribution preview */}
           <div>
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Default distribution</p>
+            <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Default distribution</p>
             <div className="h-2 rounded-full overflow-hidden flex gap-0.5 mb-3">
               {DIST_PREVIEW.map((d) => (
                 <div key={d.label} className={`${d.color}`} style={{ width: `${d.pct}%` }} />
@@ -592,8 +592,8 @@ export default function ChallengePage() {
               {DIST_PREVIEW.map((d) => (
                 <div key={d.label} className="flex items-center gap-2 text-xs">
                   <div className={`w-2 h-2 rounded-sm ${d.color} shrink-0`} />
-                  <span className="text-zinc-400 flex-1">{d.label}</span>
-                  <span className="font-medium text-zinc-300">{d.pct}%</span>
+                  <span className="text-stone-400 flex-1">{d.label}</span>
+                  <span className="font-medium text-stone-300">{d.pct}%</span>
                 </div>
               ))}
             </div>
@@ -601,14 +601,14 @@ export default function ChallengePage() {
 
           {/* Optional end date */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Voting end date <span className="text-zinc-600 font-normal">(optional)</span>
+            <label className="block text-sm font-medium text-stone-300 mb-1.5">
+              Voting end date <span className="text-stone-600 font-normal">(optional)</span>
             </label>
             <input
               type="datetime-local"
               value={state.endDate}
               onChange={(e) => update({ endDate: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-zinc-600 bg-zinc-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
         </StepCard>
@@ -616,7 +616,7 @@ export default function ChallengePage() {
 
       {/* ── STEP 6: Confirm & Submit ── */}
       {step === 6 && (
-        <StepCard title="Submit for Board Approval" icon={<Lock className="w-5 h-5 text-pink-400" />}>
+        <StepCard title="Submit for Board Approval" icon={<Lock className="w-5 h-5 text-amber-400" />}>
           <div className="bg-yellow-950/20 border border-yellow-700 rounded-xl p-4 text-sm text-yellow-300 space-y-1">
             <p className="font-semibold">This challenge goes to your board first.</p>
             <p className="text-yellow-400">
@@ -645,7 +645,7 @@ export default function ChallengePage() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-pink-500 hover:bg-pink-600 disabled:opacity-60 text-white font-semibold transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold transition-colors"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
             {submitting ? 'Submitting…' : 'Submit for Board Approval'}
@@ -659,7 +659,7 @@ export default function ChallengePage() {
           <button
             type="button"
             onClick={() => setStep((s) => Math.max(1, s - 1))}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-400 hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-700 text-sm font-medium text-stone-400 hover:bg-stone-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
@@ -667,7 +667,7 @@ export default function ChallengePage() {
             type="button"
             disabled={!canAdvance()}
             onClick={() => setStep((s) => s + 1)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
           >
             Next <ArrowRight className="w-4 h-4" />
           </button>
@@ -685,7 +685,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400 transition-colors"
+      className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400 transition-colors"
     >
       <ArrowLeft className="w-4 h-4" /> Back
     </button>
@@ -694,7 +694,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
 
 function StepCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-zinc-800 rounded-2xl border border-zinc-600 p-6 space-y-5 shadow-sm">
+    <div className="bg-stone-800 rounded-2xl border border-stone-600 p-6 space-y-5 shadow-sm">
       <h2 className="font-bold text-white text-lg flex items-center gap-2">
         {icon} {title}
       </h2>
@@ -705,8 +705,8 @@ function StepCard({ title, icon, children }: { title: string; icon: React.ReactN
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-sm py-2 border-b border-zinc-800 last:border-0">
-      <span className="text-zinc-500">{label}</span>
+    <div className="flex items-center justify-between text-sm py-2 border-b border-stone-800 last:border-0">
+      <span className="text-stone-500">{label}</span>
       <span className="font-medium text-white text-right max-w-[60%] truncate">{value}</span>
     </div>
   )

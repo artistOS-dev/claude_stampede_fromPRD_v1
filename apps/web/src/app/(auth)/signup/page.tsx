@@ -32,8 +32,8 @@ function SignupWizardWrapper({ searchParams }: SignupPageProps) {
 export default function SignupPage({ searchParams }: SignupPageProps) {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500" />
+      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     }>
       <SignupWizardWrapper searchParams={searchParams} />

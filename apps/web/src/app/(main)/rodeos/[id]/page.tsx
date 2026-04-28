@@ -112,17 +112,17 @@ interface MyVote {
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
   showdown:       { bg: 'bg-red-950/30',    text: 'text-red-400',    border: 'border-red-800',    label: 'Showdown' },
-  whale:          { bg: 'bg-blue-950/30',   text: 'text-blue-400',   border: 'border-blue-800',   label: 'Whale' },
+  whale:          { bg: 'bg-teal-950/30',   text: 'text-teal-400',   border: 'border-teal-800',   label: 'Whale' },
   grassroots:     { bg: 'bg-green-950/30',  text: 'text-green-400',  border: 'border-green-800',  label: 'Grassroots' },
-  artist_vs_artist: { bg: 'bg-purple-950/30', text: 'text-purple-400', border: 'border-purple-800', label: 'Artist vs Artist' },
+  artist_vs_artist: { bg: 'bg-amber-950/30', text: 'text-amber-400', border: 'border-amber-800', label: 'Artist vs Artist' },
 }
 
 const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   pending: { dot: 'bg-yellow-400',              label: 'Pending' },
-  open:    { dot: 'bg-blue-400',                label: 'Open' },
-  voting:  { dot: 'bg-green-950/300 animate-pulse', label: 'Voting Live' },
-  closed:  { dot: 'bg-zinc-500',                label: 'Closed' },
-  archived:{ dot: 'bg-zinc-600',                label: 'Archived' },
+  open:    { dot: 'bg-teal-400',                label: 'Open' },
+  voting:  { dot: 'bg-green-400 animate-pulse', label: 'Voting Live' },
+  closed:  { dot: 'bg-stone-500',                label: 'Closed' },
+  archived:{ dot: 'bg-stone-600',                label: 'Archived' },
 }
 
 const RECIPIENT_LABELS: Record<string, string> = {
@@ -271,7 +271,7 @@ export default function RodeoDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <Loader2 className="w-8 h-8 text-pink-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
       </div>
     )
   }
@@ -282,7 +282,7 @@ export default function RodeoDetailPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-200"
+          className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-200"
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
@@ -341,7 +341,7 @@ export default function RodeoDetailPage() {
       <button
         type="button"
         onClick={() => router.push('/rodeos')}
-        className="flex items-center gap-2 text-sm text-zinc-500 hover:text-pink-400 transition-colors"
+        className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Rodeo Feed
@@ -353,25 +353,25 @@ export default function RodeoDetailPage() {
           <div className="space-y-2">
             {/* Type + status badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full bg-zinc-900/80 ${typeStyle.text}`}>
+              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full bg-stone-900/80 ${typeStyle.text}`}>
                 {typeStyle.label}
               </span>
-              <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <span className="flex items-center gap-1.5 text-xs text-stone-400">
                 <span className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
                 {statusStyle.label}
               </span>
             </div>
 
-            <h1 className={`text-2xl font-bold ${typeStyle.text}`}>{rodeo.title}</h1>
+            <h1 className={`text-2xl font-bold font-display ${typeStyle.text}`}>{rodeo.title}</h1>
 
             {rodeo.description && (
-              <p className="text-sm text-zinc-400 max-w-lg">{rodeo.description}</p>
+              <p className="text-sm text-stone-400 max-w-lg">{rodeo.description}</p>
             )}
           </div>
 
           {/* Countdown */}
           {isVoting && countdown && (
-            <div className="flex items-center gap-2 bg-zinc-900/70 rounded-xl px-4 py-3 text-pink-400 font-semibold shrink-0">
+            <div className="flex items-center gap-2 bg-stone-900/70 rounded-xl px-4 py-3 text-amber-400 font-semibold shrink-0">
               <Timer className="w-5 h-5" />
               <span className="text-sm">{countdown}</span>
             </div>
@@ -380,7 +380,7 @@ export default function RodeoDetailPage() {
 
         {/* Matchup row */}
         {entries.length >= 2 && (
-          <div className="mt-5 pt-4 border-t border-zinc-700/50 space-y-3">
+          <div className="mt-5 pt-4 border-t border-stone-700/50 space-y-3">
             {/* VS chips */}
             <div className="flex items-center gap-3 flex-wrap">
               <EntryChip
@@ -388,7 +388,7 @@ export default function RodeoDetailPage() {
                 isWinner={result?.winner_circle_id === entries[0].circle_id || result?.winner_artist_id === entries[0].artist_id}
                 isLeading={leadingEntry?.entry.id === entries[0].id}
               />
-              <span className="text-sm font-bold text-zinc-500 shrink-0">VS</span>
+              <span className="text-sm font-bold text-stone-500 shrink-0">VS</span>
               <EntryChip
                 entry={entries[1]}
                 isWinner={result?.winner_circle_id === entries[1].circle_id || result?.winner_artist_id === entries[1].artist_id}
@@ -398,9 +398,9 @@ export default function RodeoDetailPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/rodeos/${rodeo.id}/vote`)}
-                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
                 >
-                  <span className="w-2 h-2 rounded-full bg-zinc-900 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-stone-900 animate-pulse" />
                   Vote Now
                 </button>
               )}
@@ -427,24 +427,24 @@ export default function RodeoDetailPage() {
                     <div key={e.id}>
                       <div className="flex items-center justify-between text-xs mb-0.5">
                         <div className="flex items-center gap-1.5">
-                          {isTop && <Flame className="w-3.5 h-3.5 text-pink-400" />}
-                          <span className={`font-semibold truncate max-w-[160px] ${isTop ? 'text-white' : 'text-zinc-500'}`}>
+                          {isTop && <Flame className="w-3.5 h-3.5 text-amber-400" />}
+                          <span className={`font-semibold truncate max-w-[160px] ${isTop ? 'text-white' : 'text-stone-500'}`}>
                             {entryDisplayName(e)}
                           </span>
-                          {isTop && <span className="text-pink-400 font-bold text-[10px] uppercase tracking-wide">Leading</span>}
+                          {isTop && <span className="text-amber-400 font-bold text-[10px] uppercase tracking-wide">Leading</span>}
                         </div>
-                        <span className="tabular-nums font-bold text-zinc-300 ml-2">{score.toFixed(1)}</span>
+                        <span className="tabular-nums font-bold text-stone-300 ml-2">{score.toFixed(1)}</span>
                       </div>
-                      <div className="h-1.5 bg-zinc-900/50 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-stone-900/50 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${isTop ? 'bg-pink-500' : 'bg-zinc-600'}`}
+                          className={`h-full rounded-full transition-all duration-500 ${isTop ? 'bg-amber-500' : 'bg-stone-600'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
                   )
                 })}
-                <div className="text-[10px] text-zinc-600 text-right">
+                <div className="text-[10px] text-stone-600 text-right">
                   {result?.rodeo_song_results ? 'based on votes' : 'based on song ratings'}
                 </div>
               </div>
@@ -452,10 +452,10 @@ export default function RodeoDetailPage() {
           </div>
         )}
         {entries.length === 1 && (
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-700/50 text-sm text-zinc-500">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-stone-700/50 text-sm text-stone-500">
             <Users className="w-4 h-4" />
             {entryDisplayName(entries[0])}
-            <span className="text-zinc-600 ml-1">— awaiting challenger</span>
+            <span className="text-stone-600 ml-1">— awaiting challenger</span>
           </div>
         )}
       </div>
@@ -489,12 +489,12 @@ export default function RodeoDetailPage() {
       {/* ── Songs sections per entry ─────────────────────────── */}
       <div className="space-y-4">
         <h2 className="font-bold text-white text-lg flex items-center gap-2">
-          <Music className="w-5 h-5 text-pink-400" />
+          <Music className="w-5 h-5 text-amber-400" />
           Songs on the Line
         </h2>
 
         {entries.length === 0 && (
-          <p className="text-sm text-zinc-500">No entries yet.</p>
+          <p className="text-sm text-stone-500">No entries yet.</p>
         )}
 
         {entries.map((entry) => (
@@ -523,9 +523,9 @@ export default function RodeoDetailPage() {
 
       {/* ── Circle history links ─────────────────────────────── */}
       {entries.some((e) => e.circles) && (
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-700 p-5">
+        <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5">
           <h2 className="font-bold text-white mb-3 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-pink-400" />
+            <Trophy className="w-4 h-4 text-amber-400" />
             Circle Rodeo History
           </h2>
           <div className="space-y-2">
@@ -536,22 +536,22 @@ export default function RodeoDetailPage() {
                   key={e.id}
                   type="button"
                   onClick={() => router.push(`/circles/${e.circle_id}`)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-zinc-950 hover:bg-pink-950/20 rounded-xl transition-colors group text-sm"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-stone-950 hover:bg-amber-950/20 rounded-xl transition-colors group text-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-pink-900/30 flex items-center justify-center">
-                      <Users className="w-4 h-4 text-pink-400" />
+                    <div className="w-8 h-8 rounded-full bg-amber-900/30 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-amber-400" />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-white group-hover:text-pink-300">
+                      <div className="font-medium text-white group-hover:text-amber-300">
                         {e.circles!.name}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-stone-600">
                         {e.circles!.member_count ?? 0} members · View all rodeos
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-pink-400 transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-stone-700 group-hover:text-amber-400 transition-colors" />
                 </button>
               ))}
           </div>
@@ -571,13 +571,13 @@ function EntryChip({ entry, isWinner, isLeading }: { entry: Entry; isWinner: boo
       isWinner
         ? 'bg-yellow-950/30 border-yellow-700'
         : isLeading
-        ? 'bg-pink-900/30 border-pink-700'
-        : 'bg-zinc-900/60 border-transparent'
+        ? 'bg-amber-900/30 border-amber-700'
+        : 'bg-stone-900/60 border-transparent'
     }`}>
       {isWinner && <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />}
-      {!isWinner && isLeading && <Flame className="w-3.5 h-3.5 text-pink-400" />}
+      {!isWinner && isLeading && <Flame className="w-3.5 h-3.5 text-amber-400" />}
       <span className={`text-sm font-semibold truncate max-w-[140px] ${
-        isWinner ? 'text-yellow-300' : isLeading ? 'text-pink-200' : 'text-zinc-100'
+        isWinner ? 'text-yellow-300' : isLeading ? 'text-amber-200' : 'text-stone-100'
       }`}>
         {name}
       </span>
@@ -613,23 +613,23 @@ function VoteTallies({
   const maxScore = Math.max(0, ...Array.from(entryTotals.values()))
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 p-5 space-y-4">
+    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-4">
       <h2 className="font-bold text-white flex items-center gap-2">
-        <Flame className="w-5 h-5 text-pink-400" />
+        <Flame className="w-5 h-5 text-amber-400" />
         Live Vote Tallies
       </h2>
 
       {/* Voter breakdown */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-purple-950/30 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-purple-400">{circleMemberVotes}</div>
-          <div className="text-xs text-purple-400 mt-0.5">Circle Member Votes</div>
-          <div className="text-xs text-purple-400">(2× weighted)</div>
+        <div className="bg-amber-950/30 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-amber-400">{circleMemberVotes}</div>
+          <div className="text-xs text-amber-400 mt-0.5">Circle Member Votes</div>
+          <div className="text-xs text-amber-400">(2× weighted)</div>
         </div>
-        <div className="bg-blue-950/30 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-blue-400">{generalPublicVotes}</div>
-          <div className="text-xs text-blue-400 mt-0.5">General Public Votes</div>
-          <div className="text-xs text-blue-400">(1× weighted)</div>
+        <div className="bg-teal-950/30 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-teal-400">{generalPublicVotes}</div>
+          <div className="text-xs text-teal-400 mt-0.5">General Public Votes</div>
+          <div className="text-xs text-teal-400">(1× weighted)</div>
         </div>
       </div>
 
@@ -642,19 +642,19 @@ function VoteTallies({
             return (
               <div key={e.id}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium text-zinc-300 truncate">{entryDisplayName(e)}</span>
+                  <span className="font-medium text-stone-300 truncate">{entryDisplayName(e)}</span>
                   <span className="font-bold text-white tabular-nums ml-2">{score.toFixed(1)}</span>
                 </div>
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-stone-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-pink-500 rounded-full transition-all duration-500"
+                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
               </div>
             )
           })}
-          <div className="text-xs text-zinc-600 text-right">{total} total votes</div>
+          <div className="text-xs text-stone-600 text-right">{total} total votes</div>
         </div>
       )}
     </div>
@@ -699,13 +699,13 @@ function StarRating({
             className={`w-3.5 h-3.5 transition-colors ${
               star <= displayRating
                 ? 'text-yellow-400 fill-yellow-400'
-                : 'text-zinc-300 fill-zinc-700'
+                : 'text-stone-300 fill-stone-700'
             }`}
           />
         </button>
       ))}
       {(hasMyRating || (avgRating > 0 && ratingCount > 0)) && (
-        <span className="text-xs text-zinc-600 ml-1 whitespace-nowrap">
+        <span className="text-xs text-stone-600 ml-1 whitespace-nowrap">
           {hasMyRating ? `${myRating}/5 · your rating` : `${avgRating.toFixed(1)} avg (${ratingCount})`}
         </span>
       )}
@@ -808,21 +808,21 @@ function EntrySongsCard({
   const isDragging = dragIndex !== null
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 overflow-hidden">
+    <div className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden">
       {/* Entry header */}
-      <div className="flex items-center gap-3 px-5 py-3 bg-zinc-950 border-b border-zinc-800">
-        <div className="w-7 h-7 rounded-full bg-pink-900/30 flex items-center justify-center shrink-0">
-          <Users className="w-3.5 h-3.5 text-pink-400" />
+      <div className="flex items-center gap-3 px-5 py-3 bg-stone-950 border-b border-stone-800">
+        <div className="w-7 h-7 rounded-full bg-amber-900/30 flex items-center justify-center shrink-0">
+          <Users className="w-3.5 h-3.5 text-amber-400" />
         </div>
-        <span className="font-semibold text-zinc-100">{name}</span>
+        <span className="font-semibold text-stone-100">{name}</span>
         <div className="ml-auto flex items-center gap-2">
           {songs.length > 1 && (
-            <span className="flex items-center gap-1 text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-xs text-stone-500 bg-stone-800 px-2 py-0.5 rounded-full">
               <GripVertical className="w-3 h-3" />
               drag to rank
             </span>
           )}
-          <span className="text-xs text-zinc-600">
+          <span className="text-xs text-stone-600">
             {songs.length} song{songs.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -830,7 +830,7 @@ function EntrySongsCard({
 
       {/* Songs list */}
       {songs.length === 0 ? (
-        <div className="px-5 py-4 text-sm text-zinc-600">No songs added yet.</div>
+        <div className="px-5 py-4 text-sm text-stone-600">No songs added yet.</div>
       ) : (
         <ul
           ref={listRef}
@@ -864,14 +864,14 @@ function EntrySongsCard({
                 }}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl border transition-colors ${
                   isThis
-                    ? 'bg-zinc-700 border-pink-500/60 cursor-grabbing'
-                    : 'bg-zinc-800/60 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
+                    ? 'bg-stone-700 border-amber-500/60 cursor-grabbing'
+                    : 'bg-stone-800/60 border-stone-700 hover:bg-stone-800 hover:border-stone-600'
                 }`}
               >
                 {/* Drag grip */}
                 <button
                   type="button"
-                  className="touch-none cursor-grab active:cursor-grabbing shrink-0 select-none rounded-md p-1 text-zinc-500 hover:text-pink-400 hover:bg-pink-950/30 transition-colors"
+                  className="touch-none cursor-grab active:cursor-grabbing shrink-0 select-none rounded-md p-1 text-stone-500 hover:text-amber-400 hover:bg-amber-950/30 transition-colors"
                   onPointerDown={(e) => startDrag(e, index)}
                   onPointerMove={moveDrag}
                   onPointerUp={endDrag}
@@ -884,17 +884,17 @@ function EntrySongsCard({
                 {/* Rank badge — shows live target position while dragging */}
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums transition-colors ${
                   displayRank === 1
-                    ? 'bg-pink-500 text-white'
+                    ? 'bg-amber-500 text-white'
                     : displayRank === 2
-                    ? 'bg-zinc-600 text-zinc-200'
-                    : 'bg-zinc-700 text-zinc-500'
+                    ? 'bg-stone-600 text-stone-200'
+                    : 'bg-stone-700 text-stone-500'
                 }`}>
                   {displayRank}
                 </span>
 
                 {/* Icon */}
-                <div className="w-8 h-8 rounded-lg bg-pink-950/20 flex items-center justify-center shrink-0">
-                  <Music className="w-4 h-4 text-pink-400" />
+                <div className="w-8 h-8 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0">
+                  <Music className="w-4 h-4 text-amber-400" />
                 </div>
 
                 {/* Song info */}
@@ -904,9 +904,9 @@ function EntrySongsCard({
                       {song?.title ?? 'Untitled'}
                     </span>
                     {es.label && <SongLabelBadge label={es.label} />}
-                    {es.locked && <Lock className="w-3 h-3 text-zinc-600" />}
+                    {es.locked && <Lock className="w-3 h-3 text-stone-600" />}
                   </div>
-                  <div className="text-xs text-zinc-500 truncate mt-0.5">
+                  <div className="text-xs text-stone-500 truncate mt-0.5">
                     {song?.artist ?? 'Unknown artist'}
                   </div>
 
@@ -924,7 +924,7 @@ function EntrySongsCard({
 
                   {/* Song score (finished) */}
                   {isFinished && songResult && (
-                    <div className="text-xs text-zinc-600 mt-0.5 tabular-nums">
+                    <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
                       {songResult.total_votes} votes · {songResult.weighted_score.toFixed(1)} pts
                     </div>
                   )}
@@ -959,7 +959,7 @@ function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
     )
   }
   return (
-    <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-medium">
+    <span className="text-xs px-1.5 py-0.5 rounded bg-stone-800 text-stone-500 font-medium">
       Studio
     </span>
   )
@@ -984,7 +984,7 @@ function VoteButton({
         type="button"
         disabled
         title="A paid subscription is required to vote"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-600 cursor-not-allowed"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-600 cursor-not-allowed"
       >
         <Lock className="w-3 h-3" />
         Vote
@@ -1003,7 +1003,7 @@ function VoteButton({
 
   if (state === 'voting') {
     return (
-      <button type="button" disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-pink-900/30 text-pink-400">
+      <button type="button" disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-400">
         <Loader2 className="w-3 h-3 animate-spin" />
         Voting…
       </button>
@@ -1014,7 +1014,7 @@ function VoteButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-pink-500 text-white hover:bg-pink-600 active:scale-95 transition-all"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all"
     >
       <Star className="w-3 h-3" />
       Vote
@@ -1035,15 +1035,15 @@ function CreditPoolSection({
 }) {
   const breakdown = [
     { label: 'Sponsor Credits',     value: pool.sponsor_credits,      color: 'bg-yellow-400' },
-    { label: 'Circle Credits',      value: pool.circle_credits,       color: 'bg-pink-500' },
-    { label: 'Artist Credits',      value: pool.artist_credits,       color: 'bg-purple-400' },
-    { label: 'User-backed Credits', value: pool.user_backed_credits,  color: 'bg-blue-400' },
+    { label: 'Circle Credits',      value: pool.circle_credits,       color: 'bg-amber-500' },
+    { label: 'Artist Credits',      value: pool.artist_credits,       color: 'bg-amber-400' },
+    { label: 'User-backed Credits', value: pool.user_backed_credits,  color: 'bg-teal-400' },
   ].filter((b) => b.value > 0)
 
   const net = pool.total * (1 - pool.platform_fee_pct / 100)
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-700 p-5 space-y-4">
+    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-4">
       <h2 className="font-bold text-white flex items-center gap-2">
         <Coins className="w-5 h-5 text-yellow-400" />
         Credit Pool
@@ -1052,9 +1052,9 @@ function CreditPoolSection({
       {/* Total */}
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-bold text-white">{formatCredits(pool.total)}</span>
-        <span className="text-sm text-zinc-600">total credits</span>
+        <span className="text-sm text-stone-600">total credits</span>
         {pool.platform_fee_pct > 0 && (
-          <span className="ml-auto text-xs text-zinc-600">
+          <span className="ml-auto text-xs text-stone-600">
             {formatCredits(net)} after {pool.platform_fee_pct}% platform fee
           </span>
         )}
@@ -1079,27 +1079,27 @@ function CreditPoolSection({
         {breakdown.map((b) => (
           <div key={b.label} className="flex items-center gap-2 text-sm">
             <div className={`w-2.5 h-2.5 rounded-sm ${b.color} shrink-0`} />
-            <span className="text-zinc-400 truncate">{b.label}</span>
-            <span className="ml-auto font-medium text-zinc-100 tabular-nums">{formatCredits(b.value)}</span>
+            <span className="text-stone-400 truncate">{b.label}</span>
+            <span className="ml-auto font-medium text-stone-100 tabular-nums">{formatCredits(b.value)}</span>
           </div>
         ))}
       </div>
 
       {/* Distribution rules */}
       {pool.distribution_rules && pool.distribution_rules.length > 0 && (
-        <div className="pt-3 border-t border-zinc-800">
-          <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+        <div className="pt-3 border-t border-stone-800">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
             Prize Distribution
           </div>
           <div className="space-y-1.5">
             {pool.distribution_rules.map((r) => (
               <div key={r.id} className="flex items-center justify-between text-sm">
-                <span className="text-zinc-400">{RECIPIENT_LABELS[r.recipient] ?? r.recipient}</span>
+                <span className="text-stone-400">{RECIPIENT_LABELS[r.recipient] ?? r.recipient}</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="w-24 h-1.5 bg-stone-800 rounded-full overflow-hidden">
                     <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${r.percentage}%` }} />
                   </div>
-                  <span className="text-xs font-medium text-zinc-300 tabular-nums w-8 text-right">
+                  <span className="text-xs font-medium text-stone-300 tabular-nums w-8 text-right">
                     {r.percentage}%
                   </span>
                 </div>
@@ -1111,15 +1111,15 @@ function CreditPoolSection({
 
       {/* Actual distributions (finished) */}
       {isFinished && result && (
-        <div className="pt-3 border-t border-zinc-800">
-          <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+        <div className="pt-3 border-t border-stone-800">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
             Credits Awarded
           </div>
-          <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <div className="flex items-center gap-2 text-sm text-stone-500">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
             Final results recorded
             {result.finalized_at && (
-              <span className="text-zinc-600 text-xs ml-auto">
+              <span className="text-stone-600 text-xs ml-auto">
                 {new Date(result.finalized_at).toLocaleDateString()}
               </span>
             )}

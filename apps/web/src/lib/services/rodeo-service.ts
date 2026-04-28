@@ -261,6 +261,27 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('Failed to create target entry', 'TARGET_ENTRY_FAILED', 500) }
     }
 
+    // Fire feed events for both circles (service client — only service role can INSERT)
+    const svc = createServiceClient()
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: input.challenger_circle_id,
+        rodeo_id: rodeo.id,
+        event_type: 'challenge_sent',
+        actor_id: user.id,
+        board_only: true,
+        payload: { target_circle_id: input.target_circle_id, title: input.title, credit_buy_in: input.credit_buy_in },
+      },
+      {
+        circle_id: input.target_circle_id,
+        rodeo_id: rodeo.id,
+        event_type: 'challenge_received',
+        actor_id: user.id,
+        board_only: true,
+        payload: { challenger_circle_id: input.challenger_circle_id, title: input.title, credit_buy_in: input.credit_buy_in },
+      },
+    ])
+
     return { data: { rodeo_id: rodeo.id }, error: null }
   },
 
@@ -384,6 +405,33 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('Failed to update credit pool', 'POOL_UPDATE_FAILED', 500) }
     }
 
+    // Log accepted event to both circles
+    const svc = createServiceClient()
+    const { data: rodeoInfo } = await svc
+      .from('rodeos')
+      .select('created_by_circle')
+      .eq('id', input.rodeo_id)
+      .maybeSingle()
+
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: targetEntry.circle_id,
+        rodeo_id: input.rodeo_id,
+        event_type: 'challenge_accepted',
+        actor_id: user.id,
+        board_only: true,
+        payload: { challenger_circle_id: rodeoInfo?.created_by_circle },
+      },
+      ...(rodeoInfo?.created_by_circle ? [{
+        circle_id: rodeoInfo.created_by_circle,
+        rodeo_id: input.rodeo_id,
+        event_type: 'challenge_accepted',
+        actor_id: user.id,
+        board_only: true,
+        payload: { target_circle_id: targetEntry.circle_id },
+      }] : []),
+    ])
+
     return { data: { entry_id: targetEntry.id }, error: null }
   },
 
@@ -441,6 +489,33 @@ export const RodeoService = {
     if (closeErr) {
       return { data: null, error: new RodeoError('Failed to close rodeo', 'CLOSE_FAILED', 500) }
     }
+
+    // Log declined event
+    const svc = createServiceClient()
+    const { data: rodeoInfo } = await svc
+      .from('rodeos')
+      .select('created_by_circle')
+      .eq('id', rodeo_id)
+      .maybeSingle()
+
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: targetEntry.circle_id,
+        rodeo_id,
+        event_type: 'challenge_declined',
+        actor_id: user.id,
+        board_only: true,
+        payload: {},
+      },
+      ...(rodeoInfo?.created_by_circle ? [{
+        circle_id: rodeoInfo.created_by_circle,
+        rodeo_id,
+        event_type: 'challenge_declined',
+        actor_id: user.id,
+        board_only: true,
+        payload: { declined_by_circle_id: targetEntry.circle_id },
+      }] : []),
+    ])
 
     return { data: { success: true }, error: null }
   },

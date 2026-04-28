@@ -502,6 +502,19 @@ function BoardInboxTab({
   const [membersError, setMembersError] = useState<string | null>(null)
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
 
+  // Incoming challenges state
+  const [incoming, setIncoming] = useState<IncomingChallenge[]>([])
+  const [incomingLoading, setIncomingLoading] = useState(false)
+  const [incomingError, setIncomingError] = useState<string | null>(null)
+  // Accept flow per-challenge: rodeo_id → selected song ids
+  const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const [circleSongs, setCircleSongs] = useState<Song[]>([])
+  const [circleSongsLoading, setCircleSongsLoading] = useState(false)
+  const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(new Set())
+  const [submittingAccept, setSubmittingAccept] = useState(false)
+  const [acceptError, setAcceptError] = useState<string | null>(null)
+  const [decliningId, setDecliningId] = useState<string | null>(null)
+
   const loadBoardMembers = useCallback(async () => {
     setMembersLoading(true)
     setMembersError(null)
@@ -522,6 +535,80 @@ function BoardInboxTab({
     if (isBoardMember === false) return
     loadBoardMembers()
   }, [isBoardMember, loadBoardMembers])
+
+  const loadIncomingChallenges = useCallback(async () => {
+    setIncomingLoading(true)
+    setIncomingError(null)
+    try {
+      const res = await fetch(`/api/circles/${circleId}/incoming-challenges`)
+      if (!res.ok) throw new Error('Failed to load incoming challenges')
+      const json: { challenges: IncomingChallenge[] } = await res.json()
+      setIncoming(json.challenges ?? [])
+    } catch {
+      setIncomingError('Could not load incoming challenges.')
+    } finally {
+      setIncomingLoading(false)
+    }
+  }, [circleId])
+
+  useEffect(() => {
+    if (isBoardMember === false) return
+    loadIncomingChallenges()
+  }, [isBoardMember, loadIncomingChallenges])
+
+  const openAcceptFlow = async (rodeoId: string) => {
+    setAcceptingId(rodeoId)
+    setSelectedSongIds(new Set())
+    setAcceptError(null)
+    setCircleSongsLoading(true)
+    try {
+      const res = await fetch(`/api/circles/${circleId}/songs`)
+      if (!res.ok) throw new Error('Failed to load songs')
+      const json: { songs: Song[] } = await res.json()
+      setCircleSongs(json.songs ?? [])
+    } catch {
+      setAcceptError('Could not load your circle\'s songs.')
+    } finally {
+      setCircleSongsLoading(false)
+    }
+  }
+
+  const submitAccept = async (rodeoId: string) => {
+    if (selectedSongIds.size === 0) { setAcceptError('Select at least one song.'); return }
+    setSubmittingAccept(true)
+    setAcceptError(null)
+    try {
+      const res = await fetch(`/api/rodeos/${rodeoId}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ song_ids: Array.from(selectedSongIds) }),
+      })
+      const json: { error?: string } = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Accept failed')
+      setAcceptingId(null)
+      await loadIncomingChallenges()
+    } catch (e) {
+      setAcceptError(e instanceof Error ? e.message : 'Accept failed')
+    } finally {
+      setSubmittingAccept(false)
+    }
+  }
+
+  const submitDecline = async (rodeoId: string) => {
+    setDecliningId(rodeoId)
+    try {
+      const res = await fetch(`/api/rodeos/${rodeoId}/decline`, { method: 'POST' })
+      if (!res.ok) {
+        const json: { error?: string } = await res.json()
+        throw new Error(json.error ?? 'Decline failed')
+      }
+      await loadIncomingChallenges()
+    } catch (e) {
+      setIncomingError(e instanceof Error ? e.message : 'Decline failed')
+    } finally {
+      setDecliningId(null)
+    }
+  }
 
   const updateBoardRole = async (userId: string, nextRole: 'member' | 'board') => {
     setUpdatingUserId(userId)
@@ -659,6 +746,163 @@ function BoardInboxTab({
           </p>
         )}
       </div>
+
+      {/* ── Incoming Challenges ── */}
+      {!readOnly && (incomingLoading || incoming.length > 0 || incomingError) && (
+        <div className="rounded-2xl border-2 border-yellow-700 bg-gradient-to-br from-yellow-950/20 via-zinc-900 to-zinc-900 p-4 space-y-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Swords className="w-4 h-4 text-yellow-400" />
+            <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
+              Incoming Challenges {incoming.length > 0 && `(${incoming.length})`}
+            </h3>
+          </div>
+
+          {incomingLoading && (
+            <div className="flex items-center gap-2 text-sm text-zinc-500">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+            </div>
+          )}
+
+          {incomingError && (
+            <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-xl p-3">{incomingError}</p>
+          )}
+
+          {!incomingLoading && incoming.map((challenge) => (
+            <div key={challenge.rodeo_id} className="rounded-xl border border-yellow-800 bg-zinc-900 overflow-hidden">
+              {/* Challenge header */}
+              <div className="px-4 py-3 border-b border-zinc-800">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{challenge.title}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      From <span className="text-yellow-400 font-medium">{challenge.challenger_circle.name}</span>
+                      {' · '}{challenge.credit_buy_in.toLocaleString()} credits buy-in
+                    </p>
+                    {challenge.description && (
+                      <p className="text-xs text-zinc-500 mt-1 italic">"{challenge.description}"</p>
+                    )}
+                  </div>
+                  {acceptingId !== challenge.rodeo_id && (
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openAcceptFlow(challenge.rodeo_id)}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-colors"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => submitDecline(challenge.rodeo_id)}
+                        disabled={decliningId === challenge.rodeo_id}
+                        className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-700 text-xs font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {decliningId === challenge.rodeo_id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Decline'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Their songs */}
+              <div className="px-4 py-3 border-b border-zinc-800">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Their songs</p>
+                <div className="space-y-1">
+                  {challenge.challenger_songs.map((s) => (
+                    <div key={s.song_id} className="flex items-center gap-2 text-sm">
+                      <Music2 className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                      <span className="text-white font-medium truncate">{s.title}</span>
+                      <span className="text-zinc-500 truncate">— {s.artist}</span>
+                      {s.label && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${s.label === 'live' ? 'bg-red-900/30 text-red-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                          {s.label}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accept flow — song picker */}
+              {acceptingId === challenge.rodeo_id && (
+                <div className="px-4 py-4 space-y-3 bg-zinc-950/50">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-green-400">Pick your songs to field</p>
+                    <button
+                      type="button"
+                      onClick={() => { setAcceptingId(null); setAcceptError(null) }}
+                      className="text-xs text-zinc-500 hover:text-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  {circleSongsLoading && (
+                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading your songs…
+                    </div>
+                  )}
+
+                  {!circleSongsLoading && circleSongs.length === 0 && (
+                    <p className="text-sm text-zinc-500">Your circle has no songs yet. Add songs first before accepting.</p>
+                  )}
+
+                  {!circleSongsLoading && circleSongs.length > 0 && (
+                    <div className="space-y-1 max-h-60 overflow-y-auto">
+                      {circleSongs.map((song) => {
+                        const checked = selectedSongIds.has(song.id)
+                        return (
+                          <label
+                            key={song.id}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${checked ? 'bg-green-950/40 border border-green-700' : 'border border-transparent hover:bg-zinc-800'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedSongIds((prev) => {
+                                  const next = new Set(prev)
+                                  if (next.has(song.id)) next.delete(song.id)
+                                  else next.add(song.id)
+                                  return next
+                                })
+                              }}
+                              className="w-4 h-4 accent-green-500 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">{song.title}</p>
+                              <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
+                            </div>
+                            {song.avg_rating > 0 && (
+                              <span className="text-xs text-yellow-400 shrink-0">{song.avg_rating.toFixed(1)}★</span>
+                            )}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {acceptError && (
+                    <p className="text-xs text-red-400 bg-red-950/30 border border-red-800 rounded-lg px-3 py-2">{acceptError}</p>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => submitAccept(challenge.rodeo_id)}
+                      disabled={submittingAccept || selectedSongIds.size === 0}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+                    >
+                      {submittingAccept ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+                      Accept &amp; Go Live ({selectedSongIds.size} song{selectedSongIds.size !== 1 ? 's' : ''})
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -1132,6 +1376,17 @@ interface BoardData {
   my_user_id: string
   can_vote?: boolean
   read_only?: boolean
+}
+
+interface IncomingChallenge {
+  rodeo_id: string
+  title: string
+  description: string | null
+  credit_buy_in: number
+  created_at: string
+  challenger_circle: { id: string; name: string }
+  challenger_songs: { song_id: string; title: string; artist: string; label: string | null }[]
+  target_entry_id: string | null
 }
 
 interface CircleBoardMember {

@@ -179,16 +179,16 @@ export default function CirclesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-2xl bg-gradient-to-r from-pink-500 via-pink-500 to-yellow-500 p-6 text-white shadow-lg">
-        <h1 className="text-3xl font-extrabold tracking-tight">Browse Circles</h1>
-        <p className="text-pink-100 mt-1">
+      <div className="rounded-2xl bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 p-6 text-amber-100 shadow-lg border border-amber-800/40">
+        <h1 className="text-3xl font-extrabold font-display tracking-tight text-amber-100">Browse Circles</h1>
+        <p className="text-amber-100 mt-1">
           Find communities of fans who share your taste in country music
         </p>
       </div>
 
       {canCreateCircle && (
-        <div className="bg-gradient-to-br from-pink-950/20 via-zinc-900 to-zinc-900 rounded-2xl border-2 border-pink-800 p-5 space-y-4 shadow-sm">
-          <h2 className="text-lg font-bold text-pink-200">🎸 Create Circle (Producer)</h2>
+        <div className="bg-gradient-to-br from-amber-950/20 via-stone-900 to-stone-900 rounded-2xl border-2 border-amber-800 p-5 space-y-4 shadow-sm">
+          <h2 className="text-lg font-bold text-amber-200">🎸 Create Circle (Producer)</h2>
           <form onSubmit={handleCreateCircle} className="space-y-3">
             <input
               type="text"
@@ -196,13 +196,13 @@ export default function CirclesPage() {
               placeholder="Circle name"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <textarea
               placeholder="Description"
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
               rows={3}
             />
             <input
@@ -210,14 +210,14 @@ export default function CirclesPage() {
               placeholder="Core artists (comma separated)"
               value={form.coreArtists}
               onChange={(e) => setForm((prev) => ({ ...prev, coreArtists: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="text"
               placeholder="Personality tags (comma separated)"
               value={form.personalityTags}
               onChange={(e) => setForm((prev) => ({ ...prev, personalityTags: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
@@ -226,17 +226,17 @@ export default function CirclesPage() {
                 placeholder="Max members (optional)"
                 value={form.maxMembers}
                 onChange={(e) => setForm((prev) => ({ ...prev, maxMembers: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <input
                 type="url"
                 placeholder="Image URL (optional)"
                 value={form.imageUrl}
                 onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <label className="flex items-center gap-2 text-sm text-stone-300">
               <input
                 type="checkbox"
                 checked={form.isPaid}
@@ -248,7 +248,7 @@ export default function CirclesPage() {
               <select
                 value={form.requiredTier}
                 onChange={(e) => setForm((prev) => ({ ...prev, requiredTier: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl border border-pink-800 text-sm bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm bg-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 <option value="free">free</option>
                 <option value="fan">fan</option>
@@ -265,7 +265,7 @@ export default function CirclesPage() {
             <button
               type="submit"
               disabled={creating}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 disabled:opacity-50 text-white text-sm font-semibold shadow"
+              className="px-4 py-2.5 rounded-xl bg-amber-700 hover:bg-amber-600 disabled:opacity-50 text-amber-50 text-sm font-semibold shadow"
             >
               {creating ? 'Creating…' : 'Create Circle'}
             </button>
@@ -276,7 +276,7 @@ export default function CirclesPage() {
       {/* Search */}
       <div className="relative">
         <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-600"
           aria-hidden="true"
         />
         <input
@@ -284,14 +284,14 @@ export default function CirclesPage() {
           placeholder="Search circles or artists…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-pink-800 bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-amber-800 bg-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           aria-label="Search circles"
         />
       </div>
 
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500" aria-label="Loading" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" aria-label="Loading" />
         </div>
       )}
 
@@ -303,13 +303,13 @@ export default function CirclesPage() {
 
       {!isLoading && !error && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Users className="w-12 h-12 text-zinc-700 mb-3" aria-hidden="true" />
-          <p className="text-zinc-500 font-medium">No circles found</p>
+          <Users className="w-12 h-12 text-stone-700 mb-3" aria-hidden="true" />
+          <p className="text-stone-500 font-medium">No circles found</p>
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="mt-2 text-sm text-pink-400 hover:text-pink-300"
+              className="mt-2 text-sm text-amber-400 hover:text-amber-300"
             >
               Clear search
             </button>

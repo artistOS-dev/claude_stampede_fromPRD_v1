@@ -261,6 +261,27 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('Failed to create target entry', 'TARGET_ENTRY_FAILED', 500) }
     }
 
+    // Fire feed events for both circles (service client — only service role can INSERT)
+    const svc = createServiceClient()
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: input.challenger_circle_id,
+        rodeo_id: rodeo.id,
+        event_type: 'challenge_sent',
+        actor_id: user.id,
+        board_only: true,
+        payload: { target_circle_id: input.target_circle_id, title: input.title, credit_buy_in: input.credit_buy_in },
+      },
+      {
+        circle_id: input.target_circle_id,
+        rodeo_id: rodeo.id,
+        event_type: 'challenge_received',
+        actor_id: user.id,
+        board_only: true,
+        payload: { challenger_circle_id: input.challenger_circle_id, title: input.title, credit_buy_in: input.credit_buy_in },
+      },
+    ])
+
     return { data: { rodeo_id: rodeo.id }, error: null }
   },
 
@@ -384,6 +405,33 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('Failed to update credit pool', 'POOL_UPDATE_FAILED', 500) }
     }
 
+    // Log accepted event to both circles
+    const svc = createServiceClient()
+    const { data: rodeoInfo } = await svc
+      .from('rodeos')
+      .select('created_by_circle')
+      .eq('id', input.rodeo_id)
+      .maybeSingle()
+
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: targetEntry.circle_id,
+        rodeo_id: input.rodeo_id,
+        event_type: 'challenge_accepted',
+        actor_id: user.id,
+        board_only: true,
+        payload: { challenger_circle_id: rodeoInfo?.created_by_circle },
+      },
+      ...(rodeoInfo?.created_by_circle ? [{
+        circle_id: rodeoInfo.created_by_circle,
+        rodeo_id: input.rodeo_id,
+        event_type: 'challenge_accepted',
+        actor_id: user.id,
+        board_only: true,
+        payload: { target_circle_id: targetEntry.circle_id },
+      }] : []),
+    ])
+
     return { data: { entry_id: targetEntry.id }, error: null }
   },
 
@@ -441,6 +489,33 @@ export const RodeoService = {
     if (closeErr) {
       return { data: null, error: new RodeoError('Failed to close rodeo', 'CLOSE_FAILED', 500) }
     }
+
+    // Log declined event
+    const svc = createServiceClient()
+    const { data: rodeoInfo } = await svc
+      .from('rodeos')
+      .select('created_by_circle')
+      .eq('id', rodeo_id)
+      .maybeSingle()
+
+    await svc.from('circle_rodeo_events').insert([
+      {
+        circle_id: targetEntry.circle_id,
+        rodeo_id,
+        event_type: 'challenge_declined',
+        actor_id: user.id,
+        board_only: true,
+        payload: {},
+      },
+      ...(rodeoInfo?.created_by_circle ? [{
+        circle_id: rodeoInfo.created_by_circle,
+        rodeo_id,
+        event_type: 'challenge_declined',
+        actor_id: user.id,
+        board_only: true,
+        payload: { declined_by_circle_id: targetEntry.circle_id },
+      }] : []),
+    ])
 
     return { data: { success: true }, error: null }
   },
@@ -709,14 +784,32 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('No confirmed entries', 'NO_ENTRIES') }
     }
 
-    // Get all votes for this rodeo
-    const { data: votes } = await supabase
-      .from('rodeo_votes')
-      .select('song_id, target_entry_id, voter_type, weight')
-      .eq('rodeo_id', rodeo_id)
+    // Fetch votes and song ratings in parallel
+    const [{ data: votes }, { data: entrySongRows }] = await Promise.all([
+      supabase
+        .from('rodeo_votes')
+        .select('song_id, target_entry_id, voter_type, weight')
+        .eq('rodeo_id', rodeo_id),
+      supabase
+        .from('rodeo_entry_songs')
+        .select('entry_id, song_id, circle_songs(avg_rating, rating_count)')
+        .in('entry_id', entries.map((e) => e.id)),
+    ])
 
-    // Tally scores per entry
-    const entryScores = new Map<string, number>()
+    // Build song avg_rating lookup
+    type SongRatingRow = { entry_id: string; song_id: string; circle_songs: { avg_rating: number; rating_count: number } | null }
+    const songRatingMap = new Map<string, number>() // song_id → avg_rating
+    const entryRatingMap = new Map<string, number[]>() // entry_id → [ratings]
+    for (const row of ((entrySongRows ?? []) as unknown as SongRatingRow[])) {
+      const rating = row.circle_songs?.avg_rating ?? 0
+      songRatingMap.set(row.song_id, rating)
+      const arr = entryRatingMap.get(row.entry_id) ?? []
+      arr.push(rating)
+      entryRatingMap.set(row.entry_id, arr)
+    }
+
+    // Tally vote scores per song and per entry
+    const entryVoteScores = new Map<string, number>()
     const songScores = new Map<string, {
       entry_id: string
       total_votes: number
@@ -726,7 +819,6 @@ export const RodeoService = {
     }>()
 
     for (const vote of (votes ?? [])) {
-      // Per-song stats
       const key = vote.song_id
       const existing = songScores.get(key) ?? {
         entry_id: vote.target_entry_id,
@@ -741,20 +833,31 @@ export const RodeoService = {
       else existing.general_public_votes++
       songScores.set(key, existing)
 
-      // Per-entry total
-      const entryTotal = entryScores.get(vote.target_entry_id) ?? 0
-      entryScores.set(vote.target_entry_id, entryTotal + vote.weight)
+      const entryTotal = entryVoteScores.get(vote.target_entry_id) ?? 0
+      entryVoteScores.set(vote.target_entry_id, entryTotal + vote.weight)
     }
 
-    // Determine the winner (highest weighted score)
+    // ── Combined score: 75% weighted votes + 25% avg rating ────
+    // Both inputs normalised to 0-1 before blending.
+    const maxVoteScore = Math.max(...Array.from(entryVoteScores.values()), 1)
+
+    const entryCombinedScores = new Map<string, number>()
+    for (const entry of entries) {
+      const voteScore = entryVoteScores.get(entry.id) ?? 0
+      const ratings = entryRatingMap.get(entry.id) ?? []
+      const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
+
+      const normVotes = voteScore / maxVoteScore          // 0-1
+      const normRating = avgRating / 5.0                  // 0-1
+      entryCombinedScores.set(entry.id, normVotes * 0.75 + normRating * 0.25)
+    }
+
+    // Determine the winner (highest combined score)
     let winnerId: string | null = null
     let highScore = -1
-    Array.from(entryScores.entries()).forEach(([entryId, score]) => {
-      if (score > highScore) {
-        highScore = score
-        winnerId = entryId
-      }
-    })
+    for (const [entryId, score] of Array.from(entryCombinedScores.entries())) {
+      if (score > highScore) { highScore = score; winnerId = entryId }
+    }
 
     const winnerEntry = entries.find((e) => e.id === winnerId)
 

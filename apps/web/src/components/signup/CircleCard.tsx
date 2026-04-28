@@ -67,10 +67,10 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
 
   return (
     <div
-      className={`bg-zinc-900 rounded-xl border shadow-sm p-5 transition-all ${
+      className={`bg-stone-900 rounded-xl border shadow-sm p-5 transition-all ${
         circle.isHighlighted
-          ? 'border-pink-600 ring-2 ring-pink-500/20'
-          : 'border-zinc-700 hover:border-pink-800'
+          ? 'border-amber-600 ring-2 ring-amber-500/20'
+          : 'border-stone-700 hover:border-amber-800'
       }`}
       aria-label={`Circle: ${circle.name}`}
     >
@@ -82,7 +82,7 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
               <button
                 type="button"
                 onClick={() => router.push(`/circles/${circle.id}`)}
-                className="font-bold text-white text-base leading-tight hover:text-pink-400 transition-colors text-left"
+                className="font-bold text-white text-base leading-tight hover:text-amber-400 transition-colors text-left"
               >
                 {circle.name}
               </button>
@@ -90,20 +90,20 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
               <h3 className="font-bold text-white text-base leading-tight">{circle.name}</h3>
             )}
             {circle.isHighlighted && circle.inviterName && (
-              <span className="text-xs bg-pink-900/30 text-pink-300 font-semibold px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-amber-900/30 text-amber-300 font-semibold px-2 py-0.5 rounded-full">
                 Invited by {circle.inviterName}
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{circle.description}</p>
+          <p className="text-xs text-stone-500 mt-1 line-clamp-2">{circle.description}</p>
         </div>
 
         {/* Decorative icon */}
         <div
-          className="w-10 h-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0"
+          className="w-10 h-10 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0"
           aria-hidden="true"
         >
-          <Music2 className="w-5 h-5 text-pink-400" />
+          <Music2 className="w-5 h-5 text-amber-400" />
         </div>
       </div>
 
@@ -113,19 +113,19 @@ export default function CircleCard({ circle, onJoin, onLeave, joined }: CircleCa
           {circle.core_artists.slice(0, 3).map((artist) => (
             <span
               key={artist}
-              className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full"
+              className="text-xs bg-stone-800 text-stone-400 px-2 py-0.5 rounded-full"
             >
               {artist}
             </span>
           ))}
           {circle.core_artists.length > 3 && (
-            <span className="text-xs text-zinc-600">+{circle.core_artists.length - 3} more</span>
+            <span className="text-xs text-stone-600">+{circle.core_artists.length - 3} more</span>
           )}
         </div>
       )}
 
       {/* Stats */}
-      <div className="flex items-center gap-4 mb-4 text-xs text-zinc-500">
+      <div className="flex items-center gap-4 mb-4 text-xs text-stone-500">
         <span className="flex items-center gap-1">
           <Users className="w-3.5 h-3.5" aria-hidden="true" />
           <span aria-label={`${circle.member_count} members`}>

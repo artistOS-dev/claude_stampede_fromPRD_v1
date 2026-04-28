@@ -96,13 +96,13 @@ export default function Step6Circles({
     return (
       <div className="text-center py-8">
         <div
-          className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-pink-900/30 mb-6"
+          className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-900/30 mb-6"
           aria-hidden="true"
         >
-          <PartyPopper className="w-10 h-10 text-pink-400" />
+          <PartyPopper className="w-10 h-10 text-amber-400" />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">You&apos;re in!</h2>
-        <p className="text-zinc-400">
+        <p className="text-stone-400">
           You joined {joinedCircles.length} circle{joinedCircles.length !== 1 ? 's' : ''}.
           Welcome to your community!
         </p>
@@ -113,7 +113,7 @@ export default function Step6Circles({
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-1">Find your circles</h2>
-      <p className="text-zinc-400 mb-6">
+      <p className="text-stone-400 mb-6">
         Join communities of fans who share your taste in country music.
       </p>
 
@@ -123,7 +123,7 @@ export default function Step6Circles({
           {[1, 2, 3].map((n) => (
             <div
               key={n}
-              className="h-36 bg-zinc-800 rounded-xl animate-pulse"
+              className="h-36 bg-stone-800 rounded-xl animate-pulse"
               aria-hidden="true"
             />
           ))}
@@ -164,11 +164,11 @@ export default function Step6Circles({
           ))}
 
           {circles.length === 0 && (
-            <div className="text-center py-8 text-zinc-500">
+            <div className="text-center py-8 text-stone-500">
               <p className="text-sm">No circles found for your preferences.</p>
               <a
                 href="/circles"
-                className="text-sm text-pink-400 hover:text-pink-300 font-medium mt-2 inline-block"
+                className="text-sm text-amber-400 hover:text-amber-300 font-medium mt-2 inline-block"
               >
                 Browse all circles
               </a>
@@ -182,7 +182,7 @@ export default function Step6Circles({
         <>
           <a
             href="/circles"
-            className="block text-center text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors mb-4"
+            className="block text-center text-sm text-amber-400 hover:text-amber-300 font-medium transition-colors mb-4"
           >
             Browse all circles
           </a>
@@ -200,7 +200,7 @@ export default function Step6Circles({
           <button
             type="button"
             onClick={onSkip}
-            className="w-full mt-3 text-sm text-zinc-500 hover:text-zinc-200 font-medium transition-colors py-2"
+            className="w-full mt-3 text-sm text-stone-500 hover:text-stone-200 font-medium transition-colors py-2"
           >
             Skip for now
           </button>

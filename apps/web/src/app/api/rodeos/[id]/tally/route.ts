@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({ error: votesErr.message }, { status: 500 })
   }
 
-  // Fetch entries with songs for this rodeo
+  // Fetch entries with songs (including avg_rating for combined scoring) for this rodeo
   const { data: entries, error: entriesErr } = await supabase
     .from('rodeo_entries')
     .select(`
@@ -33,7 +33,7 @@ export async function GET(
       profiles!rodeo_entries_artist_id_fkey(id, display_name),
       rodeo_entry_songs(
         id, song_id, label, locked,
-        circle_songs(id, title, artist)
+        circle_songs(id, title, artist, avg_rating, rating_count)
       )
     `)
     .eq('rodeo_id', params.id)
@@ -67,6 +67,7 @@ export async function GET(
     circle_member_votes: number
     general_public_votes: number
     weighted_score: number
+    combined_score: number
     credits_contributed: number
     songs: SongTally[]
   }
@@ -88,18 +89,26 @@ export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allEntries = (entries ?? []) as any[]
 
-  const entryTallies: EntryTally[] = allEntries.map((entry) => {
+  // First pass: tally raw scores so we can normalise across entries
+  const rawTallies = allEntries.map((entry) => {
     const entryVotes = allVotes.filter((v) => v.target_entry_id === entry.id)
     const circleMemberVotes = entryVotes.filter((v) => v.voter_type === 'circle_member').length
     const generalPublicVotes = entryVotes.filter((v) => v.voter_type === 'general_public').length
-    const weightedScore = entryVotes.reduce((sum, v) => sum + (v.weight ?? 1), 0)
+    const weightedScore = entryVotes.reduce((sum: number, v: { weight?: number }) => sum + (v.weight ?? 1), 0)
 
-    const songs: SongTally[] = (entry.rodeo_entry_songs ?? []).map((es: {
+    const entrySongs = (entry.rodeo_entry_songs ?? []) as Array<{
       song_id: string
       label: string | null
       locked: boolean
-      circle_songs: { id: string; title: string; artist: string } | null
-    }) => {
+      circle_songs: { id: string; title: string; artist: string; avg_rating?: number; rating_count?: number } | null
+    }>
+
+    const ratings = entrySongs
+      .map((es) => es.circle_songs?.avg_rating ?? 0)
+      .filter((r) => r > 0)
+    const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
+
+    const songs: SongTally[] = entrySongs.map((es) => {
       const songVotes = allVotes.filter(
         (v) => v.song_id === es.song_id && v.target_entry_id === entry.id
       )
@@ -115,7 +124,7 @@ export async function GET(
         circle_member_votes: sCM,
         general_public_votes: sGP,
         total_votes: sCM + sGP,
-        weighted_score: songVotes.reduce((sum, v) => sum + (v.weight ?? 1), 0),
+        weighted_score: songVotes.reduce((sum: number, v: { weight?: number }) => sum + (v.weight ?? 1), 0),
       }
     })
 
@@ -125,8 +134,28 @@ export async function GET(
       circle_member_votes: circleMemberVotes,
       general_public_votes: generalPublicVotes,
       weighted_score: weightedScore,
+      avgRating,
       credits_contributed: entry.credits_contributed ?? 0,
       songs,
+    }
+  })
+
+  // Normalise and blend: 75% weighted votes + 25% avg rating (0-1 each)
+  const maxVoteScore = Math.max(...rawTallies.map((e) => e.weighted_score), 1)
+
+  const entryTallies: EntryTally[] = rawTallies.map((e) => {
+    const normVotes = e.weighted_score / maxVoteScore
+    const normRating = e.avgRating / 5.0
+    const combined_score = normVotes * 0.75 + normRating * 0.25
+    return {
+      id: e.id,
+      name: e.name,
+      circle_member_votes: e.circle_member_votes,
+      general_public_votes: e.general_public_votes,
+      weighted_score: e.weighted_score,
+      combined_score: Math.round(combined_score * 1000) / 1000,
+      credits_contributed: e.credits_contributed,
+      songs: e.songs,
     }
   })
 

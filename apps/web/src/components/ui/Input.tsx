@@ -21,14 +21,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-zinc-300 mb-1.5"
+          className="block text-sm font-medium text-stone-300 mb-1.5"
         >
           {label}
         </label>
 
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-600 pointer-events-none">
               {icon}
             </div>
           )}
@@ -39,29 +39,29 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={describedBy}
             aria-invalid={error ? 'true' : undefined}
             className={clsx(
-              'block w-full rounded-xl border bg-zinc-900 text-white text-sm placeholder-zinc-500',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-pink-500',
+              'block w-full rounded-xl border bg-stone-900 text-white text-sm placeholder-stone-500',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-amber-500',
               'transition-colors duration-150',
               icon ? 'pl-10 pr-4 py-3' : 'px-4 py-3',
               trailingIcon ? 'pr-10' : '',
               error
                 ? 'border-red-400 focus-visible:ring-red-400'
-                : 'border-zinc-700 focus-visible:border-pink-600',
-              'disabled:bg-zinc-950 disabled:text-zinc-500 disabled:cursor-not-allowed',
+                : 'border-stone-700 focus-visible:border-amber-600',
+              'disabled:bg-stone-950 disabled:text-stone-500 disabled:cursor-not-allowed',
               className
             )}
             {...props}
           />
 
           {trailingIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-600">
               {trailingIcon}
             </div>
           )}
         </div>
 
         {hint && !error && (
-          <p id={hintId} className="mt-1.5 text-xs text-zinc-500">
+          <p id={hintId} className="mt-1.5 text-xs text-stone-500">
             {hint}
           </p>
         )}

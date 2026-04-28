@@ -113,20 +113,20 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
     <div className="text-center">
       {/* Animated envelope */}
       <div
-        className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-pink-900/30 mb-6 animate-envelope-float"
+        className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-900/30 mb-6 animate-envelope-float"
         aria-hidden="true"
       >
-        <Mail className="w-10 h-10 text-pink-400" />
+        <Mail className="w-10 h-10 text-amber-400" />
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2">Check your inbox</h2>
-      <p className="text-zinc-400 mb-2">
+      <p className="text-stone-400 mb-2">
         We sent a verification link to:
       </p>
       <p className="text-white font-semibold mb-6 break-all">{email}</p>
 
-      <div className="bg-pink-950/20 border border-pink-800 rounded-xl p-4 mb-6 text-left">
-        <p className="text-sm text-pink-200">
+      <div className="bg-amber-950/20 border border-amber-800 rounded-xl p-4 mb-6 text-left">
+        <p className="text-sm text-amber-200">
           <span className="font-medium">Next step:</span> Open the email and click the link
           to verify your address. This page will update automatically.
         </p>
@@ -183,7 +183,7 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
             )}
           </Button>
         ) : (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-stone-500">
             Maximum resends reached. Check your spam folder.
           </p>
         )}
@@ -191,14 +191,14 @@ export default function Step2Verify({ email, onVerified, onChangeEmail }: Step2P
         <button
           type="button"
           onClick={onChangeEmail}
-          className="w-full text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors py-2"
+          className="w-full text-sm text-amber-400 hover:text-amber-300 font-medium transition-colors py-2"
         >
           Change email address
         </button>
       </div>
 
       {/* Spam note */}
-      <p className="mt-4 text-xs text-zinc-600">
+      <p className="mt-4 text-xs text-stone-600">
         Can&apos;t find it? Check your spam or junk folder.
       </p>
     </div>

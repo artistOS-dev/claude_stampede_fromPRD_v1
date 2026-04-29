@@ -75,7 +75,7 @@ export async function GET(
 
   // Accumulate Borda points per song
   const songBorda = new Map<string, { score: number; ranker_count: number }>()
-  for (const [, voterRanks] of byVoter) {
+  for (const [, voterRanks] of Array.from(byVoter.entries())) {
     const K = voterRanks.length
     for (const { song_id, rank } of voterRanks) {
       const cur = songBorda.get(song_id) ?? { score: 0, ranker_count: 0 }

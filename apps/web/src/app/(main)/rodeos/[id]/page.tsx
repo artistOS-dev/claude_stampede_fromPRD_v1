@@ -13,10 +13,10 @@ import {
   Star,
   CheckCircle2,
   Lock,
-  Loader2,
-  AlertCircle,
   ChevronRight,
   GripVertical,
+  ListOrdered,
+  Loader2,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -102,12 +102,6 @@ interface RodeoDetail {
   rodeo_results: RodeoResult | null
 }
 
-interface MyVote {
-  song_id: string
-  target_entry_id: string
-  voter_type: string
-}
-
 // ── Constants ─────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
@@ -120,7 +114,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string; la
 const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   pending: { dot: 'bg-yellow-400',              label: 'Pending' },
   open:    { dot: 'bg-teal-400',                label: 'Open' },
-  voting:  { dot: 'bg-green-400 animate-pulse', label: 'Voting Live' },
+  voting:  { dot: 'bg-green-400 animate-pulse', label: 'Ranking Live' },
   closed:  { dot: 'bg-stone-500',                label: 'Closed' },
   archived:{ dot: 'bg-stone-600',                label: 'Archived' },
 }
@@ -166,17 +160,11 @@ export default function RodeoDetailPage() {
   const router = useRouter()
 
   const [rodeo, setRodeo] = useState<RodeoDetail | null>(null)
-  const [myVotes, setMyVotes] = useState<MyVote[]>([])
-  const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
 
-  // Per-entry song order (drag-to-reorder, keyed by entry id)
+  // Per-entry song order (drag-to-reorder during open phase)
   const [songOrders, setSongOrders] = useState<Record<string, EntrySong[]>>({})
-
-  // Per-song voting state { [song_id]: 'idle' | 'voting' | 'voted' | 'error' }
-  const [voteStates, setVoteStates] = useState<Record<string, 'idle' | 'voting' | 'voted' | 'error'>>({})
-  const [voteError, setVoteError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -186,8 +174,6 @@ export default function RodeoDetailPage() {
       if (!res.ok) throw new Error('Failed to fetch')
       const json = await res.json()
       setRodeo(json.rodeo)
-      setMyVotes(json.myVotes ?? [])
-      setIsSubscribed(json.isSubscribed ?? false)
 
       // Initialise per-entry song order from API data
       const orders: Record<string, EntrySong[]> = {}
@@ -195,13 +181,6 @@ export default function RodeoDetailPage() {
         orders[entry.id] = [...(entry.rodeo_entry_songs ?? [])]
       }
       setSongOrders(orders)
-
-      // Pre-populate voteStates with already-cast votes
-      const initial: Record<string, 'idle' | 'voting' | 'voted' | 'error'> = {}
-      for (const v of (json.myVotes ?? []) as MyVote[]) {
-        initial[v.song_id] = 'voted'
-      }
-      setVoteStates(initial)
     } catch {
       setFetchError('Could not load rodeo details.')
     } finally {
@@ -210,30 +189,6 @@ export default function RodeoDetailPage() {
   }, [id])
 
   useEffect(() => { load() }, [load])
-
-  const castVote = useCallback(async (song_id: string, target_entry_id: string) => {
-    setVoteError(null)
-    setVoteStates((prev) => ({ ...prev, [song_id]: 'voting' }))
-    try {
-      const res = await fetch(`/api/rodeos/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ song_id, target_entry_id }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setVoteStates((prev) => ({ ...prev, [song_id]: 'error' }))
-        setVoteError(json.error ?? 'Vote failed')
-        return
-      }
-      setVoteStates((prev) => ({ ...prev, [song_id]: 'voted' }))
-      // Refresh tallies without full reload
-      load()
-    } catch {
-      setVoteStates((prev) => ({ ...prev, [song_id]: 'error' }))
-      setVoteError('Network error. Please try again.')
-    }
-  }, [id, load])
 
   const reorderSongs = useCallback((entryId: string, fromIndex: number, toIndex: number) => {
     setSongOrders((prev) => {
@@ -369,8 +324,8 @@ export default function RodeoDetailPage() {
                   onClick={() => router.push(`/rodeos/${rodeo.id}/vote`)}
                   className="ml-auto flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
                 >
-                  <span className="w-2 h-2 rounded-full bg-stone-900 animate-pulse" />
-                  Vote Now
+                  <ListOrdered className="w-4 h-4" />
+                  Rank Songs
                 </button>
               )}
               {isFinished && (
@@ -414,7 +369,7 @@ export default function RodeoDetailPage() {
                   )
                 })}
                 <div className="text-[10px] text-stone-600 text-right">
-                  based on votes
+                  based on rankings
                 </div>
               </div>
             )}
@@ -429,22 +384,7 @@ export default function RodeoDetailPage() {
         )}
       </div>
 
-      {/* ── Vote error banner ───────────────────────────────── */}
-      {voteError && (
-        <div className="flex items-center gap-3 bg-red-950/30 border border-red-800 rounded-xl p-4 text-sm text-red-400">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          {voteError}
-          <button
-            type="button"
-            className="ml-auto text-xs underline"
-            onClick={() => setVoteError(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* ── Vote tallies (show when voting or finished) ─────── */}
+      {/* ── Ranking tallies (show when voting or finished) ─────── */}
       {(isVoting || isFinished) && result && (
         <VoteTallies
           total={result.general_public_votes}
@@ -468,27 +408,17 @@ export default function RodeoDetailPage() {
         {(isVoting || isFinished) && (
           <CombinedSongsCard
             entries={entries}
-            isVoting={isVoting}
-            isSubscribed={isSubscribed}
-            myVotes={myVotes}
-            voteStates={voteStates}
             songScores={songScores}
             songOrders={songOrders}
-            onVote={castVote}
           />
         )}
         {!isVoting && !isFinished && entries.map((entry: Entry) => (
           <EntrySongsCard
             key={entry.id}
             entry={entry}
-            isVoting={false}
-            isSubscribed={isSubscribed}
-            myVotes={myVotes}
-            voteStates={voteStates}
-            songScores={songScores}
             isFinished={false}
+            songScores={songScores}
             songOrders={songOrders}
-            onVote={castVote}
             onReorder={reorderSongs}
           />
         ))}
@@ -623,25 +553,15 @@ function VoteTallies({
 
 function EntrySongsCard({
   entry,
-  isVoting,
-  isSubscribed,
-  myVotes,
-  voteStates,
-  songScores,
   isFinished,
+  songScores,
   songOrders,
-  onVote,
   onReorder,
 }: {
   entry: Entry
-  isVoting: boolean
-  isSubscribed: boolean
-  myVotes: MyVote[]
-  voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
-  songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
   isFinished: boolean
+  songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
   songOrders: Record<string, EntrySong[]>
-  onVote: (song_id: string, entry_id: string) => void
   onReorder: (entryId: string, fromIndex: number, toIndex: number) => void
 }) {
   const name = entryDisplayName(entry)
@@ -741,8 +661,6 @@ function EntrySongsCard({
         >
           {songs.map((es, index) => {
             const song       = es.circle_songs
-            const voteState  = voteStates[es.song_id] ?? 'idle'
-            const hasVoted   = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
             const songResult = songScores.get(es.song_id)
             const isThis     = dragIndex === index
             const shift      = getShift(index)
@@ -815,20 +733,11 @@ function EntrySongsCard({
                   {/* Song score (finished) */}
                   {isFinished && songResult && (
                     <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
-                      {songResult.total_votes} votes · {songResult.weighted_score.toFixed(1)} pts
+                      {songResult.total_votes} ranker{songResult.total_votes !== 1 ? 's' : ''} · {songResult.weighted_score.toFixed(0)} pts
                     </div>
                   )}
                 </div>
 
-                {/* Vote button */}
-                {isVoting && (
-                  <VoteButton
-                    state={voteState}
-                    isSubscribed={isSubscribed}
-                    hasVoted={hasVoted}
-                    onClick={() => onVote(es.song_id, entry.id)}
-                  />
-                )}
               </li>
             )
           })}
@@ -868,22 +777,12 @@ type SongWithMeta = EntrySong & { entryName: string; entryIdx: number; entryId: 
 
 function CombinedSongsCard({
   entries,
-  isVoting,
-  isSubscribed,
-  myVotes,
-  voteStates,
   songScores,
   songOrders,
-  onVote,
 }: {
   entries: Entry[]
-  isVoting: boolean
-  isSubscribed: boolean
-  myVotes: MyVote[]
-  voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
   songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
   songOrders: Record<string, EntrySong[]>
-  onVote: (song_id: string, entry_id: string) => void
 }) {
   // Interleave: e0[0], e1[0], e0[1], e1[1], …
   const combined: SongWithMeta[] = []
@@ -912,8 +811,6 @@ function CombinedSongsCard({
       <ul className="flex flex-col divide-y divide-stone-800">
         {combined.map((es) => {
           const song       = es.circle_songs
-          const voteState  = voteStates[es.song_id] ?? 'idle'
-          const hasVoted   = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
           const songResult = songScores.get(es.song_id)
           const color      = COMBINED_COLORS[es.entryIdx % COMBINED_COLORS.length]
 
@@ -938,25 +835,14 @@ function CombinedSongsCard({
                     </span>
                   </div>
                 </div>
-
-                {isVoting && (
-                  <div className="shrink-0">
-                    <VoteButton
-                      state={voteState}
-                      isSubscribed={isSubscribed}
-                      hasVoted={hasVoted}
-                      onClick={() => onVote(es.song_id, es.entryId)}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Per-song score bar */}
               {songResult && (
                 <div className="space-y-1 pt-0.5">
                   <div className="flex items-center justify-between text-xs text-stone-600">
-                    <span>{songResult.total_votes} votes</span>
-                    <span className="tabular-nums font-medium text-stone-400">{songResult.weighted_score.toFixed(1)} pts</span>
+                    <span>{songResult.total_votes} ranker{songResult.total_votes !== 1 ? 's' : ''}</span>
+                    <span className="tabular-nums font-medium text-stone-400">{songResult.weighted_score.toFixed(0)} pts</span>
                   </div>
                   <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
                     <div
@@ -972,63 +858,6 @@ function CombinedSongsCard({
         })}
       </ul>
     </div>
-  )
-}
-
-// ── VoteButton ────────────────────────────────────────────────
-
-function VoteButton({
-  state,
-  isSubscribed,
-  hasVoted,
-  onClick,
-}: {
-  state: 'idle' | 'voting' | 'voted' | 'error'
-  isSubscribed: boolean
-  hasVoted: boolean
-  onClick: () => void
-}) {
-  if (!isSubscribed) {
-    return (
-      <button
-        type="button"
-        disabled
-        title="A paid subscription is required to vote"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-600 cursor-not-allowed"
-      >
-        <Lock className="w-3 h-3" />
-        Vote
-      </button>
-    )
-  }
-
-  if (hasVoted || state === 'voted') {
-    return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-900/30 text-green-400">
-        <CheckCircle2 className="w-3.5 h-3.5" />
-        Voted
-      </div>
-    )
-  }
-
-  if (state === 'voting') {
-    return (
-      <button type="button" disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-400">
-        <Loader2 className="w-3 h-3 animate-spin" />
-        Voting…
-      </button>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all"
-    >
-      <Star className="w-3 h-3" />
-      Vote
-    </button>
   )
 }
 

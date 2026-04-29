@@ -10,7 +10,8 @@ import {
   Loader2,
   AlertCircle,
   Music,
-  GripVertical,
+  ChevronUp,
+  ChevronDown,
   Plus,
   X,
   Zap,
@@ -152,11 +153,20 @@ export default function VotingPage() {
     setRankedIds((prev) => prev.filter((id) => id !== song_id))
   }, [])
 
-  const reorder = useCallback((fromIdx: number, toIdx: number) => {
+  const moveUp = useCallback((idx: number) => {
+    if (idx === 0) return
     setRankedIds((prev) => {
       const next = [...prev]
-      const [moved] = next.splice(fromIdx, 1)
-      next.splice(toIdx, 0, moved)
+      ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+      return next
+    })
+  }, [])
+
+  const moveDown = useCallback((idx: number) => {
+    setRankedIds((prev) => {
+      if (idx >= prev.length - 1) return prev
+      const next = [...prev]
+      ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
       return next
     })
   }, [])
@@ -258,7 +268,7 @@ export default function VotingPage() {
           )}
         </div>
         <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
-          Drag songs into your preferred order. Rank 1 carries the most weight.
+          Use the arrow buttons to move songs up or down. Rank 1 carries the most weight.
           You can rank all songs or just your favourites — submit when ready.
         </p>
       </div>
@@ -270,7 +280,7 @@ export default function VotingPage() {
       {submitted && canRank && (
         <div className="flex items-center gap-3 bg-green-950/30 border border-green-800 rounded-xl px-4 py-3 text-sm text-green-400">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>Ranking submitted — drag to update, then resubmit anytime.</span>
+          <span>Ranking submitted — reorder and resubmit anytime.</span>
         </div>
       )}
 
@@ -306,7 +316,8 @@ export default function VotingPage() {
             songs={rankedSongs}
             canRank={canRank}
             onRemove={removeFromRanking}
-            onReorder={reorder}
+            onMoveUp={moveUp}
+            onMoveDown={moveDown}
           />
         )}
       </div>
@@ -421,126 +432,69 @@ function SubscriptionGate() {
 }
 
 // ── RankingList ───────────────────────────────────────────────
-// Drag-to-reorder list of songs in the voter's ballot.
+// Up/down arrow reorder list of songs in the voter's ballot.
 
 function RankingList({
   songs,
   canRank,
   onRemove,
-  onReorder,
+  onMoveUp,
+  onMoveDown,
 }: {
   songs: (SongTally & { entryIdx: number; entryName: string })[]
   canRank: boolean
   onRemove: (song_id: string) => void
-  onReorder: (fromIdx: number, toIdx: number) => void
+  onMoveUp: (idx: number) => void
+  onMoveDown: (idx: number) => void
 }) {
-  const [dragIndex, setDragIndex]   = useState<number | null>(null)
-  const [dropIndex, setDropIndex]   = useState<number | null>(null)
-  const [dragOffset, setDragOffset] = useState(0)
-  const listRef    = useRef<HTMLUListElement>(null)
-  const dragStartY = useRef(0)
-  const itemHeights = useRef<number[]>([])
-
-  const startDrag = (e: React.PointerEvent<HTMLButtonElement>, index: number) => {
-    e.preventDefault()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    dragStartY.current = e.clientY
-    if (listRef.current) {
-      itemHeights.current = Array.from(listRef.current.children).map(
-        (c) => (c as HTMLElement).offsetHeight
-      )
-    }
-    setDragIndex(index)
-    setDropIndex(index)
-    setDragOffset(0)
-  }
-
-  const moveDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (dragIndex === null) return
-    setDragOffset(e.clientY - dragStartY.current)
-    if (!listRef.current) return
-    const items = Array.from(listRef.current.children) as HTMLElement[]
-    let newDrop = songs.length - 1
-    for (let i = 0; i < items.length; i++) {
-      const rect = items[i].getBoundingClientRect()
-      if (e.clientY < rect.top + rect.height / 2) { newDrop = i; break }
-    }
-    if (newDrop !== dropIndex) setDropIndex(newDrop)
-  }
-
-  const endDrag = () => {
-    if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
-      onReorder(dragIndex, dropIndex)
-    }
-    setDragIndex(null)
-    setDropIndex(null)
-    setDragOffset(0)
-  }
-
-  const getShift = (index: number): number => {
-    if (dragIndex === null || dropIndex === null || index === dragIndex) return 0
-    const h = itemHeights.current[dragIndex] ?? 68
-    if (dragIndex < dropIndex && index > dragIndex && index <= dropIndex) return -h
-    if (dragIndex > dropIndex && index >= dropIndex && index < dragIndex) return h
-    return 0
-  }
-
-  const isDragging = dragIndex !== null
-
   return (
-    <ul
-      ref={listRef}
-      className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden flex flex-col gap-0"
-      style={{ userSelect: isDragging ? 'none' : 'auto' }}
-    >
+    <ul className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden flex flex-col">
       {songs.map((song, index) => {
-        const color      = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
-        const isThis     = dragIndex === index
-        const shift      = getShift(index)
-        const displayRank = isThis && dropIndex !== null ? dropIndex + 1 : index + 1
+        const color   = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
+        const rank    = index + 1
+        const isFirst = index === 0
+        const isLast  = index === songs.length - 1
 
         return (
           <li
             key={song.song_id}
-            style={{
-              transform: isThis
-                ? `translateY(${dragOffset}px) scale(1.02)`
-                : `translateY(${shift}px)`,
-              transition: isThis ? 'box-shadow 150ms' : 'transform 180ms cubic-bezier(0.2,0,0,1)',
-              zIndex: isThis ? 50 : 'auto',
-              position: 'relative',
-              boxShadow: isThis ? '0 16px 40px rgba(0,0,0,0.6)' : undefined,
-            }}
-            className={`flex items-center gap-3 px-3 py-3 border-b border-stone-800 last:border-b-0 transition-colors ${
-              isThis ? 'bg-stone-700' : 'bg-stone-900 hover:bg-stone-800/60'
-            }`}
+            className="flex items-center gap-3 px-3 py-3 border-b border-stone-800 last:border-b-0 bg-stone-900 hover:bg-stone-800/40 transition-colors"
           >
-            {/* Drag grip */}
+            {/* Up / down arrows */}
             {canRank ? (
-              <button
-                type="button"
-                className="touch-none cursor-grab active:cursor-grabbing shrink-0 p-1 rounded text-stone-600 hover:text-amber-400 transition-colors"
-                onPointerDown={(e) => startDrag(e, index)}
-                onPointerMove={moveDrag}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                title="Drag to reorder"
-              >
-                <GripVertical className="w-4 h-4" />
-              </button>
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button
+                  type="button"
+                  disabled={isFirst}
+                  onClick={() => onMoveUp(index)}
+                  className="p-0.5 rounded text-stone-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  title="Move up"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={isLast}
+                  onClick={() => onMoveDown(index)}
+                  className="p-0.5 rounded text-stone-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  title="Move down"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
-              <div className="w-6 shrink-0" />
+              <div className="w-5 shrink-0" />
             )}
 
             {/* Rank badge */}
             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
-              displayRank === 1
+              rank === 1
                 ? 'bg-amber-500 text-white'
-                : displayRank === 2
+                : rank === 2
                 ? 'bg-stone-600 text-stone-200'
                 : 'bg-stone-700 text-stone-500'
             }`}>
-              {displayRank}
+              {rank}
             </span>
 
             {/* Song icon */}
@@ -610,7 +564,7 @@ function LiveTallies({
           Live Tallies
         </h2>
         <span className="text-xs text-stone-600">
-          {totalRankers} voter{totalRankers !== 1 ? 's' : ''} · {totalBorda.toFixed(0)} pts total
+          {totalRankers} ranker{totalRankers !== 1 ? 's' : ''} · {totalBorda.toFixed(0)} pts total
         </span>
       </div>
 

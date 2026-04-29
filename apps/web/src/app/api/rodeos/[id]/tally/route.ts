@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // GET /api/rodeos/[id]/tally
-// Returns live per-entry and per-song vote tallies by reading rodeo_votes directly.
-// Polled by the voting screen every ~10 s for real-time feel.
+// Returns per-song and per-entry Borda scores computed from rodeo_rankings.
+// Borda count for subsets: a voter ranking K songs gives (K − rank + 1) points
+// to the song at position rank. Unranked songs receive 0 from that voter.
+// Polled by the ranking screen every ~12 s for live feel.
 
 export async function GET(
   _request: NextRequest,
@@ -13,18 +15,18 @@ export async function GET(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Fetch all votes for this rodeo
-  const { data: votes, error: votesErr } = await supabase
-    .from('rodeo_votes')
-    .select('song_id, target_entry_id, voter_type, weight')
+  // All ranking rows for this rodeo
+  const { data: rankings, error: rankErr } = await supabase
+    .from('rodeo_rankings')
+    .select('voter_id, song_id, rank')
     .eq('rodeo_id', params.id)
 
-  if (votesErr) {
-    console.error('tally votes error:', votesErr)
-    return NextResponse.json({ error: votesErr.message }, { status: 500 })
+  if (rankErr) {
+    console.error('tally rankings error:', rankErr)
+    return NextResponse.json({ error: rankErr.message }, { status: 500 })
   }
 
-  // Fetch entries with songs for this rodeo
+  // Entries with their songs
   const { data: entries, error: entriesErr } = await supabase
     .from('rodeo_entries')
     .select(`
@@ -44,31 +46,46 @@ export async function GET(
     return NextResponse.json({ error: entriesErr.message }, { status: 500 })
   }
 
-  // Fetch current user's votes for this rodeo
-  const { data: myVotesRaw } = await supabase
-    .from('rodeo_votes')
-    .select('song_id, target_entry_id, voter_type')
+  // Current user's ranking (ordered by rank ascending)
+  const { data: myRankingRaw } = await supabase
+    .from('rodeo_rankings')
+    .select('song_id, rank')
     .eq('rodeo_id', params.id)
     .eq('voter_id', user.id)
+    .order('rank', { ascending: true })
 
-  // Fetch user's profile (subscription + voter type context)
+  // Subscription check
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier')
     .eq('id', user.id)
     .single()
 
-  // ── Aggregate in memory ────────────────────────────────────
+  // ── Borda scoring ──────────────────────────────────────────────
 
-  interface EntryTally {
-    id: string
-    name: string
-    circle_member_votes: number
-    general_public_votes: number
-    weighted_score: number
-    credits_contributed: number
-    songs: SongTally[]
+  const allRankings = rankings ?? []
+
+  // Group by voter to know each ballot's size K
+  const byVoter = new Map<string, Array<{ song_id: string; rank: number }>>()
+  for (const r of allRankings) {
+    const list = byVoter.get(r.voter_id) ?? []
+    list.push({ song_id: r.song_id, rank: r.rank })
+    byVoter.set(r.voter_id, list)
   }
+
+  // Accumulate Borda points per song
+  const songBorda = new Map<string, { score: number; ranker_count: number }>()
+  for (const [, voterRanks] of byVoter) {
+    const K = voterRanks.length
+    for (const { song_id, rank } of voterRanks) {
+      const cur = songBorda.get(song_id) ?? { score: 0, ranker_count: 0 }
+      cur.score += K - rank + 1   // rank 1 → K pts, rank K → 1 pt
+      cur.ranker_count++
+      songBorda.set(song_id, cur)
+    }
+  }
+
+  // ── Build response ─────────────────────────────────────────────
 
   interface SongTally {
     song_id: string
@@ -77,22 +94,22 @@ export async function GET(
     artist: string
     label: string | null
     locked: boolean
-    circle_member_votes: number
-    general_public_votes: number
-    total_votes: number
-    weighted_score: number
+    borda_score: number
+    ranker_count: number
   }
 
-  const allVotes = votes ?? []
+  interface EntryTally {
+    id: string
+    name: string
+    borda_score: number
+    credits_contributed: number
+    songs: SongTally[]
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allEntries = (entries ?? []) as any[]
 
   const entryTallies: EntryTally[] = allEntries.map((entry) => {
-    const entryVotes = allVotes.filter((v) => v.target_entry_id === entry.id)
-    const circleMemberVotes = entryVotes.filter((v) => v.voter_type === 'circle_member').length
-    const generalPublicVotes = entryVotes.filter((v) => v.voter_type === 'general_public').length
-    const weightedScore = entryVotes.reduce((sum: number, v: { weight?: number }) => sum + (v.weight ?? 1), 0)
-
     const entrySongs = (entry.rodeo_entry_songs ?? []) as Array<{
       song_id: string
       label: string | null
@@ -101,11 +118,7 @@ export async function GET(
     }>
 
     const songs: SongTally[] = entrySongs.map((es) => {
-      const songVotes = allVotes.filter(
-        (v) => v.song_id === es.song_id && v.target_entry_id === entry.id
-      )
-      const sCM = songVotes.filter((v) => v.voter_type === 'circle_member').length
-      const sGP = songVotes.filter((v) => v.voter_type === 'general_public').length
+      const b = songBorda.get(es.song_id) ?? { score: 0, ranker_count: 0 }
       return {
         song_id: es.song_id,
         entry_id: entry.id,
@@ -113,33 +126,25 @@ export async function GET(
         artist: es.circle_songs?.artist ?? 'Unknown',
         label: es.label,
         locked: es.locked,
-        circle_member_votes: sCM,
-        general_public_votes: sGP,
-        total_votes: sCM + sGP,
-        weighted_score: songVotes.reduce((sum: number, v: { weight?: number }) => sum + (v.weight ?? 1), 0),
+        borda_score: b.score,
+        ranker_count: b.ranker_count,
       }
     })
 
     return {
       id: entry.id,
       name: entry.circles?.name ?? entry.profiles?.display_name ?? 'Unknown',
-      circle_member_votes: circleMemberVotes,
-      general_public_votes: generalPublicVotes,
-      weighted_score: weightedScore,
+      borda_score: songs.reduce((s, sg) => s + sg.borda_score, 0),
       credits_contributed: entry.credits_contributed ?? 0,
       songs,
     }
   })
 
-  const totalWeighted = entryTallies.reduce((s, e) => s + e.weighted_score, 0)
-
   return NextResponse.json({
     entries: entryTallies,
-    total_weighted: totalWeighted,
-    total_votes: allVotes.length,
-    my_votes: (myVotesRaw ?? []).map((v) => v.song_id),
+    total_borda: entryTallies.reduce((s, e) => s + e.borda_score, 0),
+    total_rankers: byVoter.size,
+    my_ranking: (myRankingRaw ?? []).map((r) => r.song_id),
     is_subscribed: profile?.subscription_tier !== 'free',
-    granted_credits: profile?.subscription_tier === 'free' ? 0 : 50,
-    voter_type: myVotesRaw?.[0]?.voter_type ?? null,
   })
 }

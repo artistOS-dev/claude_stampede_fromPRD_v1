@@ -280,10 +280,6 @@ export default function RodeoDetailPage() {
   const result      = rodeo.rodeo_results
   const entries     = (rodeo.rodeo_entries ?? []).filter((e) => e.status !== 'withdrawn')
 
-  const totalVotes  = result
-    ? (result.circle_member_votes ?? 0) + (result.general_public_votes ?? 0)
-    : 0
-
   // Build song→score lookup for finished/voting rodeos
   const songScores = new Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>()
   if (result?.rodeo_song_results) {
@@ -451,9 +447,7 @@ export default function RodeoDetailPage() {
       {/* ── Vote tallies (show when voting or finished) ─────── */}
       {(isVoting || isFinished) && result && (
         <VoteTallies
-          circleMemberVotes={result.circle_member_votes}
-          generalPublicVotes={result.general_public_votes}
-          total={totalVotes}
+          total={result.general_public_votes}
           entries={entries}
           songScores={songScores}
         />
@@ -572,19 +566,14 @@ function EntryChip({ entry, isWinner, isLeading }: { entry: Entry; isWinner: boo
 // ── VoteTallies ───────────────────────────────────────────────
 
 function VoteTallies({
-  circleMemberVotes,
-  generalPublicVotes,
   total,
   entries,
   songScores,
 }: {
-  circleMemberVotes: number
-  generalPublicVotes: number
   total: number
   entries: Entry[]
   songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
 }) {
-  // Build per-entry vote totals from song results
   const entryTotals = new Map<string, number>()
   entries.forEach((e) => {
     let sum = 0
@@ -600,26 +589,11 @@ function VoteTallies({
     <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-4">
       <h2 className="font-bold text-white flex items-center gap-2">
         <Flame className="w-5 h-5 text-amber-400" />
-        Live Vote Tallies
+        Ranking Tallies
       </h2>
 
-      {/* Voter breakdown */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-amber-950/30 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-amber-400">{circleMemberVotes}</div>
-          <div className="text-xs text-amber-400 mt-0.5">Circle Member Votes</div>
-          <div className="text-xs text-amber-400">(2× weighted)</div>
-        </div>
-        <div className="bg-teal-950/30 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-teal-400">{generalPublicVotes}</div>
-          <div className="text-xs text-teal-400 mt-0.5">General Public Votes</div>
-          <div className="text-xs text-teal-400">(1× weighted)</div>
-        </div>
-      </div>
-
-      {/* Per-entry score bars */}
       {entries.length > 0 && (
-        <div className="space-y-3 pt-1">
+        <div className="space-y-3">
           {entries.map((e) => {
             const score = entryTotals.get(e.id) ?? 0
             const pct = maxScore > 0 ? (score / maxScore) * 100 : 0
@@ -627,7 +601,7 @@ function VoteTallies({
               <div key={e.id}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="font-medium text-stone-300 truncate">{entryDisplayName(e)}</span>
-                  <span className="font-bold text-white tabular-nums ml-2">{score.toFixed(1)}</span>
+                  <span className="font-bold text-white tabular-nums ml-2">{score.toFixed(0)} pts</span>
                 </div>
                 <div className="h-2 bg-stone-800 rounded-full overflow-hidden">
                   <div
@@ -638,7 +612,7 @@ function VoteTallies({
               </div>
             )
           })}
-          <div className="text-xs text-stone-600 text-right">{total} total votes</div>
+          <div className="text-xs text-stone-600 text-right">{total} ranker{total !== 1 ? 's' : ''}</div>
         </div>
       )}
     </div>

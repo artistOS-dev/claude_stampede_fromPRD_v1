@@ -5,17 +5,17 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   Timer,
-  Star,
   CheckCircle2,
   Lock,
   Loader2,
   AlertCircle,
-  Coins,
-  Zap,
-  Users,
   Music,
+  GripVertical,
+  Plus,
+  X,
+  Zap,
   Crown,
-  ChevronRight,
+  Send,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -27,30 +27,24 @@ interface SongTally {
   artist: string
   label: 'studio' | 'live' | null
   locked: boolean
-  circle_member_votes: number
-  general_public_votes: number
-  total_votes: number
-  weighted_score: number
+  borda_score: number
+  ranker_count: number
 }
 
 interface EntryTally {
   id: string
   name: string
-  circle_member_votes: number
-  general_public_votes: number
-  weighted_score: number
+  borda_score: number
   credits_contributed: number
   songs: SongTally[]
 }
 
 interface TallyData {
   entries: EntryTally[]
-  total_weighted: number
-  total_votes: number
-  my_votes: string[]   // song_ids the current user has voted on
+  total_borda: number
+  total_rankers: number
+  my_ranking: string[]
   is_subscribed: boolean
-  granted_credits: number
-  voter_type: 'circle_member' | 'general_public' | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -68,11 +62,6 @@ function getCountdown(endDate: string | null): string | null {
   return `${mins}m ${secs}s`
 }
 
-function pct(part: number, total: number): number {
-  if (total === 0) return 50
-  return Math.round((part / total) * 100)
-}
-
 // ── Loading skeleton ──────────────────────────────────────────
 
 function LoadingSkeleton() {
@@ -80,35 +69,56 @@ function LoadingSkeleton() {
     <div className="max-w-2xl mx-auto space-y-6 animate-pulse">
       <div className="h-8 w-40 bg-stone-700 rounded" />
       <div className="h-32 bg-stone-700 rounded-2xl" />
-      <div className="h-24 bg-stone-700 rounded-2xl" />
-      {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-stone-700 rounded-2xl" />)}
+      {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 bg-stone-700 rounded-2xl" />)}
     </div>
   )
 }
+
+// ── Palette for circle colour coding ─────────────────────────
+
+const ENTRY_COLORS = [
+  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
+  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
+]
 
 // ── Main page ─────────────────────────────────────────────────
 
 export default function VotingPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
+  const router  = useRouter()
 
-  // Rodeo metadata (title, end_date, status) fetched from detail endpoint
-  const [meta, setMeta] = useState<{ title: string; end_date: string | null; status: string } | null>(null)
-  // Live tally data, polled
-  const [tally, setTally] = useState<TallyData | null>(null)
+  const [meta, setMeta]           = useState<{ title: string; end_date: string | null; status: string } | null>(null)
+  const [tally, setTally]         = useState<TallyData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  // Optimistic voted set (song_ids)
-  const [voted, setVoted] = useState<Set<string>>(new Set())
-  // Per-song vote state
-  const [voteStates, setVoteStates] = useState<Record<string, 'idle' | 'pending' | 'done' | 'error'>>({})
-  const [voteError, setVoteError] = useState<string | null>(null)
-  // Countdown ticker
   const [countdown, setCountdown] = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── Fetch rodeo meta (once) ──────────────────────────────
+  // Local ranking state — ordered song_ids in the voter's current ballot
+  const [rankedIds, setRankedIds] = useState<string[]>([])
+  // Whether the voter has submitted at least once this session
+  const [submitted, setSubmitted]       = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError]   = useState<string | null>(null)
+
+  const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const initialised  = useRef(false)
+
+  // ── Load tally ───────────────────────────────────────────
+
+  const loadTally = useCallback(async () => {
+    const res = await fetch(`/api/rodeos/${id}/tally`)
+    if (!res.ok) return
+    const json: TallyData = await res.json()
+    setTally(json)
+    // Only seed rankedIds from server on first load
+    if (!initialised.current) {
+      setRankedIds(json.my_ranking ?? [])
+      if ((json.my_ranking ?? []).length > 0) setSubmitted(true)
+      initialised.current = true
+    }
+    setIsLoading(false)
+  }, [id])
 
   const loadMeta = useCallback(async () => {
     const res = await fetch(`/api/rodeos/${id}`)
@@ -117,28 +127,12 @@ export default function VotingPage() {
     setMeta({ title: json.rodeo?.title, end_date: json.rodeo?.end_date, status: json.rodeo?.status })
   }, [id])
 
-  // ── Fetch / poll tally ───────────────────────────────────
-
-  const loadTally = useCallback(async () => {
-    const res = await fetch(`/api/rodeos/${id}/tally`)
-    if (!res.ok) return
-    const json: TallyData = await res.json()
-    setTally(json)
-    setVoted(new Set(json.my_votes))
-    setIsLoading(false)
-  }, [id])
-
   useEffect(() => {
     setIsLoading(true)
     Promise.all([loadMeta(), loadTally()])
-    // Poll every 12 s while page is visible
     pollRef.current = setInterval(loadTally, 12_000)
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [loadMeta, loadTally])
-
-  // ── Countdown ticker ─────────────────────────────────────
 
   useEffect(() => {
     if (!meta?.end_date) return
@@ -148,34 +142,49 @@ export default function VotingPage() {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
   }, [meta?.end_date])
 
-  // ── Cast vote ────────────────────────────────────────────
+  // ── Ranking mutations ────────────────────────────────────
 
-  const castVote = useCallback(async (song_id: string, entry_id: string) => {
-    if (voted.has(song_id)) return
-    setVoteError(null)
-    setVoteStates((p) => ({ ...p, [song_id]: 'pending' }))
-    // Optimistic update
-    setVoted((p) => new Set(p).add(song_id))
+  const addToRanking = useCallback((song_id: string) => {
+    setRankedIds((prev) => prev.includes(song_id) ? prev : [...prev, song_id])
+  }, [])
 
-    const res = await fetch(`/api/rodeos/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ song_id, target_entry_id: entry_id }),
+  const removeFromRanking = useCallback((song_id: string) => {
+    setRankedIds((prev) => prev.filter((id) => id !== song_id))
+  }, [])
+
+  const reorder = useCallback((fromIdx: number, toIdx: number) => {
+    setRankedIds((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, moved)
+      return next
     })
-    const json = await res.json()
+  }, [])
 
-    if (!res.ok) {
-      // Rollback
-      setVoted((p) => { const s = new Set(p); s.delete(song_id); return s })
-      setVoteStates((p) => ({ ...p, [song_id]: 'error' }))
-      setVoteError(json.error ?? 'Vote failed — please try again.')
-      return
+  // ── Submit ranking ───────────────────────────────────────
+
+  const submitRanking = useCallback(async () => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const res = await fetch(`/api/rodeos/${id}/rank`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ song_ids: rankedIds }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setSubmitError(json.error ?? 'Failed to submit ranking.')
+        return
+      }
+      setSubmitted(true)
+      loadTally()
+    } catch {
+      setSubmitError('Network error — please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setVoteStates((p) => ({ ...p, [song_id]: 'done' }))
-    // Refresh tally immediately after voting
-    loadTally()
-  }, [id, voted, loadTally])
+  }, [id, rankedIds, loadTally])
 
   // ── Render ───────────────────────────────────────────────
 
@@ -192,136 +201,176 @@ export default function VotingPage() {
     )
   }
 
-  const isOpen    = meta?.status === 'voting'
-  const entries   = tally.entries
-  const totalW    = tally.total_weighted
-  // Determine leading entry (highest weighted score)
-  const sorted    = [...entries].sort((a, b) => b.weighted_score - a.weighted_score)
-  const leader    = sorted[0]
-  const trailer   = sorted[1]
-  const leaderPct = leader && totalW > 0 ? pct(leader.weighted_score, totalW) : 50
-  // All songs across all entries, paired with their entry
-  const allSongs  = entries.flatMap((e) => e.songs.map((s) => ({ ...s, entryName: e.name })))
-  const votedCount  = allSongs.filter((s) => voted.has(s.song_id)).length
+  const isOpen   = meta?.status === 'voting'
+  const canRank  = tally.is_subscribed && isOpen
+
+  // Build a flat song map for quick lookup
+  const songMap  = new Map<string, SongTally & { entryIdx: number; entryName: string }>()
+  tally.entries.forEach((entry, idx) => {
+    entry.songs.forEach((song) => {
+      songMap.set(song.song_id, { ...song, entryIdx: idx, entryName: entry.name })
+    })
+  })
+
+  // Interleaved full song list (the canonical display order)
+  const allSongs: (SongTally & { entryIdx: number; entryName: string })[] = []
+  const maxLen = Math.max(...tally.entries.map((e) => e.songs.length), 0)
+  for (let i = 0; i < maxLen; i++) {
+    for (let j = 0; j < tally.entries.length; j++) {
+      const song = tally.entries[j].songs[i]
+      if (song) allSongs.push({ ...song, entryIdx: j, entryName: tally.entries[j].name })
+    }
+  }
+
+  const rankedSet   = new Set(rankedIds)
+  const unranked    = allSongs.filter((s) => !rankedSet.has(s.song_id))
+  const rankedSongs = rankedIds.map((id) => songMap.get(id)).filter(Boolean) as (SongTally & { entryIdx: number; entryName: string })[]
+
+  const sorted   = [...tally.entries].sort((a, b) => b.borda_score - a.borda_score)
+  const totalB   = tally.total_borda
+  const leader   = sorted[0]
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-16">
+    <div className="max-w-2xl mx-auto space-y-5 pb-20">
 
       {/* Back */}
       <BackButton onClick={() => router.push(`/rodeos/${id}`)} label="Back to Rodeo" />
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 rounded-2xl p-6 text-amber-100 shadow-lg border border-amber-800/40">
+      <div className="bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 rounded-2xl p-6 border border-amber-800/40 shadow-lg">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-300 animate-pulse' : 'bg-stone-500'}`} />
               <span className="text-xs font-medium text-amber-200/80 uppercase tracking-wide">
-                {isOpen ? 'Voting Live' : 'Voting Closed'}
+                {isOpen ? 'Ranking Live' : 'Ranking Closed'}
               </span>
             </div>
-            <h1 className="text-xl font-bold font-display leading-tight text-amber-100">{meta?.title ?? 'Rodeo'}</h1>
+            <h1 className="text-xl font-bold font-display leading-tight text-amber-100">
+              {meta?.title ?? 'Rodeo'}
+            </h1>
           </div>
           {countdown && isOpen && (
-            <div className="flex items-center gap-2 bg-stone-900/20 backdrop-blur rounded-xl px-4 py-2 shrink-0">
-              <Timer className="w-4 h-4" />
-              <span className="text-sm font-bold tabular-nums">{countdown}</span>
+            <div className="flex items-center gap-2 bg-stone-900/30 backdrop-blur rounded-xl px-4 py-2 shrink-0">
+              <Timer className="w-4 h-4 text-amber-200" />
+              <span className="text-sm font-bold tabular-nums text-amber-100">{countdown}</span>
             </div>
           )}
         </div>
-
-        {/* Vote progress */}
-        <div className="mt-4 text-xs text-white/70">
-          {votedCount} / {allSongs.length} songs voted
-        </div>
-        <div className="mt-1.5 h-1.5 bg-stone-900/20 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-stone-900 rounded-full transition-all duration-500"
-            style={{ width: allSongs.length ? `${(votedCount / allSongs.length) * 100}%` : '0%' }}
-          />
-        </div>
+        <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
+          Drag songs into your preferred order. Rank 1 carries the most weight.
+          You can rank all songs or just your favourites — submit when ready.
+        </p>
       </div>
 
       {/* ── Subscription gate ───────────────────────────────── */}
-      {!tally.is_subscribed && (
-        <SubscriptionGate />
+      {!tally.is_subscribed && <SubscriptionGate />}
+
+      {/* ── Submitted banner ────────────────────────────────── */}
+      {submitted && canRank && (
+        <div className="flex items-center gap-3 bg-green-950/30 border border-green-800 rounded-xl px-4 py-3 text-sm text-green-400">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>Ranking submitted — drag to update, then resubmit anytime.</span>
+        </div>
       )}
 
-      {/* ── Granted credits banner (general public) ─────────── */}
-      {tally.is_subscribed && tally.voter_type !== 'circle_member' && (
-        <GrantedCreditsBanner credits={tally.granted_credits} />
+      {/* ── Submit error ─────────────────────────────────────── */}
+      {submitError && (
+        <div className="flex items-center gap-3 bg-red-950/30 border border-red-800 rounded-xl px-4 py-3 text-sm text-red-400">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {submitError}
+          <button type="button" className="ml-auto text-xs underline" onClick={() => setSubmitError(null)}>
+            Dismiss
+          </button>
+        </div>
       )}
 
-      {/* Circle member badge */}
-      {tally.voter_type === 'circle_member' && (
-        <div className="flex items-center gap-3 bg-amber-950/30 border border-amber-800 rounded-xl p-3 text-sm text-amber-400">
-          <Crown className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>Your votes carry <strong>2× weight</strong> as a Circle member.</span>
+      {/* ── Ranked ballot ───────────────────────────────────── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-white flex items-center gap-2">
+            <Music className="w-4 h-4 text-amber-400" />
+            Your Ranking
+            {rankedIds.length > 0 && (
+              <span className="text-xs font-normal text-stone-500">{rankedIds.length} song{rankedIds.length !== 1 ? 's' : ''}</span>
+            )}
+          </h2>
+        </div>
+
+        {rankedIds.length === 0 ? (
+          <div className="bg-stone-900 border border-stone-700 border-dashed rounded-2xl px-5 py-8 text-center text-stone-600 text-sm">
+            Add songs from below to start your ranking
+          </div>
+        ) : (
+          <RankingList
+            songs={rankedSongs}
+            canRank={canRank}
+            onRemove={removeFromRanking}
+            onReorder={reorder}
+          />
+        )}
+      </div>
+
+      {/* ── Submit button ────────────────────────────────────── */}
+      {canRank && (
+        <button
+          type="button"
+          onClick={submitRanking}
+          disabled={isSubmitting || rankedIds.length === 0}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
+            bg-amber-500 text-white hover:bg-amber-600 active:scale-95
+            disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+        >
+          {isSubmitting
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+            : <><Send className="w-4 h-4" /> {submitted ? 'Update Ranking' : 'Submit Ranking'}</>
+          }
+        </button>
+      )}
+
+      {/* ── Not ranked pool ─────────────────────────────────── */}
+      {unranked.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="font-bold text-stone-500 text-sm flex items-center gap-2">
+            <Plus className="w-3.5 h-3.5" />
+            Not in your ranking
+          </h2>
+          <div className="bg-stone-900 rounded-2xl border border-stone-800 divide-y divide-stone-800">
+            {unranked.map((song) => {
+              const color = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
+              return (
+                <div key={song.song_id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-8 h-8 rounded-lg bg-stone-800 flex items-center justify-center shrink-0">
+                    <Music className="w-3.5 h-3.5 text-stone-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-stone-400 truncate">{song.title}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-stone-600 truncate">{song.artist}</span>
+                      <span className={`text-xs px-1.5 py-0 rounded-full border font-medium ${color.badge}`}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
+                        {song.entryName}
+                      </span>
+                    </div>
+                  </div>
+                  {canRank && (
+                    <button
+                      type="button"
+                      onClick={() => addToRanking(song.song_id)}
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-400 hover:bg-amber-950/30 hover:text-amber-400 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
       {/* ── Live tallies ────────────────────────────────────── */}
-      <LiveTallies
-        entries={sorted}
-        leaderPct={leaderPct}
-        totalW={totalW}
-        leader={leader}
-        trailer={trailer}
-      />
-
-      {/* ── Ballot ──────────────────────────────────────────── */}
-      {entries.length === 0 ? (
-        <div className="text-center text-stone-600 py-12">No songs in this rodeo yet.</div>
-      ) : (
-        <div className="space-y-3">
-          <h2 className="font-bold text-white flex items-center gap-2">
-            <Music className="w-5 h-5 text-amber-400" />
-            Ballot
-            <span className="text-xs font-normal text-stone-600 ml-1">
-              — vote for your favourite songs
-            </span>
-          </h2>
-
-          {/* Vote error */}
-          {voteError && (
-            <div className="flex items-center gap-3 bg-red-950/30 border border-red-800 rounded-xl p-3 text-sm text-red-400">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {voteError}
-              <button type="button" className="ml-auto text-xs underline" onClick={() => setVoteError(null)}>
-                Dismiss
-              </button>
-            </div>
-          )}
-
-          {/* Combined song list — all songs from both entries interleaved */}
-          <CombinedBallot
-            entries={entries}
-            totalW={totalW}
-            canVote={tally.is_subscribed && isOpen}
-            voted={voted}
-            voteStates={voteStates}
-            onVote={castVote}
-          />
-        </div>
-      )}
-
-      {/* ── Done state ──────────────────────────────────────── */}
-      {tally.is_subscribed && isOpen && votedCount === allSongs.length && allSongs.length > 0 && (
-        <div className="bg-green-950/30 border border-green-800 rounded-2xl p-5 text-center space-y-2">
-          <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto" />
-          <p className="font-semibold text-green-800">All votes cast!</p>
-          <p className="text-sm text-green-400">
-            Results will be finalized when voting closes. Check back soon.
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push(`/rodeos/${id}`)}
-            className="mt-2 inline-flex items-center gap-1.5 text-sm text-green-400 font-medium hover:text-green-900"
-          >
-            View rodeo details <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      <LiveTallies entries={sorted} totalBorda={totalB} totalRankers={tally.total_rankers} leader={leader} />
 
     </div>
   )
@@ -346,22 +395,20 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
 
 function SubscriptionGate() {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-stone-950 to-stone-900 rounded-2xl p-6 text-white">
-      {/* Decorative blur */}
+    <div className="relative overflow-hidden bg-gradient-to-br from-stone-950 to-stone-900 rounded-2xl p-6 text-white border border-stone-800">
       <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-amber-500/20 blur-2xl pointer-events-none" />
       <div className="relative space-y-3">
         <div className="flex items-center gap-2">
           <Lock className="w-5 h-5 text-amber-400" />
-          <span className="font-bold text-lg">Subscription Required to Vote</span>
+          <span className="font-bold text-lg">Subscription Required</span>
         </div>
-        <p className="text-sm text-stone-700 leading-relaxed">
-          Voting in Rodeos is reserved for Stampede subscribers. Upgrade to cast your vote,
-          earn credits, and shape which music wins.
+        <p className="text-sm text-stone-400 leading-relaxed">
+          Ranking in Rodeos is reserved for Stampede subscribers. Upgrade to submit
+          your ballot, earn credits, and shape which music wins.
         </p>
-        <div className="bg-stone-800/50 rounded-xl p-3 text-sm text-stone-300">
-          <strong className="text-white">You can still watch</strong> — live tallies below are
-          always visible. No weighting hidden.
-        </div>
+        <p className="text-xs text-stone-600">
+          Live tallies below are always visible — no weighting hidden.
+        </p>
         <button
           type="button"
           className="w-full mt-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 font-semibold text-sm transition-colors"
@@ -373,24 +420,166 @@ function SubscriptionGate() {
   )
 }
 
-// ── GrantedCreditsBanner ──────────────────────────────────────
+// ── RankingList ───────────────────────────────────────────────
+// Drag-to-reorder list of songs in the voter's ballot.
 
-function GrantedCreditsBanner({ credits }: { credits: number }) {
+function RankingList({
+  songs,
+  canRank,
+  onRemove,
+  onReorder,
+}: {
+  songs: (SongTally & { entryIdx: number; entryName: string })[]
+  canRank: boolean
+  onRemove: (song_id: string) => void
+  onReorder: (fromIdx: number, toIdx: number) => void
+}) {
+  const [dragIndex, setDragIndex]   = useState<number | null>(null)
+  const [dropIndex, setDropIndex]   = useState<number | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const listRef    = useRef<HTMLUListElement>(null)
+  const dragStartY = useRef(0)
+  const itemHeights = useRef<number[]>([])
+
+  const startDrag = (e: React.PointerEvent<HTMLButtonElement>, index: number) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragStartY.current = e.clientY
+    if (listRef.current) {
+      itemHeights.current = Array.from(listRef.current.children).map(
+        (c) => (c as HTMLElement).offsetHeight
+      )
+    }
+    setDragIndex(index)
+    setDropIndex(index)
+    setDragOffset(0)
+  }
+
+  const moveDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (dragIndex === null) return
+    setDragOffset(e.clientY - dragStartY.current)
+    if (!listRef.current) return
+    const items = Array.from(listRef.current.children) as HTMLElement[]
+    let newDrop = songs.length - 1
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect()
+      if (e.clientY < rect.top + rect.height / 2) { newDrop = i; break }
+    }
+    if (newDrop !== dropIndex) setDropIndex(newDrop)
+  }
+
+  const endDrag = () => {
+    if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+      onReorder(dragIndex, dropIndex)
+    }
+    setDragIndex(null)
+    setDropIndex(null)
+    setDragOffset(0)
+  }
+
+  const getShift = (index: number): number => {
+    if (dragIndex === null || dropIndex === null || index === dragIndex) return 0
+    const h = itemHeights.current[dragIndex] ?? 68
+    if (dragIndex < dropIndex && index > dragIndex && index <= dropIndex) return -h
+    if (dragIndex > dropIndex && index >= dropIndex && index < dragIndex) return h
+    return 0
+  }
+
+  const isDragging = dragIndex !== null
+
   return (
-    <div className="flex items-center gap-4 bg-stone-900 border border-yellow-700 rounded-2xl p-4">
-      <div className="w-10 h-10 rounded-full bg-yellow-950/30 flex items-center justify-center shrink-0">
-        <Coins className="w-5 h-5 text-yellow-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-yellow-300">
-          Fresh ears welcome — you&apos;ve been granted {credits} Stampede credits
-        </p>
-        <p className="text-xs text-yellow-400 mt-0.5">
-          Vote as general public. Circle members carry 2× weight, but your voice counts.
-        </p>
-      </div>
-      <span className="text-2xl font-bold text-yellow-400 tabular-nums shrink-0">+{credits}</span>
-    </div>
+    <ul
+      ref={listRef}
+      className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden flex flex-col gap-0"
+      style={{ userSelect: isDragging ? 'none' : 'auto' }}
+    >
+      {songs.map((song, index) => {
+        const color      = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
+        const isThis     = dragIndex === index
+        const shift      = getShift(index)
+        const displayRank = isThis && dropIndex !== null ? dropIndex + 1 : index + 1
+
+        return (
+          <li
+            key={song.song_id}
+            style={{
+              transform: isThis
+                ? `translateY(${dragOffset}px) scale(1.02)`
+                : `translateY(${shift}px)`,
+              transition: isThis ? 'box-shadow 150ms' : 'transform 180ms cubic-bezier(0.2,0,0,1)',
+              zIndex: isThis ? 50 : 'auto',
+              position: 'relative',
+              boxShadow: isThis ? '0 16px 40px rgba(0,0,0,0.6)' : undefined,
+            }}
+            className={`flex items-center gap-3 px-3 py-3 border-b border-stone-800 last:border-b-0 transition-colors ${
+              isThis ? 'bg-stone-700' : 'bg-stone-900 hover:bg-stone-800/60'
+            }`}
+          >
+            {/* Drag grip */}
+            {canRank ? (
+              <button
+                type="button"
+                className="touch-none cursor-grab active:cursor-grabbing shrink-0 p-1 rounded text-stone-600 hover:text-amber-400 transition-colors"
+                onPointerDown={(e) => startDrag(e, index)}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                title="Drag to reorder"
+              >
+                <GripVertical className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="w-6 shrink-0" />
+            )}
+
+            {/* Rank badge */}
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
+              displayRank === 1
+                ? 'bg-amber-500 text-white'
+                : displayRank === 2
+                ? 'bg-stone-600 text-stone-200'
+                : 'bg-stone-700 text-stone-500'
+            }`}>
+              {displayRank}
+            </span>
+
+            {/* Song icon */}
+            <div className="w-8 h-8 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0">
+              <Music className="w-3.5 h-3.5 text-amber-400" />
+            </div>
+
+            {/* Song info */}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-white truncate">{song.title}</div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-stone-500 truncate">{song.artist}</span>
+                <span className={`text-xs px-1.5 py-0 rounded-full border font-medium ${color.badge}`}>
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
+                  {song.entryName}
+                </span>
+              </div>
+              {song.borda_score > 0 && (
+                <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
+                  {song.borda_score.toFixed(0)} pts · {song.ranker_count} ranker{song.ranker_count !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+
+            {/* Remove button */}
+            {canRank && (
+              <button
+                type="button"
+                onClick={() => onRemove(song.song_id)}
+                className="shrink-0 p-1.5 rounded-lg text-stone-600 hover:text-red-400 hover:bg-red-950/20 transition-colors"
+                title="Remove from ranking"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -398,18 +587,20 @@ function GrantedCreditsBanner({ credits }: { credits: number }) {
 
 function LiveTallies({
   entries,
-  leaderPct,
-  totalW,
+  totalBorda,
+  totalRankers,
   leader,
-  trailer,
 }: {
   entries: EntryTally[]
-  leaderPct: number
-  totalW: number
+  totalBorda: number
+  totalRankers: number
   leader: EntryTally | undefined
-  trailer: EntryTally | undefined
 }) {
-  const tied = totalW === 0
+  const tied = totalBorda === 0
+
+  const leaderPct = leader && totalBorda > 0
+    ? Math.round((leader.borda_score / totalBorda) * 100)
+    : 50
 
   return (
     <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-5">
@@ -418,56 +609,39 @@ function LiveTallies({
           <Zap className="w-5 h-5 text-amber-400" />
           Live Tallies
         </h2>
-        <span className="text-xs text-stone-600">{totalW.toFixed(0)} weighted pts total</span>
+        <span className="text-xs text-stone-600">
+          {totalRankers} voter{totalRankers !== 1 ? 's' : ''} · {totalBorda.toFixed(0)} pts total
+        </span>
       </div>
 
-      {/* ── Tug-of-war credit flow bar ── */}
+      {/* Tug-of-war bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-xs font-semibold text-stone-400 px-0.5">
           <span className="truncate max-w-[40%]">{entries[0]?.name ?? '—'}</span>
           <span className="truncate max-w-[40%] text-right">{entries[1]?.name ?? '—'}</span>
         </div>
-
-        {/* Animated bar */}
         <div className="relative h-8 rounded-full bg-stone-800 overflow-hidden">
-          {/* Left entry fill */}
           <div
-            className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700 ease-in-out"
+            className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700"
             style={{ width: tied ? '50%' : `${leaderPct}%` }}
           />
-          {/* Right entry fill */}
           <div
-            className="absolute inset-y-0 right-0 bg-teal-400 transition-all duration-700 ease-in-out"
+            className="absolute inset-y-0 right-0 bg-teal-400 transition-all duration-700"
             style={{ width: tied ? '50%' : `${100 - leaderPct}%` }}
           />
-          {/* Center divider + label */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-xs font-bold text-white drop-shadow-sm select-none">
               {tied ? 'TIED' : `${leaderPct}% — ${100 - leaderPct}%`}
             </span>
           </div>
-          {/* Credit particles (decorative) */}
-          {!tied && (
-            <div
-              className="absolute top-1.5 bottom-1.5 w-5 rounded-full bg-stone-900/30 animate-bounce"
-              style={{ left: `calc(${leaderPct}% - 10px)` }}
-            />
-          )}
         </div>
-
-        {/* Credits flowing label */}
-        {!tied && leader && (
-          <p className="text-xs text-center text-stone-600">
-            Credits flowing toward <strong className="text-stone-400">{leader.name}</strong>
-          </p>
-        )}
       </div>
 
-      {/* ── Per-entry breakdown ── */}
+      {/* Per-entry breakdown */}
       <div className="grid gap-3">
         {entries.map((entry, idx) => {
-          const entryPct = totalW > 0 ? pct(entry.weighted_score, totalW) : 50
-          const isLeading = entry.id === leader?.id && totalW > 0
+          const pct       = totalBorda > 0 ? Math.round((entry.borda_score / totalBorda) * 100) : 50
+          const isLeading = entry.id === leader?.id && totalBorda > 0
           return (
             <div
               key={entry.id}
@@ -479,34 +653,40 @@ function LiveTallies({
                   <span className="font-semibold text-stone-100 truncate text-sm">{entry.name}</span>
                 </div>
                 <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-amber-400' : 'text-stone-400'}`}>
-                  {entry.weighted_score.toFixed(1)}
+                  {entry.borda_score.toFixed(0)}
                   <span className="text-xs font-normal text-stone-600 ml-1">pts</span>
                 </span>
               </div>
-
-              {/* Score bar */}
               <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-3">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-amber-500' : 'bg-teal-400'}`}
-                  style={{ width: `${entryPct}%` }}
+                  style={{ width: `${pct}%` }}
                 />
               </div>
-
-              {/* Circle member / general public split — always visible */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                  <Users className="w-3 h-3 text-amber-400 shrink-0" />
-                  <span className="font-semibold text-amber-400">{entry.circle_member_votes}</span>
-                  <span>Circle member</span>
-                  <span className="text-stone-600">(2×)</span>
+              {/* Per-song scores */}
+              {entry.songs.some((s) => s.borda_score > 0) && (
+                <div className="space-y-1 pt-1">
+                  {[...entry.songs]
+                    .sort((a, b) => b.borda_score - a.borda_score)
+                    .map((song) => {
+                      const maxSong = Math.max(...entry.songs.map((s) => s.borda_score), 1)
+                      return (
+                        <div key={song.song_id} className="flex items-center gap-2 text-xs text-stone-500">
+                          <span className="truncate flex-1 max-w-[50%]">{song.title}</span>
+                          <div className="flex-1 h-1 bg-stone-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-600/60 rounded-full"
+                              style={{ width: `${(song.borda_score / maxSong) * 100}%` }}
+                            />
+                          </div>
+                          <span className="tabular-nums w-10 text-right text-stone-600">
+                            {song.borda_score.toFixed(0)} pts
+                          </span>
+                        </div>
+                      )
+                    })}
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                  <Users className="w-3 h-3 text-teal-400 shrink-0" />
-                  <span className="font-semibold text-teal-400">{entry.general_public_votes}</span>
-                  <span>General public</span>
-                  <span className="text-stone-600">(1×)</span>
-                </div>
-              </div>
+              )}
             </div>
           )
         })}
@@ -515,191 +695,9 @@ function LiveTallies({
   )
 }
 
-// ── CombinedBallot ────────────────────────────────────────────
-// All songs from all entries in one list; circle badge on each row.
-
-// Palette for distinguishing entries (up to 2 for showdowns)
-const ENTRY_COLORS = [
-  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
-  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
-]
-
-type SongWithEntry = SongTally & { entryName: string; entryIdx: number; entryId: string }
-
-function CombinedBallot({
-  entries,
-  totalW,
-  canVote,
-  voted,
-  voteStates,
-  onVote,
-}: {
-  entries: EntryTally[]
-  totalW: number
-  canVote: boolean
-  voted: Set<string>
-  voteStates: Record<string, 'idle' | 'pending' | 'done' | 'error'>
-  onVote: (song_id: string, entry_id: string) => void
-}) {
-  // Interleave songs: entry0[0], entry1[0], entry0[1], entry1[1], …
-  const combined: SongWithEntry[] = []
-  const maxLen = Math.max(...entries.map((e) => e.songs.length), 0)
-  for (let i = 0; i < maxLen; i++) {
-    for (let j = 0; j < entries.length; j++) {
-      const song = entries[j].songs[i]
-      if (song) combined.push({ ...song, entryName: entries[j].name, entryIdx: j, entryId: entries[j].id })
-    }
-  }
-
-  return (
-    <div className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden">
-      <ul className="divide-y divide-stone-800">
-        {combined.map((song) => {
-          const isVoted = voted.has(song.song_id)
-          const state   = voteStates[song.song_id] ?? 'idle'
-          const songPct = totalW > 0 ? pct(song.weighted_score, totalW) : 0
-          const color   = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
-
-          return (
-            <li key={song.song_id} className="p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Music className="w-4 h-4 text-amber-400" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-white text-sm">{song.title}</span>
-                    {song.label && <SongLabelBadge label={song.label} />}
-                    {song.locked && <span title="Locked"><Lock className="w-3 h-3 text-stone-600" /></span>}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <p className="text-xs text-stone-600">{song.artist}</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${color.badge}`}>
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
-                      {song.entryName}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0">
-                  <SongVoteButton
-                    state={isVoted ? 'done' : state}
-                    canVote={canVote}
-                    onClick={() => onVote(song.song_id, song.entryId)}
-                  />
-                </div>
-              </div>
-
-              <SongTallyBar song={song} songPct={songPct} />
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
-
-// ── SongTallyBar ──────────────────────────────────────────────
-
-function SongTallyBar({ song, songPct }: { song: SongTally; songPct: number }) {
-  return (
-    <div className="space-y-1.5 pt-1">
-      {/* Progress bar */}
-      <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-amber-400 rounded-full transition-all duration-700"
-          style={{ width: `${songPct}%` }}
-        />
-      </div>
-
-      {/* Tally detail — circle member and general public always shown */}
-      <div className="flex items-center gap-4 text-xs text-stone-600">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-          <span className="font-medium text-amber-600">{song.circle_member_votes}</span>
-          <span>circle</span>
-          <span className="text-stone-700">(2×)</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-teal-400 shrink-0" />
-          <span className="font-medium text-teal-400">{song.general_public_votes}</span>
-          <span>public</span>
-          <span className="text-stone-700">(1×)</span>
-        </span>
-        <span className="ml-auto font-semibold text-stone-500">
-          {song.weighted_score.toFixed(1)} pts
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ── SongVoteButton ────────────────────────────────────────────
-
-function SongVoteButton({
-  state,
-  canVote,
-  onClick,
-}: {
-  state: 'idle' | 'pending' | 'done' | 'error'
-  canVote: boolean
-  onClick: () => void
-}) {
-  if (!canVote) {
-    return (
-      <button
-        type="button"
-        disabled
-        title="Subscription required"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-600 cursor-not-allowed"
-      >
-        <Lock className="w-3 h-3" /> Vote
-      </button>
-    )
-  }
-
-  if (state === 'pending') {
-    return (
-      <button type="button" disabled className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-400 flex items-center gap-1.5">
-        <Loader2 className="w-3 h-3 animate-spin" /> Voting…
-      </button>
-    )
-  }
-
-  if (state === 'done') {
-    return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-900/30 text-green-400">
-        <CheckCircle2 className="w-3.5 h-3.5" /> Voted
-      </div>
-    )
-  }
-
-  if (state === 'error') {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-900/30 text-red-400 hover:bg-red-200"
-      >
-        <AlertCircle className="w-3 h-3" /> Retry
-      </button>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all"
-    >
-      <Star className="w-3 h-3" /> Vote
-    </button>
-  )
-}
-
 // ── SongLabelBadge ────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
   if (label === 'live') {
     return <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 font-medium">Live</span>

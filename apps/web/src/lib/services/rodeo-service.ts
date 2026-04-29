@@ -804,29 +804,11 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('No confirmed entries', 'NO_ENTRIES') }
     }
 
-    // Fetch votes and song ratings in parallel
-    const [{ data: votes }, { data: entrySongRows }] = await Promise.all([
-      supabase
-        .from('rodeo_votes')
-        .select('song_id, target_entry_id, voter_type, weight')
-        .eq('rodeo_id', rodeo_id),
-      supabase
-        .from('rodeo_entry_songs')
-        .select('entry_id, song_id, circle_songs(avg_rating, rating_count)')
-        .in('entry_id', entries.map((e) => e.id)),
-    ])
-
-    // Build song avg_rating lookup
-    type SongRatingRow = { entry_id: string; song_id: string; circle_songs: { avg_rating: number; rating_count: number } | null }
-    const songRatingMap = new Map<string, number>() // song_id → avg_rating
-    const entryRatingMap = new Map<string, number[]>() // entry_id → [ratings]
-    for (const row of ((entrySongRows ?? []) as unknown as SongRatingRow[])) {
-      const rating = row.circle_songs?.avg_rating ?? 0
-      songRatingMap.set(row.song_id, rating)
-      const arr = entryRatingMap.get(row.entry_id) ?? []
-      arr.push(rating)
-      entryRatingMap.set(row.entry_id, arr)
-    }
+    // Fetch votes only — winner is determined by weighted vote total
+    const { data: votes } = await supabase
+      .from('rodeo_votes')
+      .select('song_id, target_entry_id, voter_type, weight')
+      .eq('rodeo_id', rodeo_id)
 
     // Tally vote scores per song and per entry
     const entryVoteScores = new Map<string, number>()
@@ -857,25 +839,10 @@ export const RodeoService = {
       entryVoteScores.set(vote.target_entry_id, entryTotal + vote.weight)
     }
 
-    // ── Combined score: 75% weighted votes + 25% avg rating ────
-    // Both inputs normalised to 0-1 before blending.
-    const maxVoteScore = Math.max(...Array.from(entryVoteScores.values()), 1)
-
-    const entryCombinedScores = new Map<string, number>()
-    for (const entry of entries) {
-      const voteScore = entryVoteScores.get(entry.id) ?? 0
-      const ratings = entryRatingMap.get(entry.id) ?? []
-      const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
-
-      const normVotes = voteScore / maxVoteScore          // 0-1
-      const normRating = avgRating / 5.0                  // 0-1
-      entryCombinedScores.set(entry.id, normVotes * 0.75 + normRating * 0.25)
-    }
-
-    // Determine the winner (highest combined score)
+    // Determine the winner (highest weighted vote total)
     let winnerId: string | null = null
     let highScore = -1
-    for (const [entryId, score] of Array.from(entryCombinedScores.entries())) {
+    for (const [entryId, score] of Array.from(entryVoteScores.entries())) {
       if (score > highScore) { highScore = score; winnerId = entryId }
     }
 

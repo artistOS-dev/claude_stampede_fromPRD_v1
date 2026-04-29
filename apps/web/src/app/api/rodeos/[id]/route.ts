@@ -18,34 +18,23 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // Fetch current user's votes for this rodeo so the UI can show voted state
-  const { data: myVotes } = await supabase
-    .from('rodeo_votes')
-    .select('song_id, target_entry_id, voter_type')
+  // Fetch user's current ranking for this rodeo (ordered by rank)
+  const { data: myRankingRaw } = await supabase
+    .from('rodeo_rankings')
+    .select('song_id, rank')
     .eq('rodeo_id', params.id)
     .eq('voter_id', user.id)
+    .order('rank', { ascending: true })
 
-  // Collect all song IDs from this rodeo's entries
-  const songIds = (rodeo?.rodeo_entries ?? [])
-    .flatMap((e: { rodeo_entry_songs?: { song_id: string }[] }) => (e.rodeo_entry_songs ?? []).map((s) => s.song_id))
+  const myRanking = (myRankingRaw ?? []).map((r) => r.song_id)
 
-  // Fetch this user's own ratings for those songs
-  const { data: myRatings } = songIds.length > 0
-    ? await supabase
-        .from('song_ratings')
-        .select('song_id, rating')
-        .eq('user_id', user.id)
-        .in('song_id', songIds)
-    : { data: [] }
-
-  // Fetch user's subscription tier for vote-gating
+  // Fetch user's subscription tier
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier')
     .eq('id', user.id)
     .single()
 
-  // Permission flags for the Result Screen
   const isCreator = rodeo?.created_by === user.id
 
   // Check if user is board/founder of the winning circle
@@ -65,47 +54,9 @@ export async function GET(
 
   return NextResponse.json({
     rodeo,
-    myVotes: myVotes ?? [],
-    myRatings: (myRatings ?? []) as { song_id: string; rating: number }[],
+    myRanking,
     isSubscribed: profile?.subscription_tier !== 'free',
     isCreator,
     isWinningCircleBoard,
   })
-}
-
-// ── POST /api/rodeos/[id] — cast a vote ───────────────────────
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const supabase = createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  let body: { song_id: string; target_entry_id: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
-
-  if (!body.song_id || !body.target_entry_id) {
-    return NextResponse.json({ error: 'song_id and target_entry_id are required' }, { status: 400 })
-  }
-
-  const { data, error } = await RodeoService.castVote({
-    rodeo_id: params.id,
-    song_id: body.song_id,
-    target_entry_id: body.target_entry_id,
-  })
-
-  if (error) {
-    return NextResponse.json(
-      { error: error.message, code: error.code },
-      { status: error.status }
-    )
-  }
-
-  return NextResponse.json({ vote_id: data.vote_id })
 }

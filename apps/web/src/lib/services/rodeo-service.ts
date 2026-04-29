@@ -8,7 +8,6 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import type {
   RodeoType,
   RodeoStatus,
-  VoterType,
   SongLabel,
 } from '@/lib/types/rodeo'
 
@@ -47,12 +46,6 @@ interface AcceptChallengeInput {
   rodeo_id: string
   song_ids: string[]
   song_labels?: Record<string, SongLabel>
-}
-
-interface CastVoteInput {
-  rodeo_id: string
-  song_id: string
-  target_entry_id: string
 }
 
 type ServiceResult<T> = { data: T; error: null } | { data: null; error: RodeoError }
@@ -671,98 +664,6 @@ export const RodeoService = {
   },
 
   // ────────────────────────────────────────────────────────────
-  // castVote — A user votes on a song in a rodeo
-  // Spec: Step 7 — subscription required; circle member vs public
-  // Rule: one vote per user per song per rodeo
-  // ────────────────────────────────────────────────────────────
-  async castVote(input: CastVoteInput): Promise<ServiceResult<{ vote_id: string }>> {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { data: null, error: new RodeoError('Unauthorized', 'UNAUTHORIZED', 401) }
-
-    // Fetch rodeo — must be in voting status
-    const { data: rodeo } = await supabase
-      .from('rodeos')
-      .select('id, status')
-      .eq('id', input.rodeo_id)
-      .single()
-
-    if (!rodeo) {
-      return { data: null, error: new RodeoError('Rodeo not found', 'NOT_FOUND', 404) }
-    }
-
-    if (rodeo.status !== 'voting') {
-      return { data: null, error: new RodeoError('Voting is not open for this rodeo', 'NOT_VOTING') }
-    }
-
-    // Subscription check — free tier cannot vote (per spec: "subscription required")
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return { data: null, error: new RodeoError('Profile not found', 'PROFILE_NOT_FOUND', 404) }
-    }
-
-    if (profile.subscription_tier === 'free') {
-      return { data: null, error: new RodeoError('A paid subscription is required to vote in rodeos', 'SUBSCRIPTION_REQUIRED', 403) }
-    }
-
-    // Determine voter type: check if user is a member of any circle in this rodeo
-    const { data: rodeoCircles } = await supabase
-      .from('rodeo_entries')
-      .select('circle_id')
-      .eq('rodeo_id', input.rodeo_id)
-      .not('circle_id', 'is', null)
-
-    const circleIds = (rodeoCircles ?? []).map((e) => e.circle_id).filter(Boolean) as string[]
-
-    let voterType: VoterType = 'general_public'
-    let weight = 1.0
-
-    if (circleIds.length > 0) {
-      const { data: membership } = await supabase
-        .from('circle_members')
-        .select('circle_id')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .in('circle_id', circleIds)
-        .limit(1)
-        .maybeSingle()
-
-      if (membership) {
-        voterType = 'circle_member'
-        weight = 2.0   // circle members carry more weight (spec: "higher weight")
-      }
-    }
-
-    // Insert the vote (unique constraint on rodeo_id, voter_id, song_id handles dupes)
-    const { data: vote, error: voteErr } = await supabase
-      .from('rodeo_votes')
-      .upsert(
-        {
-          rodeo_id: input.rodeo_id,
-          voter_id: user.id,
-          song_id: input.song_id,
-          target_entry_id: input.target_entry_id,
-          voter_type: voterType,
-          weight,
-        },
-        { onConflict: 'rodeo_id,voter_id,song_id' }
-      )
-      .select('id')
-      .single()
-
-    if (voteErr || !vote) {
-      return { data: null, error: new RodeoError(voteErr?.message ?? 'Failed to cast vote', 'VOTE_FAILED', 500) }
-    }
-
-    return { data: { vote_id: vote.id }, error: null }
-  },
-
-  // ────────────────────────────────────────────────────────────
   // closeRodeo — End voting, compute results, distribute credits
   // Spec: Steps 8-9 — scorecard, credit flow, archive
   // Rule: platform fee deducted before distribution
@@ -804,51 +705,55 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('No confirmed entries', 'NO_ENTRIES') }
     }
 
-    // Fetch votes only — winner is determined by weighted vote total
-    const { data: votes } = await supabase
-      .from('rodeo_votes')
-      .select('song_id, target_entry_id, voter_type, weight')
+    // Fetch all rankings — winner determined by Borda count
+    const { data: rankings } = await supabase
+      .from('rodeo_rankings')
+      .select('voter_id, song_id, rank')
       .eq('rodeo_id', rodeo_id)
 
-    // Tally vote scores per song and per entry
-    const entryVoteScores = new Map<string, number>()
-    const songScores = new Map<string, {
-      entry_id: string
-      total_votes: number
-      weighted_score: number
-      circle_member_votes: number
-      general_public_votes: number
-    }>()
+    // Fetch entry→song mapping so we can attribute each song to an entry
+    const { data: entrySongs } = await supabase
+      .from('rodeo_entry_songs')
+      .select('song_id, entry_id')
+      .in('entry_id', entries.map((e) => e.id))
 
-    for (const vote of (votes ?? [])) {
-      const key = vote.song_id
-      const existing = songScores.get(key) ?? {
-        entry_id: vote.target_entry_id,
-        total_votes: 0,
-        weighted_score: 0,
-        circle_member_votes: 0,
-        general_public_votes: 0,
-      }
-      existing.total_votes++
-      existing.weighted_score += vote.weight
-      if (vote.voter_type === 'circle_member') existing.circle_member_votes++
-      else existing.general_public_votes++
-      songScores.set(key, existing)
+    const songToEntry = new Map<string, string>()
+    for (const es of (entrySongs ?? [])) songToEntry.set(es.song_id, es.entry_id)
 
-      const entryTotal = entryVoteScores.get(vote.target_entry_id) ?? 0
-      entryVoteScores.set(vote.target_entry_id, entryTotal + vote.weight)
+    // Borda scoring: group by voter, K = ballot size, rank i gets (K - i + 1) pts
+    const byVoter = new Map<string, Array<{ song_id: string; rank: number }>>()
+    for (const r of (rankings ?? [])) {
+      const list = byVoter.get(r.voter_id) ?? []
+      list.push({ song_id: r.song_id, rank: r.rank })
+      byVoter.set(r.voter_id, list)
     }
 
-    // Determine the winner (highest weighted vote total)
+    const songBorda = new Map<string, { entry_id: string; score: number; ranker_count: number }>()
+    const entryBorda = new Map<string, number>()
+
+    for (const [, voterRanks] of Array.from(byVoter.entries())) {
+      const K = voterRanks.length
+      for (const { song_id, rank } of voterRanks) {
+        const pts = K - rank + 1
+        const entryId = songToEntry.get(song_id) ?? ''
+        const cur = songBorda.get(song_id) ?? { entry_id: entryId, score: 0, ranker_count: 0 }
+        cur.score += pts
+        cur.ranker_count++
+        songBorda.set(song_id, cur)
+        entryBorda.set(entryId, (entryBorda.get(entryId) ?? 0) + pts)
+      }
+    }
+
+    // Winner = entry with highest total Borda score
     let winnerId: string | null = null
     let highScore = -1
-    for (const [entryId, score] of Array.from(entryVoteScores.entries())) {
+    for (const [entryId, score] of Array.from(entryBorda.entries())) {
       if (score > highScore) { highScore = score; winnerId = entryId }
     }
 
     const winnerEntry = entries.find((e) => e.id === winnerId)
 
-    // Upsert the result row (trigger may have already created it in openRodeo)
+    // Upsert result row
     const { data: result, error: resultErr } = await supabase
       .from('rodeo_results')
       .upsert(
@@ -856,8 +761,8 @@ export const RodeoService = {
           rodeo_id,
           winner_circle_id: winnerEntry?.circle_id ?? null,
           winner_artist_id: winnerEntry?.artist_id ?? null,
-          circle_member_votes: (votes ?? []).filter((v) => v.voter_type === 'circle_member').length,
-          general_public_votes: (votes ?? []).filter((v) => v.voter_type === 'general_public').length,
+          circle_member_votes: 0,
+          general_public_votes: byVoter.size,   // repurposed: total unique rankers
           archived_to_circle_history: true,
           finalized_at: new Date().toISOString(),
         },
@@ -870,15 +775,15 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('Failed to finalize result', 'RESULT_FAILED', 500) }
     }
 
-    // Insert per-song results
-    const songResultRows = Array.from(songScores.entries()).map(([song_id, s]) => ({
+    // Insert per-song results (weighted_score = Borda score, total_votes = ranker count)
+    const songResultRows = Array.from(songBorda.entries()).map(([song_id, s]) => ({
       result_id: result.id,
       song_id,
       entry_id: s.entry_id,
-      total_votes: s.total_votes,
-      weighted_score: s.weighted_score,
-      circle_member_votes: s.circle_member_votes,
-      general_public_votes: s.general_public_votes,
+      total_votes: s.ranker_count,
+      weighted_score: s.score,
+      circle_member_votes: 0,
+      general_public_votes: s.ranker_count,
     }))
 
     if (songResultRows.length > 0) {

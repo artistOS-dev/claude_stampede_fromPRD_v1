@@ -273,12 +273,12 @@ export default function VotingPage() {
       {entries.length === 0 ? (
         <div className="text-center text-stone-600 py-12">No songs in this rodeo yet.</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h2 className="font-bold text-white flex items-center gap-2">
             <Music className="w-5 h-5 text-amber-400" />
             Ballot
             <span className="text-xs font-normal text-stone-600 ml-1">
-              — vote for any song across both entries
+              — vote for your favourite songs
             </span>
           </h2>
 
@@ -293,18 +293,15 @@ export default function VotingPage() {
             </div>
           )}
 
-          {/* Group songs by entry */}
-          {entries.map((entry) => (
-            <EntryBallotSection
-              key={entry.id}
-              entry={entry}
-              totalW={totalW}
-              canVote={tally.is_subscribed && isOpen}
-              voted={voted}
-              voteStates={voteStates}
-              onVote={castVote}
-            />
-          ))}
+          {/* Combined song list — all songs from both entries interleaved */}
+          <CombinedBallot
+            entries={entries}
+            totalW={totalW}
+            canVote={tally.is_subscribed && isOpen}
+            voted={voted}
+            voteStates={voteStates}
+            onVote={castVote}
+          />
         </div>
       )}
 
@@ -518,46 +515,53 @@ function LiveTallies({
   )
 }
 
-// ── EntryBallotSection ────────────────────────────────────────
+// ── CombinedBallot ────────────────────────────────────────────
+// All songs from all entries in one list; circle badge on each row.
 
-function EntryBallotSection({
-  entry,
+// Palette for distinguishing entries (up to 2 for showdowns)
+const ENTRY_COLORS = [
+  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
+  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
+]
+
+type SongWithEntry = SongTally & { entryName: string; entryIdx: number; entryId: string }
+
+function CombinedBallot({
+  entries,
   totalW,
   canVote,
   voted,
   voteStates,
   onVote,
 }: {
-  entry: EntryTally
+  entries: EntryTally[]
   totalW: number
   canVote: boolean
   voted: Set<string>
   voteStates: Record<string, 'idle' | 'pending' | 'done' | 'error'>
   onVote: (song_id: string, entry_id: string) => void
 }) {
+  // Interleave songs: entry0[0], entry1[0], entry0[1], entry1[1], …
+  const combined: SongWithEntry[] = []
+  const maxLen = Math.max(...entries.map((e) => e.songs.length), 0)
+  for (let i = 0; i < maxLen; i++) {
+    for (let j = 0; j < entries.length; j++) {
+      const song = entries[j].songs[i]
+      if (song) combined.push({ ...song, entryName: entries[j].name, entryIdx: j, entryId: entries[j].id })
+    }
+  }
+
   return (
     <div className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden">
-      {/* Entry header */}
-      <div className="flex items-center gap-3 px-5 py-3 bg-stone-950 border-b border-stone-800">
-        <div className="w-7 h-7 rounded-full bg-amber-900/30 flex items-center justify-center shrink-0">
-          <Users className="w-3.5 h-3.5 text-amber-400" />
-        </div>
-        <span className="font-semibold text-stone-100">{entry.name}</span>
-        <span className="ml-auto text-xs text-stone-600">
-          {entry.songs.length} song{entry.songs.length !== 1 ? 's' : ''}
-        </span>
-      </div>
-
-      {/* Songs */}
       <ul className="divide-y divide-stone-800">
-        {entry.songs.map((song) => {
-          const isVoted  = voted.has(song.song_id)
-          const state    = voteStates[song.song_id] ?? 'idle'
-          const songPct  = totalW > 0 ? pct(song.weighted_score, totalW) : 0
+        {combined.map((song) => {
+          const isVoted = voted.has(song.song_id)
+          const state   = voteStates[song.song_id] ?? 'idle'
+          const songPct = totalW > 0 ? pct(song.weighted_score, totalW) : 0
+          const color   = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
 
           return (
             <li key={song.song_id} className="p-4 space-y-3">
-              {/* Song info row */}
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0 mt-0.5">
                   <Music className="w-4 h-4 text-amber-400" />
@@ -569,20 +573,24 @@ function EntryBallotSection({
                     {song.label && <SongLabelBadge label={song.label} />}
                     {song.locked && <span title="Locked"><Lock className="w-3 h-3 text-stone-600" /></span>}
                   </div>
-                  <p className="text-xs text-stone-600 mt-0.5">{song.artist}</p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <p className="text-xs text-stone-600">{song.artist}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${color.badge}`}>
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
+                      {song.entryName}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Vote button */}
                 <div className="shrink-0">
                   <SongVoteButton
                     state={isVoted ? 'done' : state}
                     canVote={canVote}
-                    onClick={() => onVote(song.song_id, entry.id)}
+                    onClick={() => onVote(song.song_id, song.entryId)}
                   />
                 </div>
               </div>
 
-              {/* Per-song tally — always visible, no hidden weighting */}
               <SongTallyBar song={song} songPct={songPct} />
             </li>
           )

@@ -486,7 +486,7 @@ export default function RodeoDetailPage() {
         />
       )}
 
-      {/* ── Songs sections per entry ─────────────────────────── */}
+      {/* ── Songs on the Line ───────────────────────────────── */}
       <div className="space-y-4">
         <h2 className="font-bold text-white text-lg flex items-center gap-2">
           <Music className="w-5 h-5 text-amber-400" />
@@ -497,16 +497,31 @@ export default function RodeoDetailPage() {
           <p className="text-sm text-stone-500">No entries yet.</p>
         )}
 
-        {entries.map((entry) => (
-          <EntrySongsCard
-            key={entry.id}
-            entry={entry}
+        {/* Combined list during voting/finished; per-entry during pending (drag-reorder) */}
+        {(isVoting || isFinished) && (
+          <CombinedSongsCard
+            entries={entries}
             isVoting={isVoting}
             isSubscribed={isSubscribed}
             myVotes={myVotes}
             voteStates={voteStates}
             songScores={songScores}
-            isFinished={isFinished}
+            myRatings={myRatings}
+            songOrders={songOrders}
+            onVote={castVote}
+            onRate={rateSong}
+          />
+        )}
+        {!isVoting && !isFinished && entries.map((entry: Entry) => (
+          <EntrySongsCard
+            key={entry.id}
+            entry={entry}
+            isVoting={false}
+            isSubscribed={isSubscribed}
+            myVotes={myVotes}
+            voteStates={voteStates}
+            songScores={songScores}
+            isFinished={false}
             myRatings={myRatings}
             songOrders={songOrders}
             onVote={castVote}
@@ -962,6 +977,141 @@ function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
     <span className="text-xs px-1.5 py-0.5 rounded bg-stone-800 text-stone-500 font-medium">
       Studio
     </span>
+  )
+}
+
+// ── CombinedSongsCard ─────────────────────────────────────────
+// Shows all songs from all entries in a single interleaved list
+// with a per-circle colour badge. Used during voting/finished.
+
+const COMBINED_COLORS = [
+  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
+  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
+]
+
+type SongWithMeta = EntrySong & { entryName: string; entryIdx: number; entryId: string; circleId: string | null }
+
+function CombinedSongsCard({
+  entries,
+  isVoting,
+  isSubscribed,
+  myVotes,
+  voteStates,
+  songScores,
+  myRatings,
+  songOrders,
+  onVote,
+  onRate,
+}: {
+  entries: Entry[]
+  isVoting: boolean
+  isSubscribed: boolean
+  myVotes: MyVote[]
+  voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
+  songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
+  myRatings: Record<string, number>
+  songOrders: Record<string, EntrySong[]>
+  onVote: (song_id: string, entry_id: string) => void
+  onRate: (circleId: string, songId: string, rating: number) => void
+}) {
+  // Interleave: e0[0], e1[0], e0[1], e1[1], …
+  const combined: SongWithMeta[] = []
+  const maxLen = Math.max(...entries.map((e) => (songOrders[e.id] ?? e.rodeo_entry_songs ?? []).length), 0)
+  for (let i = 0; i < maxLen; i++) {
+    for (let j = 0; j < entries.length; j++) {
+      const songs = songOrders[entries[j].id] ?? entries[j].rodeo_entry_songs ?? []
+      const es = songs[i]
+      if (es) {
+        combined.push({
+          ...es,
+          entryName: entryDisplayName(entries[j]),
+          entryIdx: j,
+          entryId: entries[j].id,
+          circleId: entries[j].circle_id,
+        })
+      }
+    }
+  }
+
+  return (
+    <div className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden">
+      {combined.length === 0 && (
+        <div className="px-5 py-4 text-sm text-stone-600">No songs added yet.</div>
+      )}
+      <ul className="flex flex-col divide-y divide-stone-800">
+        {combined.map((es) => {
+          const song       = es.circle_songs
+          const voteState  = voteStates[es.song_id] ?? 'idle'
+          const hasVoted   = voteState === 'voted' || myVotes.some((v) => v.song_id === es.song_id)
+          const songResult = songScores.get(es.song_id)
+          const color      = COMBINED_COLORS[es.entryIdx % COMBINED_COLORS.length]
+
+          return (
+            <li key={es.id} className="p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Music className="w-4 h-4 text-amber-400" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-white text-sm">{song?.title ?? 'Unknown'}</span>
+                    {es.label && <SongLabelBadge label={es.label} />}
+                    {es.locked && <span title="Locked"><Lock className="w-3 h-3 text-stone-600" /></span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <p className="text-xs text-stone-600">{song?.artist ?? ''}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${color.badge}`}>
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
+                      {es.entryName}
+                    </span>
+                  </div>
+                </div>
+
+                {isVoting && (
+                  <div className="shrink-0">
+                    <VoteButton
+                      state={voteState}
+                      isSubscribed={isSubscribed}
+                      hasVoted={hasVoted}
+                      onClick={() => onVote(es.song_id, es.entryId)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Per-song score bar */}
+              {songResult && (
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between text-xs text-stone-600">
+                    <span>{songResult.total_votes} votes</span>
+                    <span className="tabular-nums font-medium text-stone-400">{songResult.weighted_score.toFixed(1)} pts</span>
+                  </div>
+                  <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all"
+                      style={{ width: `${Math.min(100, songResult.weighted_score * 10)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Rating stars */}
+              {es.circleId && song && (
+                <StarRating
+                  circleId={es.circleId}
+                  songId={es.song_id}
+                  avgRating={song.avg_rating ?? 0}
+                  ratingCount={song.rating_count ?? 0}
+                  myRating={myRatings[es.song_id] ?? 0}
+                  onRate={onRate}
+                />
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 

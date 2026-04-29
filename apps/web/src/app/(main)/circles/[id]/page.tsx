@@ -574,7 +574,13 @@ function BoardInboxTab({
   }
 
   const submitAccept = async (rodeoId: string) => {
+    const challenge = incoming.find((c) => c.rodeo_id === rodeoId)
+    const required = challenge?.challenger_songs.length ?? 1
     if (selectedSongIds.size === 0) { setAcceptError('Select at least one song.'); return }
+    if (selectedSongIds.size !== required) {
+      setAcceptError(`You must pick exactly ${required} song${required !== 1 ? 's' : ''} — the same number as the challenger.`)
+      return
+    }
     setSubmittingAccept(true)
     setAcceptError(null)
     try {
@@ -827,11 +833,16 @@ function BoardInboxTab({
               {acceptingId === challenge.rodeo_id && (
                 <div className="px-4 py-4 space-y-3 bg-stone-950/50">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-green-400">Pick your songs to field</p>
+                    <div>
+                      <p className="text-sm font-semibold text-green-400">Pick your songs to field</p>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Select exactly <span className="text-amber-400 font-semibold">{challenge.challenger_songs.length}</span> song{challenge.challenger_songs.length !== 1 ? 's' : ''} — songs already chosen by the challenger are unavailable.
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => { setAcceptingId(null); setAcceptError(null) }}
-                      className="text-xs text-stone-500 hover:text-stone-300"
+                      className="text-xs text-stone-500 hover:text-stone-300 shrink-0"
                     >
                       Cancel
                     </button>
@@ -847,40 +858,56 @@ function BoardInboxTab({
                     <p className="text-sm text-stone-500">Your circle has no songs yet. Add songs first before accepting.</p>
                   )}
 
-                  {!circleSongsLoading && circleSongs.length > 0 && (
-                    <div className="space-y-1 max-h-60 overflow-y-auto">
-                      {circleSongs.map((song) => {
-                        const checked = selectedSongIds.has(song.id)
-                        return (
-                          <label
-                            key={song.id}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${checked ? 'bg-green-950/40 border border-green-700' : 'border border-transparent hover:bg-stone-800'}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setSelectedSongIds((prev) => {
-                                  const next = new Set(prev)
-                                  if (next.has(song.id)) next.delete(song.id)
-                                  else next.add(song.id)
-                                  return next
-                                })
-                              }}
-                              className="w-4 h-4 accent-green-500 shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-white truncate">{song.title}</p>
-                              <p className="text-xs text-stone-500 truncate">{song.artist}</p>
-                            </div>
-                            {song.avg_rating > 0 && (
-                              <span className="text-xs text-yellow-400 shrink-0">{song.avg_rating.toFixed(1)}★</span>
-                            )}
-                          </label>
-                        )
-                      })}
-                    </div>
-                  )}
+                  {!circleSongsLoading && circleSongs.length > 0 && (() => {
+                    const takenIds = new Set(challenge.challenger_songs.map((s) => s.song_id))
+                    const required = challenge.challenger_songs.length
+                    const selCount = selectedSongIds.size
+                    return (
+                      <div className="space-y-1 max-h-60 overflow-y-auto">
+                        {circleSongs.map((song) => {
+                          const taken   = takenIds.has(song.id)
+                          const checked = selectedSongIds.has(song.id)
+                          return (
+                            <label
+                              key={song.id}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                taken
+                                  ? 'opacity-40 cursor-not-allowed border border-transparent'
+                                  : checked
+                                    ? 'bg-green-950/40 border border-green-700 cursor-pointer'
+                                    : 'border border-transparent hover:bg-stone-800 cursor-pointer'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={taken || (!checked && selCount >= required)}
+                                onChange={() => {
+                                  if (taken) return
+                                  setSelectedSongIds((prev) => {
+                                    const next = new Set(prev)
+                                    if (next.has(song.id)) next.delete(song.id)
+                                    else if (next.size < required) next.add(song.id)
+                                    return next
+                                  })
+                                }}
+                                className="w-4 h-4 accent-green-500 shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{song.title}</p>
+                                <p className="text-xs text-stone-500 truncate">{song.artist}</p>
+                              </div>
+                              {taken ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-stone-800 text-stone-500 shrink-0">Taken</span>
+                              ) : song.avg_rating > 0 ? (
+                                <span className="text-xs text-yellow-400 shrink-0">{song.avg_rating.toFixed(1)}★</span>
+                              ) : null}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
 
                   {acceptError && (
                     <p className="text-xs text-red-400 bg-red-950/30 border border-red-800 rounded-lg px-3 py-2">{acceptError}</p>
@@ -890,11 +917,11 @@ function BoardInboxTab({
                     <button
                       type="button"
                       onClick={() => submitAccept(challenge.rodeo_id)}
-                      disabled={submittingAccept || selectedSongIds.size === 0}
+                      disabled={submittingAccept || selectedSongIds.size !== challenge.challenger_songs.length}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
                     >
                       {submittingAccept ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
-                      Accept &amp; Go Live ({selectedSongIds.size} song{selectedSongIds.size !== 1 ? 's' : ''})
+                      Accept &amp; Go Live ({selectedSongIds.size}/{challenge.challenger_songs.length})
                     </button>
                   </div>
                 </div>

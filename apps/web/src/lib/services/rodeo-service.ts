@@ -351,16 +351,36 @@ export const RodeoService = {
       return { data: null, error: new RodeoError('All songs must belong to your circle', 'INVALID_SONGS') }
     }
 
-    // Get the challenger's credit contribution to enforce equal buy-in
+    // Get the challenger's entry: credits + their songs (for equal-count and dupe checks)
     const { data: challengerEntry } = await supabase
       .from('rodeo_entries')
-      .select('credits_contributed')
+      .select('credits_contributed, rodeo_entry_songs(song_id)')
       .eq('rodeo_id', input.rodeo_id)
       .eq('status', 'confirmed')
       .single()
 
     if (!challengerEntry) {
       return { data: null, error: new RodeoError('Challenger entry not found', 'CHALLENGER_NOT_FOUND', 500) }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const challengerSongIds = new Set<string>(((challengerEntry as any).rodeo_entry_songs ?? []).map((s: { song_id: string }) => s.song_id))
+
+    // Equal song count required
+    if (input.song_ids.length !== challengerSongIds.size) {
+      return { data: null, error: new RodeoError(
+        `You must pick exactly ${challengerSongIds.size} song${challengerSongIds.size !== 1 ? 's' : ''} — the same number as the challenger`,
+        'SONG_COUNT_MISMATCH'
+      ) }
+    }
+
+    // No song may appear in both entries
+    const dupes = input.song_ids.filter((id) => challengerSongIds.has(id))
+    if (dupes.length > 0) {
+      return { data: null, error: new RodeoError(
+        'One or more songs were already chosen by the challenger. Please pick different songs.',
+        'DUPLICATE_SONGS'
+      ) }
     }
 
     const equalCredits = challengerEntry.credits_contributed

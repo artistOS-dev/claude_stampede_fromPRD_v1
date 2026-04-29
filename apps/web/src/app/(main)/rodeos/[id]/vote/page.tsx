@@ -108,17 +108,20 @@ export default function VotingPage() {
   // ── Load tally ───────────────────────────────────────────
 
   const loadTally = useCallback(async () => {
-    const res = await fetch(`/api/rodeos/${id}/tally`)
-    if (!res.ok) return
-    const json: TallyData = await res.json()
-    setTally(json)
-    // Only seed rankedIds from server on first load
-    if (!initialised.current) {
-      setRankedIds(json.my_ranking ?? [])
-      if ((json.my_ranking ?? []).length > 0) setSubmitted(true)
-      initialised.current = true
+    try {
+      const res = await fetch(`/api/rodeos/${id}/tally`)
+      if (!res.ok) return
+      const json: TallyData = await res.json()
+      setTally(json)
+      // Only seed rankedIds from server on first load
+      if (!initialised.current) {
+        setRankedIds(json.my_ranking ?? [])
+        if ((json.my_ranking ?? []).length > 0) setSubmitted(true)
+        initialised.current = true
+      }
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }, [id])
 
   const loadMeta = useCallback(async () => {

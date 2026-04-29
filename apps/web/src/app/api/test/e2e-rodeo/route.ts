@@ -333,18 +333,23 @@ export async function POST(_req: NextRequest) {
           .limit(1)
           .single()
 
+        // Submit a test ranking directly
         const firstSong = entries?.rodeo_entry_songs?.[0]
-        if (firstSong && entries) {
-          const voteResult = await RodeoService.castVote({
-            rodeo_id: ctx.rodeo_id,
-            song_id: firstSong.song_id,
-            target_entry_id: entries.id,
-          })
-          log.push(pass(8, 'Rodeo opens and voting runs', {
-            vote_id: voteResult.data?.vote_id ?? 'cast',
-          }))
+        if (firstSong && entries && user) {
+          const { error: rankErr } = await supabase
+            .from('rodeo_rankings')
+            .insert({
+              rodeo_id: ctx.rodeo_id,
+              voter_id: user.id,
+              song_id: firstSong.song_id,
+              rank: 1,
+            })
+          log.push(rankErr
+            ? fail(8, 'Rodeo opens and ranking runs', rankErr.message)
+            : pass(8, 'Rodeo opens and ranking runs', { ranked: 1 })
+          )
         } else {
-          log.push(pass(8, 'Rodeo opens (no songs to vote on for test)', { opened: true }))
+          log.push(pass(8, 'Rodeo opens (no songs to rank for test)', { opened: true }))
         }
       }
     } catch (err) {

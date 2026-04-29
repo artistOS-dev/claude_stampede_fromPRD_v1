@@ -39,7 +39,7 @@ interface EntrySong {
   song_id: string
   label: 'studio' | 'live' | null
   locked: boolean
-  circle_songs: { id: string; title: string; artist: string; avg_rating: number; rating_count: number } | null
+  circle_songs: { id: string; title: string; artist: string } | null
 }
 
 interface Entry {
@@ -167,7 +167,6 @@ export default function RodeoDetailPage() {
 
   const [rodeo, setRodeo] = useState<RodeoDetail | null>(null)
   const [myVotes, setMyVotes] = useState<MyVote[]>([])
-  const [myRatings, setMyRatings] = useState<Record<string, number>>({})
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -189,13 +188,6 @@ export default function RodeoDetailPage() {
       setRodeo(json.rodeo)
       setMyVotes(json.myVotes ?? [])
       setIsSubscribed(json.isSubscribed ?? false)
-
-      // Build my ratings map
-      const ratingsMap: Record<string, number> = {}
-      for (const r of (json.myRatings ?? []) as { song_id: string; rating: number }[]) {
-        ratingsMap[r.song_id] = r.rating
-      }
-      setMyRatings(ratingsMap)
 
       // Initialise per-entry song order from API data
       const orders: Record<string, EntrySong[]> = {}
@@ -242,20 +234,6 @@ export default function RodeoDetailPage() {
       setVoteError('Network error. Please try again.')
     }
   }, [id, load])
-
-  const rateSong = useCallback(async (circleId: string, songId: string, rating: number) => {
-    // Optimistic update
-    setMyRatings((prev) => ({ ...prev, [songId]: rating }))
-    try {
-      await fetch(`/api/circles/${circleId}/songs/${songId}/rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating }),
-      })
-    } catch {
-      // silent — optimistic value stays
-    }
-  }, [])
 
   const reorderSongs = useCallback((entryId: string, fromIndex: number, toIndex: number) => {
     setSongOrders((prev) => {
@@ -320,12 +298,7 @@ export default function RodeoDetailPage() {
     let score = 0
     for (const es of songs) {
       const voteScore = songScores.get(es.song_id)?.weighted_score
-      if (voteScore !== undefined) {
-        score += voteScore
-      } else {
-        const cs = es.circle_songs
-        score += (cs?.avg_rating ?? 0) * (cs?.rating_count ?? 0)
-      }
+      if (voteScore !== undefined) score += voteScore
     }
     return { entry: e, score }
   })
@@ -445,7 +418,7 @@ export default function RodeoDetailPage() {
                   )
                 })}
                 <div className="text-[10px] text-stone-600 text-right">
-                  {result?.rodeo_song_results ? 'based on votes' : 'based on song ratings'}
+                  based on votes
                 </div>
               </div>
             )}
@@ -506,10 +479,8 @@ export default function RodeoDetailPage() {
             myVotes={myVotes}
             voteStates={voteStates}
             songScores={songScores}
-            myRatings={myRatings}
             songOrders={songOrders}
             onVote={castVote}
-            onRate={rateSong}
           />
         )}
         {!isVoting && !isFinished && entries.map((entry: Entry) => (
@@ -522,10 +493,8 @@ export default function RodeoDetailPage() {
             voteStates={voteStates}
             songScores={songScores}
             isFinished={false}
-            myRatings={myRatings}
             songOrders={songOrders}
             onVote={castVote}
-            onRate={rateSong}
             onReorder={reorderSongs}
           />
         ))}
@@ -676,58 +645,6 @@ function VoteTallies({
   )
 }
 
-// ── StarRating ────────────────────────────────────────────────
-
-function StarRating({
-  songId,
-  circleId,
-  myRating,
-  avgRating,
-  ratingCount,
-  onRate,
-}: {
-  songId: string
-  circleId: string | null
-  myRating: number | undefined
-  avgRating: number
-  ratingCount: number
-  onRate: (circleId: string, songId: string, rating: number) => void
-}) {
-  const [hovered, setHovered] = useState<number | null>(null)
-  const hasMyRating = myRating !== undefined && myRating > 0
-  const displayRating = hovered ?? (hasMyRating ? myRating : avgRating)
-
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(null)}
-          onClick={() => { if (circleId) onRate(circleId, songId, star) }}
-          disabled={!circleId}
-          className="p-0.5 transition-transform hover:scale-110 disabled:cursor-default"
-          title={circleId ? `Rate ${star} star${star !== 1 ? 's' : ''}` : undefined}
-        >
-          <Star
-            className={`w-3.5 h-3.5 transition-colors ${
-              star <= displayRating
-                ? 'text-yellow-400 fill-yellow-400'
-                : 'text-stone-300 fill-stone-700'
-            }`}
-          />
-        </button>
-      ))}
-      {(hasMyRating || (avgRating > 0 && ratingCount > 0)) && (
-        <span className="text-xs text-stone-600 ml-1 whitespace-nowrap">
-          {hasMyRating ? `${myRating}/5 · your rating` : `${avgRating.toFixed(1)} avg (${ratingCount})`}
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ── EntrySongsCard ────────────────────────────────────────────
 
 function EntrySongsCard({
@@ -738,10 +655,8 @@ function EntrySongsCard({
   voteStates,
   songScores,
   isFinished,
-  myRatings,
   songOrders,
   onVote,
-  onRate,
   onReorder,
 }: {
   entry: Entry
@@ -751,10 +666,8 @@ function EntrySongsCard({
   voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
   songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
   isFinished: boolean
-  myRatings: Record<string, number>
   songOrders: Record<string, EntrySong[]>
   onVote: (song_id: string, entry_id: string) => void
-  onRate: (circleId: string, songId: string, rating: number) => void
   onReorder: (entryId: string, fromIndex: number, toIndex: number) => void
 }) {
   const name = entryDisplayName(entry)
@@ -925,18 +838,6 @@ function EntrySongsCard({
                     {song?.artist ?? 'Unknown artist'}
                   </div>
 
-                  {/* Star rating */}
-                  <div className="mt-1.5">
-                    <StarRating
-                      songId={es.song_id}
-                      circleId={entry.circle_id}
-                      myRating={myRatings[es.song_id]}
-                      avgRating={song?.avg_rating ?? 0}
-                      ratingCount={song?.rating_count ?? 0}
-                      onRate={onRate}
-                    />
-                  </div>
-
                   {/* Song score (finished) */}
                   {isFinished && songResult && (
                     <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
@@ -998,10 +899,8 @@ function CombinedSongsCard({
   myVotes,
   voteStates,
   songScores,
-  myRatings,
   songOrders,
   onVote,
-  onRate,
 }: {
   entries: Entry[]
   isVoting: boolean
@@ -1009,10 +908,8 @@ function CombinedSongsCard({
   myVotes: MyVote[]
   voteStates: Record<string, 'idle' | 'voting' | 'voted' | 'error'>
   songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
-  myRatings: Record<string, number>
   songOrders: Record<string, EntrySong[]>
   onVote: (song_id: string, entry_id: string) => void
-  onRate: (circleId: string, songId: string, rating: number) => void
 }) {
   // Interleave: e0[0], e1[0], e0[1], e1[1], …
   const combined: SongWithMeta[] = []
@@ -1096,17 +993,6 @@ function CombinedSongsCard({
                 </div>
               )}
 
-              {/* Rating stars */}
-              {es.circleId && song && (
-                <StarRating
-                  circleId={es.circleId}
-                  songId={es.song_id}
-                  avgRating={song.avg_rating ?? 0}
-                  ratingCount={song.rating_count ?? 0}
-                  myRating={myRatings[es.song_id] ?? 0}
-                  onRate={onRate}
-                />
-              )}
             </li>
           )
         })}

@@ -32,7 +32,6 @@ export async function GET(
     .select(`
       id, circle_id, artist_id, credits_contributed,
       circles(id, name),
-      profiles!rodeo_entries_artist_id_fkey(id, display_name),
       rodeo_entry_songs(
         id, song_id, label, locked,
         circle_songs(id, title, artist)
@@ -133,7 +132,7 @@ export async function GET(
 
     return {
       id: entry.id,
-      name: entry.circles?.name ?? entry.profiles?.display_name ?? 'Unknown',
+      name: entry.circles?.name ?? 'Unknown',
       borda_score: songs.reduce((s, sg) => s + sg.borda_score, 0),
       credits_contributed: entry.credits_contributed ?? 0,
       songs,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Search, Users, Music, Star, CheckCircle2,
   Coins, Trophy, Loader2, AlertCircle, Lock, ChevronRight, Crown,
@@ -96,6 +96,9 @@ function formatCredits(n: number): string {
 
 export default function ChallengePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromCircleId = searchParams.get('from')
+
   const [step, setStep] = useState(1)
   const [state, setState] = useState<WizardState>(INITIAL)
 
@@ -113,18 +116,22 @@ export default function ChallengePage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [proposalId, setProposalId] = useState<string | null>(null)
 
-  // Load user's board/founder circles on mount
+  // Load user's board/founder circles on mount — pre-select if ?from=<id> provided
   useEffect(() => {
     fetch('/api/circles/mine')
       .then((r) => r.json())
       .then((d) => {
-        setMyCircles(d.circles ?? [])
-        if (d.circles?.length === 1) {
-          setState((s) => ({ ...s, challengerCircleId: d.circles[0].id, challengerCircleName: d.circles[0].name }))
+        const circles: MyCircle[] = d.circles ?? []
+        setMyCircles(circles)
+        const preselect = fromCircleId
+          ? circles.find((c) => c.id === fromCircleId)
+          : circles.length === 1 ? circles[0] : null
+        if (preselect) {
+          setState((s) => ({ ...s, challengerCircleId: preselect.id, challengerCircleName: preselect.name }))
         }
       })
       .finally(() => setMyCirclesLoading(false))
-  }, [])
+  }, [fromCircleId])
 
   // Browse circles for target selection
   const loadCircles = useCallback(async (q: string) => {
@@ -436,7 +443,7 @@ export default function ChallengePage() {
                         update({ selectedSongIds: ids })
                       }}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                        selected ? 'bg-amber-500 border-amber-500' : 'border-stone-700'
+                        selected ? 'bg-amber-500 border-amber-500' : 'border-stone-400 bg-stone-900 hover:border-amber-500'
                       }`}
                       aria-label={selected ? 'Deselect' : 'Select'}
                     >

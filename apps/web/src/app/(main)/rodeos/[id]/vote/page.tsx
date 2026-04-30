@@ -220,7 +220,7 @@ export default function VotingPage() {
 
   const isExpired = meta?.end_date ? new Date(meta.end_date).getTime() < Date.now() : false
   const isOpen    = meta?.status === 'voting' && !isExpired
-  const canRank   = tally.is_subscribed && isOpen
+  const canRank   = isOpen
 
   // Build a flat song map for quick lookup
   const songMap  = new Map<string, SongTally & { entryIdx: number; entryName: string }>()
@@ -287,8 +287,6 @@ export default function VotingPage() {
         )}
       </div>
 
-      {/* ── Subscription gate ───────────────────────────────── */}
-      {!tally.is_subscribed && <SubscriptionGate />}
 
       {/* ── Submitted banner ────────────────────────────────── */}
       {submitted && canRank && (

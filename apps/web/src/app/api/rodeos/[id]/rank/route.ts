@@ -41,20 +41,6 @@ export async function POST(
     return NextResponse.json({ error: 'Voting has ended — the deadline has passed' }, { status: 400 })
   }
 
-  // Subscription required
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.subscription_tier === 'free') {
-    return NextResponse.json(
-      { error: 'A paid subscription is required to rank in rodeos' },
-      { status: 403 }
-    )
-  }
-
   // Validate all song_ids belong to this rodeo
   if (songIds.length > 0) {
     const { data: rodeoEntries } = await supabase

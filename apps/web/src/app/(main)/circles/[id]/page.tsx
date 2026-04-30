@@ -1619,9 +1619,10 @@ export default function CircleDetailPage() {
     if (tab === 'rodeos' && !rodeoHistory && !rodeoHistoryLoading) loadRodeoHistory()
   }, [tab, rodeoHistory, rodeoHistoryLoading, loadRodeoHistory])
   useEffect(() => {
-    // guard: also stop retrying if isBoardMember was set to false (403 response)
-    if (tab === 'board' && !boardData && !boardLoading && isBoardMember !== false) loadBoardInbox()
-  }, [tab, boardData, boardLoading, isBoardMember, loadBoardInbox])
+    // Load eagerly on mount so the badge shows without opening the tab first.
+    // 403 → isBoardMember=false, stops further retries.
+    if (!boardData && !boardLoading && isBoardMember !== false) loadBoardInbox()
+  }, [boardData, boardLoading, isBoardMember, loadBoardInbox])
   useEffect(() => {
     if (tab === 'nominations' && !nominationsLoaded) loadNominations()
   }, [tab, nominationsLoaded, loadNominations])
@@ -1811,11 +1812,19 @@ export default function CircleDetailPage() {
         >
           <span className="flex items-center gap-1.5">
             <Crown className="w-4 h-4" />Board
-            {boardData && boardData.proposals.filter((p) => p.status === 'pending').length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">
-                {boardData.proposals.filter((p) => p.status === 'pending').length}
-              </span>
-            )}
+            {(() => {
+              if (!boardData) return null
+              const pending = boardData.proposals.filter((p) => p.status === 'pending')
+              if (pending.length === 0) return null
+              const needsMyVote = pending.filter(
+                (p) => !p.challenge_proposal_votes.some((v) => v.voter_id === boardData.my_user_id)
+              ).length
+              return (
+                <span className={`w-4 h-4 rounded-full text-white text-xs flex items-center justify-center font-bold ${needsMyVote > 0 ? 'bg-amber-500 animate-pulse' : 'bg-stone-600'}`}>
+                  {pending.length}
+                </span>
+              )
+            })()}
           </span>
         </button>
       </div>

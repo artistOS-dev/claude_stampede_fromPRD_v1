@@ -223,11 +223,12 @@ export const ChallengeBoardService = {
     }
 
     const totalVotesCast = tally.approve + tally.hold + tally.decline
-    const majority = Math.floor(totalSeats / 2) + 1 // strict majority
+    const majority = Math.floor(totalSeats / 2) + 1 // used for decline/hold only
 
     let outcome: 'approved' | 'held' | 'declined' | null = null
 
-    if (tally.approve >= majority) {
+    // A single approve vote is enough to send the challenge
+    if (tally.approve >= 1) {
       outcome = 'approved'
     } else if (tally.decline >= majority) {
       outcome = 'declined'

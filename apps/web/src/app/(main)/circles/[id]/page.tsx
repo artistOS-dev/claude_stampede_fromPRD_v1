@@ -91,6 +91,20 @@ const EVENT_ICONS: Record<string, string> = {
   nomination_inducted:   '🎤',
 }
 
+function RoleBadge({ role }: { role: 'member' | 'board' | 'founder' }) {
+  const styles = {
+    founder: 'bg-yellow-950/40 text-yellow-300 border-yellow-700',
+    board:   'bg-amber-950/40 text-amber-300 border-amber-700',
+    member:  'bg-stone-800 text-stone-400 border-stone-700',
+  }
+  const labels = { founder: '👑 Founder', board: '🛡 Board', member: '✓ Member' }
+  return (
+    <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${styles[role]}`}>
+      {labels[role]}
+    </span>
+  )
+}
+
 function FeedEventCard({ event }: { event: FeedEvent }) {
   const icon = EVENT_ICONS[event.event_type] ?? '📌'
   const label = event.event_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -1431,6 +1445,9 @@ export default function CircleDetailPage() {
   const [tab, setTab] = useState<'songs' | 'artists' | 'rodeos' | 'nominations' | 'feed' | 'board'>('songs')
   const [isViewAllUser, setIsViewAllUser] = useState(false)
 
+  // Circle header info
+  const [circleInfo, setCircleInfo] = useState<{ name: string; member_count: number; my_role: 'member' | 'board' | 'founder' | null } | null>(null)
+
   // Rodeo history state
   const [rodeoHistory, setRodeoHistory] = useState<RodeoHistoryData | null>(null)
   const [rodeoHistoryLoading, setRodeoHistoryLoading] = useState(false)
@@ -1590,15 +1607,22 @@ export default function CircleDetailPage() {
     })
   }, [])
 
+  useEffect(() => {
+    fetch(`/api/circles/${id}/info`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setCircleInfo({ name: d.name, member_count: d.member_count, my_role: d.my_role }) })
+  }, [id])
+
   useEffect(() => { loadSongs() }, [loadSongs])
   useEffect(() => { loadArtists() }, [loadArtists])
   useEffect(() => {
     if (tab === 'rodeos' && !rodeoHistory && !rodeoHistoryLoading) loadRodeoHistory()
   }, [tab, rodeoHistory, rodeoHistoryLoading, loadRodeoHistory])
   useEffect(() => {
-    // guard: also stop retrying if isBoardMember was set to false (403 response)
-    if (tab === 'board' && !boardData && !boardLoading && isBoardMember !== false) loadBoardInbox()
-  }, [tab, boardData, boardLoading, isBoardMember, loadBoardInbox])
+    // Load eagerly on mount so the badge shows without opening the tab first.
+    // 403 → isBoardMember=false, stops further retries.
+    if (!boardData && !boardLoading && isBoardMember !== false) loadBoardInbox()
+  }, [boardData, boardLoading, isBoardMember, loadBoardInbox])
   useEffect(() => {
     if (tab === 'nominations' && !nominationsLoaded) loadNominations()
   }, [tab, nominationsLoaded, loadNominations])
@@ -1724,6 +1748,26 @@ export default function CircleDetailPage() {
         Back to circles
       </button>
 
+      {/* ── Circle header ── */}
+      {circleInfo && (
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-900/30 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white leading-tight">{circleInfo.name}</h1>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {circleInfo.member_count} member{circleInfo.member_count !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          {circleInfo.my_role && (
+            <RoleBadge role={circleInfo.my_role} />
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 bg-stone-800 rounded-xl p-1 w-fit">
         <button
@@ -1768,11 +1812,19 @@ export default function CircleDetailPage() {
         >
           <span className="flex items-center gap-1.5">
             <Crown className="w-4 h-4" />Board
-            {boardData && boardData.proposals.filter((p) => p.status === 'pending').length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">
-                {boardData.proposals.filter((p) => p.status === 'pending').length}
-              </span>
-            )}
+            {(() => {
+              if (!boardData) return null
+              const pending = boardData.proposals.filter((p) => p.status === 'pending')
+              if (pending.length === 0) return null
+              const needsMyVote = pending.filter(
+                (p) => !p.challenge_proposal_votes.some((v) => v.voter_id === boardData.my_user_id)
+              ).length
+              return (
+                <span className={`w-4 h-4 rounded-full text-white text-xs flex items-center justify-center font-bold ${needsMyVote > 0 ? 'bg-amber-500 animate-pulse' : 'bg-stone-600'}`}>
+                  {pending.length}
+                </span>
+              )
+            })()}
           </span>
         </button>
       </div>
@@ -1936,7 +1988,7 @@ export default function CircleDetailPage() {
           readOnly={boardData?.read_only === true}
           circleId={id}
           onVoted={loadBoardInbox}
-          onNewChallenge={() => router.push('/rodeos/challenge')}
+          onNewChallenge={() => router.push(`/rodeos/challenge?from=${id}`)}
           onViewRodeo={(rodeoId) => router.push(`/rodeos/${rodeoId}`)}
         />
       )}

@@ -10,6 +10,7 @@ import type {
   RodeoStatus,
   SongLabel,
 } from '@/lib/types/rodeo'
+import { ActivityFeedService } from './activity-feed-service'
 
 // ── Error helper ──────────────────────────────────────────────
 
@@ -611,7 +612,7 @@ export const RodeoService = {
     // Fetch rodeo
     const { data: rodeo } = await supabase
       .from('rodeos')
-      .select('id, status, created_by')
+      .select('id, status, created_by, title')
       .eq('id', rodeo_id)
       .single()
 
@@ -630,7 +631,7 @@ export const RodeoService = {
     // All entries must be confirmed (no pending/withdrawn)
     const { data: entries } = await supabase
       .from('rodeo_entries')
-      .select('id, status, internal_vote_passed')
+      .select('id, status, internal_vote_passed, circle_id')
       .eq('rodeo_id', rodeo_id)
 
     if (!entries || entries.length < 2) {
@@ -660,6 +661,20 @@ export const RodeoService = {
     // Create a placeholder result row (vote tallies auto-update via trigger)
     await supabase.from('rodeo_results').insert({ rodeo_id })
 
+    // Log rodeo_opened for all participating circles
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const circleIds = [...new Set((entries ?? []).map((e: any) => e.circle_id as string))] as string[]
+    for (const circle_id of circleIds) {
+      ActivityFeedService.log({
+        circle_id,
+        rodeo_id,
+        event_type: 'rodeo_opened',
+        actor_id: user.id,
+        board_only: false,
+        payload: { rodeo_id, title: rodeo.title },
+      })
+    }
+
     return { data: { success: true }, error: null }
   },
 
@@ -677,7 +692,7 @@ export const RodeoService = {
     // Fetch rodeo
     const { data: rodeo } = await supabase
       .from('rodeos')
-      .select('id, status, created_by')
+      .select('id, status, created_by, title')
       .eq('id', rodeo_id)
       .single()
 
@@ -852,6 +867,24 @@ export const RodeoService = {
 
     if (closeErr) {
       return { data: null, error: new RodeoError('Failed to close rodeo', 'CLOSE_FAILED', 500) }
+    }
+
+    // Log result_posted for every circle that participated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const circleIds = [...new Set((entries ?? []).map((e: any) => e.circle_id as string))] as string[]
+    for (const circle_id of circleIds) {
+      ActivityFeedService.log({
+        circle_id,
+        rodeo_id,
+        event_type: 'result_posted',
+        actor_id: user.id,
+        board_only: false,
+        payload: {
+          rodeo_id,
+          title: rodeo.title,
+          winner_circle_id: winnerEntry?.circle_id ?? null,
+        },
+      })
     }
 
     return { data: { result_id: result.id }, error: null }

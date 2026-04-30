@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { ActivityFeedService } from '@/lib/services/activity-feed-service'
 
 const joinCircleSchema = z.object({
   circle_id: z.string().min(1),
@@ -60,6 +61,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Failed to join circle' }, { status: 500 })
   }
+
+  // Fetch display name for payload then fire-and-forget feed event
+  const supabase2 = createClient()
+  const { data: profile } = await supabase2.from('profiles').select('display_name').eq('id', user.id).maybeSingle()
+  ActivityFeedService.log({
+    circle_id,
+    event_type: 'member_joined',
+    actor_id: user.id,
+    board_only: false,
+    payload: { display_name: profile?.display_name ?? null },
+  })
 
   return NextResponse.json({ success: true })
 }

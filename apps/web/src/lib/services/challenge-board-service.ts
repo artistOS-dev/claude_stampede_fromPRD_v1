@@ -13,6 +13,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { RodeoService } from './rodeo-service'
+import { ActivityFeedService } from './activity-feed-service'
 
 // ── Error ─────────────────────────────────────────────────────
 
@@ -123,6 +124,19 @@ export const ChallengeBoardService = {
     if (songsErr) {
       return { data: null, error: new BoardError('Failed to attach songs', 'SONGS_FAILED', 500) }
     }
+
+    // Notify board via feed (board-only so regular members don't see it)
+    ActivityFeedService.log({
+      circle_id: input.circle_id,
+      event_type: 'board_approval_pending',
+      actor_id: user.id,
+      board_only: true,
+      payload: {
+        proposal_id: proposal.id,
+        title: input.title,
+        target_circle_id: input.target_circle_id,
+      },
+    })
 
     return { data: { proposal_id: proposal.id }, error: null }
   },

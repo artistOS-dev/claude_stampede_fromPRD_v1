@@ -663,7 +663,7 @@ export const RodeoService = {
 
     // Log rodeo_opened for all participating circles
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const circleIds = [...new Set((entries ?? []).map((e: any) => e.circle_id as string))] as string[]
+    const circleIds = Array.from(new Set((entries ?? []).map((e: any) => e.circle_id as string)))
     for (const circle_id of circleIds) {
       ActivityFeedService.log({
         circle_id,
@@ -871,7 +871,7 @@ export const RodeoService = {
 
     // Log result_posted for every circle that participated
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const circleIds = [...new Set((entries ?? []).map((e: any) => e.circle_id as string))] as string[]
+    const circleIds = Array.from(new Set((entries ?? []).map((e: any) => e.circle_id as string)))
     for (const circle_id of circleIds) {
       ActivityFeedService.log({
         circle_id,

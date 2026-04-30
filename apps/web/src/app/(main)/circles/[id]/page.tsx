@@ -59,6 +59,7 @@ interface Nomination {
 
 interface FeedEvent {
   id: string
+  circle_id: string
   event_type: string
   actor_id: string | null
   rodeo_id: string | null
@@ -89,6 +90,8 @@ const EVENT_ICONS: Record<string, string> = {
   board_approval_pending:'⏳',
   nomination_passed:     '🗳️',
   nomination_inducted:   '🎤',
+  song_added:            '🎵',
+  member_joined:         '👋',
 }
 
 function RoleBadge({ role }: { role: 'member' | 'board' | 'founder' }) {
@@ -105,25 +108,88 @@ function RoleBadge({ role }: { role: 'member' | 'board' | 'founder' }) {
   )
 }
 
+function feedEventDescription(event: FeedEvent): { headline: string; detail?: string } {
+  const p = event.payload as Record<string, string | null>
+  switch (event.event_type) {
+    case 'song_added':
+      return {
+        headline: p.title ? `"${p.title}" added to the circle` : 'A song was added',
+        detail: p.artist ? `by ${p.artist}` : undefined,
+      }
+    case 'member_joined':
+      return {
+        headline: p.display_name ? `${p.display_name} joined the circle` : 'A new member joined',
+      }
+    case 'challenge_sent':
+      return {
+        headline: p.title ? `Challenge sent: "${p.title}"` : 'A challenge was sent',
+        detail: p.credit_buy_in ? `${p.credit_buy_in} credits at stake` : undefined,
+      }
+    case 'challenge_received':
+      return {
+        headline: p.title ? `Incoming challenge: "${p.title}"` : 'A challenge was received',
+        detail: p.credit_buy_in ? `${p.credit_buy_in} credits at stake` : undefined,
+      }
+    case 'challenge_accepted':
+      return { headline: 'Challenge accepted — rodeo is on' }
+    case 'challenge_declined':
+      return { headline: 'Challenge declined' }
+    case 'board_approval_pending':
+      return {
+        headline: p.title ? `Board vote needed: "${p.title}"` : 'A challenge proposal needs board approval',
+      }
+    case 'rodeo_opened':
+      return {
+        headline: p.title ? `Ranking open: "${p.title}"` : 'Voting is now open',
+        detail: 'Cast your ballot',
+      }
+    case 'result_posted': {
+      const isWinner = p.winner_circle_id === event.circle_id
+      return {
+        headline: p.title ? `Result: "${p.title}"` : 'Rodeo result posted',
+        detail: p.winner_circle_id
+          ? (isWinner ? '🏆 Your circle won!' : 'Your circle lost this one')
+          : 'Result: Draw',
+      }
+    }
+    case 'vote_milestone':
+      return { headline: 'Voting milestone reached', detail: p.milestone ?? undefined }
+    case 'artist_promoted':
+      return {
+        headline: p.artist_name ? `${p.artist_name} was promoted` : 'An artist was promoted',
+        detail: p.new_tier ? `New tier: ${p.new_tier.replace(/_/g, ' ')}` : undefined,
+      }
+    case 'credits_distributed':
+      return { headline: 'Credits distributed to members' }
+    case 'budget_reset':
+      return { headline: 'Nomination budget has been reset' }
+    case 'nomination_passed':
+      return {
+        headline: p.artist_name ? `Nomination for ${p.artist_name} passed` : 'A nomination passed',
+        detail: 'Moving to board review',
+      }
+    case 'nomination_inducted':
+      return {
+        headline: p.artist_name ? `${p.artist_name} inducted into the circle` : 'Artist inducted',
+      }
+    default:
+      return { headline: event.event_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) }
+  }
+}
+
 function FeedEventCard({ event }: { event: FeedEvent }) {
   const icon = EVENT_ICONS[event.event_type] ?? '📌'
-  const label = event.event_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  const payload = event.payload as Record<string, string>
+  const { headline, detail } = feedEventDescription(event)
 
   return (
     <div className="flex gap-3 py-3 border-b border-stone-800 last:border-0">
-      <div className="w-8 h-8 rounded-full bg-stone-950 flex items-center justify-center flex-shrink-0 text-base">
+      <div className="w-8 h-8 rounded-full bg-stone-950 flex items-center justify-center flex-shrink-0 text-base mt-0.5">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{label}</p>
-        {payload.artist_name && (
-          <p className="text-xs text-stone-500 truncate">Artist: {payload.artist_name}</p>
-        )}
-        {payload.action && (
-          <p className="text-xs text-stone-600 truncate capitalize">{String(payload.action).replace(/_/g, ' ')}</p>
-        )}
-        <p className="text-xs text-stone-600 mt-0.5">{formatDate(event.created_at)}</p>
+        <p className="text-sm font-medium text-white leading-snug">{headline}</p>
+        {detail && <p className="text-xs text-stone-400 mt-0.5 truncate">{detail}</p>}
+        <p className="text-xs text-stone-600 mt-1">{formatDate(event.created_at)}</p>
       </div>
       {event.board_only && (
         <span className="text-xs bg-amber-900/30 text-amber-400 px-2 py-0.5 rounded-full h-fit self-center flex-shrink-0">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { ActivityFeedService } from '@/lib/services/activity-feed-service'
 
 const addSongSchema = z.object({
   title: z.string().min(1).max(200),
@@ -65,17 +66,30 @@ export async function POST(
     return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { error } = await supabase.from('circle_songs').insert({
+  const { data: inserted, error } = await supabase.from('circle_songs').insert({
     circle_id: params.id,
     shared_by: user.id,
     ...parsed.data,
-  })
+  }).select('id, title, artist').single()
 
   if (error) {
     console.error('Add song error:', error)
     if (error.code === '42501') return NextResponse.json({ error: 'You must be a member of this circle.' }, { status: 403 })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // Fire-and-forget feed event
+  ActivityFeedService.log({
+    circle_id: params.id,
+    event_type: 'song_added',
+    actor_id: user.id,
+    board_only: false,
+    payload: {
+      song_id: inserted.id,
+      title: inserted.title,
+      artist: inserted.artist,
+    },
+  })
 
   return NextResponse.json({ success: true })
 }

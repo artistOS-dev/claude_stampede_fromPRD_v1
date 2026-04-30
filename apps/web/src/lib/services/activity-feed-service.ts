@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export type FeedEventType =
   | 'challenge_sent'
@@ -14,6 +14,8 @@ export type FeedEventType =
   | 'board_approval_pending'
   | 'nomination_passed'
   | 'nomination_inducted'
+  | 'song_added'
+  | 'member_joined'
 
 export interface FeedEvent {
   id: string
@@ -39,7 +41,7 @@ export interface LogEventParams {
 
 export const ActivityFeedService = {
   async log(params: LogEventParams): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const { error } = await supabase.from('circle_rodeo_events').insert({
       circle_id: params.circle_id,
       event_type: params.event_type,
@@ -58,7 +60,7 @@ export const ActivityFeedService = {
     circle_id: string,
     options?: { board_member?: boolean; limit?: number; offset?: number }
   ): Promise<FeedEvent[]> {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
 

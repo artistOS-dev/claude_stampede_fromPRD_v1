@@ -196,13 +196,13 @@ export default function CirclesPage() {
               placeholder="Circle name"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <textarea
               placeholder="Description"
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
               rows={3}
             />
             <input
@@ -210,14 +210,14 @@ export default function CirclesPage() {
               placeholder="Core artists (comma separated)"
               value={form.coreArtists}
               onChange={(e) => setForm((prev) => ({ ...prev, coreArtists: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="text"
               placeholder="Personality tags (comma separated)"
               value={form.personalityTags}
               onChange={(e) => setForm((prev) => ({ ...prev, personalityTags: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
@@ -226,14 +226,14 @@ export default function CirclesPage() {
                 placeholder="Max members (optional)"
                 value={form.maxMembers}
                 onChange={(e) => setForm((prev) => ({ ...prev, maxMembers: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <input
                 type="url"
                 placeholder="Image URL (optional)"
                 value={form.imageUrl}
                 onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-800 bg-stone-900 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <label className="flex items-center gap-2 text-sm text-stone-300">

@@ -23,14 +23,19 @@ begin;
 --    Delete them before rodeos so no dangling NULL rodeo_id rows remain.
 delete from public.circle_rodeo_events;
 
--- 2. Delete all rodeos — cascades to:
+-- 2. challenge_proposals.rodeo_id has no ON DELETE rule (defaults to RESTRICT).
+--    Null it out before deleting rodeos, then the proposals are wiped by the
+--    circles cascade in step 4.
+update public.challenge_proposals set rodeo_id = null where rodeo_id is not null;
+
+-- 3. Delete all rodeos — cascades to:
 --    credit_pools → distribution_rules
 --    rodeo_entries → rodeo_entry_songs, rodeo_votes
 --    rodeo_results → rodeo_song_results, rodeo_credit_distributions
 --    rodeo_rankings
 delete from public.rodeos;
 
--- 3. Delete all circles — cascades to:
+-- 4. Delete all circles — cascades to:
 --    circle_members, circle_invites, circle_songs → song_ratings,
 --    circle_artists, challenge_proposals → challenge_proposal_songs,
 --    challenge_proposal_votes, nomination_budgets, nominations → nomination_votes

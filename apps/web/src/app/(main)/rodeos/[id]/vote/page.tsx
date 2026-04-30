@@ -110,7 +110,11 @@ export default function VotingPage() {
   const loadTally = useCallback(async () => {
     try {
       const res = await fetch(`/api/rodeos/${id}/tally`)
-      if (!res.ok) return
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        if (!initialised.current) setFetchError(json.error ?? `Error ${res.status} loading tally`)
+        return
+      }
       const json: TallyData = await res.json()
       setTally(json)
       // Only seed rankedIds from server on first load

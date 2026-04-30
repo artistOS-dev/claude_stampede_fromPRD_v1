@@ -174,10 +174,13 @@ export default function ChallengePage() {
       case 2: return !!state.title.trim() && !!state.storyline.trim()
       case 3: return state.selectedSongIds.length >= 1
       case 4: return state.confidenceConfirmed
-      case 5: return state.creditBuyIn > 0
+      case 5: return state.creditBuyIn > 0 && !!state.endDate && new Date(state.endDate).getTime() > Date.now()
       default: return false
     }
   }
+
+  // Min date-time for the end date picker: 1 hour from now
+  const minEndDate = new Date(Date.now() + 3_600_000).toISOString().slice(0, 16)
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -606,17 +609,24 @@ export default function ChallengePage() {
             </div>
           </div>
 
-          {/* Optional end date */}
+          {/* Required end date */}
           <div>
             <label className="block text-sm font-medium text-stone-300 mb-1.5">
-              Voting end date <span className="text-stone-600 font-normal">(optional)</span>
+              Voting deadline <span className="text-red-400 font-normal">*</span>
             </label>
             <input
               type="datetime-local"
+              min={minEndDate}
               value={state.endDate}
               onChange={(e) => update({ endDate: e.target.value })}
               className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
+            {state.endDate && new Date(state.endDate).getTime() <= Date.now() && (
+              <p className="text-xs text-red-400 mt-1">Deadline must be in the future.</p>
+            )}
+            {!state.endDate && (
+              <p className="text-xs text-stone-500 mt-1">Required — rankings close at this time.</p>
+            )}
           </div>
         </StepCard>
       )}

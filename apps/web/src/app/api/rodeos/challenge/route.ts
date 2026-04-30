@@ -40,6 +40,12 @@ export async function POST(request: NextRequest) {
   if (!body.credit_buy_in || body.credit_buy_in <= 0) {
     return NextResponse.json({ error: 'credit_buy_in must be greater than zero' }, { status: 400 })
   }
+  if (!body.end_date) {
+    return NextResponse.json({ error: 'end_date is required — rodeos must have a voting deadline' }, { status: 400 })
+  }
+  if (new Date(body.end_date).getTime() <= Date.now()) {
+    return NextResponse.json({ error: 'end_date must be in the future' }, { status: 400 })
+  }
 
   const { data, error } = await RodeoService.challengeCircle({
     challenger_circle_id: body.challenger_circle_id,

@@ -26,15 +26,19 @@ export async function POST(
   }
   const songIds = body.song_ids as string[]
 
-  // Rodeo must be open for voting
+  // Rodeo must be open for voting and not past its deadline
   const { data: rodeo } = await supabase
     .from('rodeos')
-    .select('status')
+    .select('status, end_date')
     .eq('id', params.id)
     .single()
 
   if (!rodeo || rodeo.status !== 'voting') {
     return NextResponse.json({ error: 'Voting is not open for this rodeo' }, { status: 400 })
+  }
+
+  if (rodeo.end_date && new Date(rodeo.end_date).getTime() < Date.now()) {
+    return NextResponse.json({ error: 'Voting has ended — the deadline has passed' }, { status: 400 })
   }
 
   // Subscription required

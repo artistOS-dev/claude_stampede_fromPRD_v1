@@ -218,8 +218,9 @@ export default function VotingPage() {
     )
   }
 
-  const isOpen   = meta?.status === 'voting'
-  const canRank  = tally.is_subscribed && isOpen
+  const isExpired = meta?.end_date ? new Date(meta.end_date).getTime() < Date.now() : false
+  const isOpen    = meta?.status === 'voting' && !isExpired
+  const canRank   = tally.is_subscribed && isOpen
 
   // Build a flat song map for quick lookup
   const songMap  = new Map<string, SongTally & { entryIdx: number; entryName: string }>()
@@ -258,26 +259,32 @@ export default function VotingPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-300 animate-pulse' : 'bg-stone-500'}`} />
+              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-300 animate-pulse' : isExpired ? 'bg-red-500' : 'bg-stone-500'}`} />
               <span className="text-xs font-medium text-amber-200/80 uppercase tracking-wide">
-                {isOpen ? 'Ranking Live' : 'Ranking Closed'}
+                {isOpen ? 'Ranking Live' : isExpired ? 'Deadline Passed' : 'Ranking Closed'}
               </span>
             </div>
             <h1 className="text-xl font-bold font-display leading-tight text-amber-100">
               {meta?.title ?? 'Rodeo'}
             </h1>
           </div>
-          {countdown && isOpen && (
-            <div className="flex items-center gap-2 bg-stone-900/30 backdrop-blur rounded-xl px-4 py-2 shrink-0">
-              <Timer className="w-4 h-4 text-amber-200" />
-              <span className="text-sm font-bold tabular-nums text-amber-100">{countdown}</span>
+          {countdown && (
+            <div className={`flex items-center gap-2 backdrop-blur rounded-xl px-4 py-2 shrink-0 ${isExpired ? 'bg-red-950/40' : 'bg-stone-900/30'}`}>
+              <Timer className={`w-4 h-4 ${isExpired ? 'text-red-400' : 'text-amber-200'}`} />
+              <span className={`text-sm font-bold tabular-nums ${isExpired ? 'text-red-300' : 'text-amber-100'}`}>{countdown}</span>
             </div>
           )}
         </div>
-        <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
-          Use the arrow buttons to move songs up or down. Rank 1 carries the most weight.
-          You can rank all songs or just your favourites — submit when ready.
-        </p>
+        {isExpired ? (
+          <p className="mt-3 text-xs text-red-300/80 leading-relaxed">
+            The voting deadline has passed. No new rankings can be submitted.
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
+            Use the arrow buttons to move songs up or down. Rank 1 carries the most weight.
+            You can rank all songs or just your favourites — submit when ready.
+          </p>
+        )}
       </div>
 
       {/* ── Subscription gate ───────────────────────────────── */}

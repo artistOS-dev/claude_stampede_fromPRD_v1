@@ -354,35 +354,6 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
   )
 }
 
-// ── SubscriptionGate ──────────────────────────────────────────
-
-function SubscriptionGate() {
-  return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-stone-950 to-stone-900 rounded-2xl p-6 text-white border border-stone-800">
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-amber-500/20 blur-2xl pointer-events-none" />
-      <div className="relative space-y-3">
-        <div className="flex items-center gap-2">
-          <Lock className="w-5 h-5 text-amber-400" />
-          <span className="font-bold text-lg">Subscription Required</span>
-        </div>
-        <p className="text-sm text-stone-400 leading-relaxed">
-          Ranking in Rodeos is reserved for Stampede subscribers. Upgrade to submit
-          your ballot, earn credits, and shape which music wins.
-        </p>
-        <p className="text-xs text-stone-600">
-          Live tallies below are always visible — no weighting hidden.
-        </p>
-        <button
-          type="button"
-          className="w-full mt-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 font-semibold text-sm transition-colors"
-        >
-          Upgrade to Stampede Pro
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── RankingList ───────────────────────────────────────────────
 // Up/down arrow reorder list of songs in the voter's ballot.
 

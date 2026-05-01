@@ -568,59 +568,44 @@ function LiveTallies({
         </div>
       </div>
 
-      {/* Per-entry breakdown */}
-      <div className="grid gap-3">
-        {entries.map((entry, idx) => {
-          const pct       = totalBorda > 0 ? Math.round((entry.borda_score / totalBorda) * 100) : 50
-          const isLeading = entry.id === leader?.id && totalBorda > 0
-          return (
-            <div
-              key={entry.id}
-              className={`rounded-xl border p-4 ${isLeading ? 'border-amber-700 bg-amber-950/20' : 'border-stone-800 bg-stone-950'}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  {isLeading && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                  <span className="font-semibold text-stone-100 truncate text-sm">{entry.name}</span>
+      {/* Combined song ranking */}
+      {(() => {
+        const allSongs = entries.flatMap((e) => e.songs)
+        const sorted   = [...allSongs].sort((a, b) => b.borda_score - a.borda_score)
+        const maxScore = Math.max(...sorted.map((s) => s.borda_score), 1)
+        const hasSores = sorted.some((s) => s.borda_score > 0)
+        return (
+          <div className="space-y-2">
+            {sorted.map((song, rank) => {
+              const isTop = rank === 0 && hasSores
+              return (
+                <div key={song.song_id} className="flex items-center gap-3">
+                  <span className={`w-5 text-xs font-bold tabular-nums shrink-0 text-right ${isTop ? 'text-amber-400' : 'text-stone-600'}`}>
+                    {rank + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className={`text-sm truncate ${isTop ? 'text-white font-semibold' : 'text-stone-400'}`}>
+                        {song.title}
+                      </span>
+                      <span className="tabular-nums text-xs text-stone-600 shrink-0">
+                        {song.borda_score.toFixed(0)} pts
+                      </span>
+                    </div>
+                    <div className="h-1 bg-stone-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${isTop ? 'bg-amber-500' : 'bg-stone-600'}`}
+                        style={{ width: `${(song.borda_score / maxScore) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  {isTop && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                 </div>
-                <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-amber-400' : 'text-stone-400'}`}>
-                  {entry.borda_score.toFixed(0)}
-                  <span className="text-xs font-normal text-stone-600 ml-1">pts</span>
-                </span>
-              </div>
-              <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-3">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-amber-500' : 'bg-teal-400'}`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              {entry.songs.some((s) => s.borda_score > 0) && (
-                <div className="space-y-1 pt-1">
-                  {[...entry.songs]
-                    .sort((a, b) => b.borda_score - a.borda_score)
-                    .map((song) => {
-                      const maxSong = Math.max(...entry.songs.map((s) => s.borda_score), 1)
-                      return (
-                        <div key={song.song_id} className="flex items-center gap-2 text-xs text-stone-500">
-                          <span className="truncate flex-1 max-w-[50%]">{song.title}</span>
-                          <div className="flex-1 h-1 bg-stone-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-amber-600/60 rounded-full"
-                              style={{ width: `${(song.borda_score / maxSong) * 100}%` }}
-                            />
-                          </div>
-                          <span className="tabular-nums w-10 text-right text-stone-600">
-                            {song.borda_score.toFixed(0)} pts
-                          </span>
-                        </div>
-                      )
-                    })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -841,15 +826,10 @@ function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
 }
 
 // ── CombinedSongsCard ─────────────────────────────────────────
-// Shows all songs from all entries in a single interleaved list
-// with a per-circle colour badge. Used during voting/finished.
+// Shows all songs from all entries in a single interleaved list.
+// Used during voting/finished.
 
-const COMBINED_COLORS = [
-  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
-  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
-]
-
-type SongWithMeta = EntrySong & { entryName: string; entryIdx: number; entryId: string; circleId: string | null }
+type SongWithMeta = EntrySong & { entryId: string; circleId: string | null }
 
 function CombinedSongsCard({
   entries,
@@ -870,8 +850,6 @@ function CombinedSongsCard({
       if (es) {
         combined.push({
           ...es,
-          entryName: entryDisplayName(entries[j]),
-          entryIdx: j,
           entryId: entries[j].id,
           circleId: entries[j].circle_id,
         })
@@ -888,7 +866,6 @@ function CombinedSongsCard({
         {combined.map((es) => {
           const song       = es.circle_songs
           const songResult = songScores.get(es.song_id)
-          const color      = COMBINED_COLORS[es.entryIdx % COMBINED_COLORS.length]
 
           return (
             <li key={es.id} className="p-4 space-y-3">
@@ -903,13 +880,7 @@ function CombinedSongsCard({
                     {es.label && <SongLabelBadge label={es.label} />}
                     {es.locked && <span title="Locked"><Lock className="w-3 h-3 text-stone-600" /></span>}
                   </div>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <p className="text-xs text-stone-600">{song?.artist ?? ''}</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${color.badge}`}>
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
-                      {es.entryName}
-                    </span>
-                  </div>
+                  <p className="text-xs text-stone-600 mt-1">{song?.artist ?? ''}</p>
                 </div>
               </div>
 

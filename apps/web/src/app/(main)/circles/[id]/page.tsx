@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Music2, Users, Star, Plus, Trash2, ExternalLink, ArrowLeft, Loader2,
+  Music2, Users, Star, Plus, Trash2, ArrowLeft, Loader2,
   Trophy, Coins, TrendingUp, TrendingDown, Minus, Crown, Archive,
   ChevronRight, Flame, CheckCircle2, ThumbsUp, PauseCircle, XCircle,
   AlertCircle, Swords,
@@ -11,6 +11,7 @@ import {
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import AddSongForm from '@/components/circles/AddSongForm'
+import SpotifyInlinePlayer from '@/components/circles/SpotifyInlinePlayer'
 
 interface Song {
   id: string
@@ -1941,29 +1942,23 @@ export default function CircleDetailPage() {
               key={song.id}
               className="bg-stone-900 rounded-xl border border-stone-700 shadow-sm p-4 flex items-start gap-4"
             >
-              {/* Cover placeholder */}
-              <div className="w-12 h-12 rounded-lg bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                <Music2 className="w-6 h-6 text-amber-400" />
-              </div>
+              {/* Cover art or placeholder */}
+              {song.cover_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={song.cover_url}
+                  alt=""
+                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                  <Music2 className="w-6 h-6 text-amber-400" />
+                </div>
+              )}
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-white truncate">{song.title}</p>
-                    <p className="text-sm text-stone-500 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
-                  </div>
-                  {song.spotify_url && (
-                    <a
-                      href={song.spotify_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 text-green-400 hover:text-green-400"
-                      aria-label="Open in Spotify"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
+                <p className="font-semibold text-white truncate">{song.title}</p>
+                <p className="text-sm text-stone-500 truncate">{song.artist}{song.album ? ` · ${song.album}` : ''}</p>
 
                 <div className="mt-2 flex items-center gap-4 flex-wrap">
                   {/* Community avg */}
@@ -1991,6 +1986,8 @@ export default function CircleDetailPage() {
                     Shared by {song.profiles.display_name}
                   </p>
                 )}
+
+                {song.spotify_url && <SpotifyInlinePlayer url={song.spotify_url} />}
               </div>
             </div>
           ))}

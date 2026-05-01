@@ -6,14 +6,11 @@ import {
   ArrowLeft,
   Timer,
   CheckCircle2,
-  Lock,
   Loader2,
   AlertCircle,
   Music,
   ChevronUp,
   ChevronDown,
-  Plus,
-  X,
   Zap,
   Crown,
   Send,
@@ -117,10 +114,19 @@ export default function VotingPage() {
       }
       const json: TallyData = await res.json()
       setTally(json)
-      // Only seed rankedIds from server on first load
+      // Seed on first load: start from existing ranking, append any unranked songs
       if (!initialised.current) {
-        setRankedIds(json.my_ranking ?? [])
-        if ((json.my_ranking ?? []).length > 0) setSubmitted(true)
+        const interleaved: string[] = []
+        const maxLen = Math.max(...json.entries.map((e) => e.songs.length), 0)
+        for (let i = 0; i < maxLen; i++) {
+          for (const entry of json.entries) {
+            if (entry.songs[i]) interleaved.push(entry.songs[i].song_id)
+          }
+        }
+        const prev = json.my_ranking ?? []
+        const full = [...prev, ...interleaved.filter((id) => !prev.includes(id))]
+        setRankedIds(full)
+        if (prev.length > 0) setSubmitted(true)
         initialised.current = true
       }
     } finally {
@@ -151,14 +157,6 @@ export default function VotingPage() {
   }, [meta?.end_date])
 
   // ── Ranking mutations ────────────────────────────────────
-
-  const addToRanking = useCallback((song_id: string) => {
-    setRankedIds((prev) => prev.includes(song_id) ? prev : [...prev, song_id])
-  }, [])
-
-  const removeFromRanking = useCallback((song_id: string) => {
-    setRankedIds((prev) => prev.filter((id) => id !== song_id))
-  }, [])
 
   const moveUp = useCallback((idx: number) => {
     if (idx === 0) return
@@ -222,27 +220,15 @@ export default function VotingPage() {
   const isOpen    = meta?.status === 'voting' && !isExpired
   const canRank   = isOpen
 
-  // Build a flat song map for quick lookup
-  const songMap  = new Map<string, SongTally & { entryIdx: number; entryName: string }>()
-  tally.entries.forEach((entry, idx) => {
-    entry.songs.forEach((song) => {
-      songMap.set(song.song_id, { ...song, entryIdx: idx, entryName: entry.name })
-    })
+  // Flat song map for quick lookup
+  const songMap = new Map<string, SongTally>()
+  tally.entries.forEach((entry) => {
+    entry.songs.forEach((song) => songMap.set(song.song_id, song))
   })
 
-  // Interleaved full song list (the canonical display order)
-  const allSongs: (SongTally & { entryIdx: number; entryName: string })[] = []
-  const maxLen = Math.max(...tally.entries.map((e) => e.songs.length), 0)
-  for (let i = 0; i < maxLen; i++) {
-    for (let j = 0; j < tally.entries.length; j++) {
-      const song = tally.entries[j].songs[i]
-      if (song) allSongs.push({ ...song, entryIdx: j, entryName: tally.entries[j].name })
-    }
-  }
-
-  const rankedSet   = new Set(rankedIds)
-  const unranked    = allSongs.filter((s) => !rankedSet.has(s.song_id))
-  const rankedSongs = rankedIds.map((id) => songMap.get(id)).filter(Boolean) as (SongTally & { entryIdx: number; entryName: string })[]
+  const totalSongs  = tally.entries.reduce((n, e) => n + e.songs.length, 0)
+  const rankedSongs = rankedIds.map((id) => songMap.get(id)).filter(Boolean) as SongTally[]
+  const allRanked   = rankedIds.length >= totalSongs
 
   const sorted   = [...tally.entries].sort((a, b) => b.borda_score - a.borda_score)
   const totalB   = tally.total_borda
@@ -281,8 +267,7 @@ export default function VotingPage() {
           </p>
         ) : (
           <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
-            Use the arrow buttons to move songs up or down. Rank 1 carries the most weight.
-            You can rank all songs or just your favourites — submit when ready.
+            Use the arrows to order all {totalSongs} songs from favourite to least favourite, then submit.
           </p>
         )}
       </div>
@@ -309,85 +294,44 @@ export default function VotingPage() {
 
       {/* ── Ranked ballot ───────────────────────────────────── */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-white flex items-center gap-2">
-            <Music className="w-4 h-4 text-amber-400" />
-            Your Ranking
-            {rankedIds.length > 0 && (
-              <span className="text-xs font-normal text-stone-500">{rankedIds.length} song{rankedIds.length !== 1 ? 's' : ''}</span>
-            )}
-          </h2>
-        </div>
-
-        {rankedIds.length === 0 ? (
-          <div className="bg-stone-900 border border-stone-700 border-dashed rounded-2xl px-5 py-8 text-center text-stone-600 text-sm">
-            Add songs from below to start your ranking
-          </div>
-        ) : (
-          <RankingList
-            songs={rankedSongs}
-            canRank={canRank}
-            onRemove={removeFromRanking}
-            onMoveUp={moveUp}
-            onMoveDown={moveDown}
-          />
-        )}
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Music className="w-4 h-4 text-amber-400" />
+          Your Ranking
+          <span className="text-xs font-normal text-stone-500">{rankedIds.length} of {totalSongs} songs</span>
+        </h2>
+        <RankingList
+          songs={rankedSongs}
+          canRank={canRank}
+          onMoveUp={moveUp}
+          onMoveDown={moveDown}
+        />
       </div>
 
       {/* ── Submit button ────────────────────────────────────── */}
       {canRank && (
-        <button
-          type="button"
-          onClick={submitRanking}
-          disabled={isSubmitting || rankedIds.length === 0}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
-            bg-amber-500 text-white hover:bg-amber-600 active:scale-95
-            disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
-        >
-          {isSubmitting
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
-            : <><Send className="w-4 h-4" /> {submitted ? 'Update Ranking' : 'Submit Ranking'}</>
-          }
-        </button>
-      )}
-
-      {/* ── Not ranked pool ─────────────────────────────────── */}
-      {unranked.length > 0 && (
         <div className="space-y-2">
-          <h2 className="font-bold text-stone-500 text-sm flex items-center gap-2">
-            <Plus className="w-3.5 h-3.5" />
-            Not in your ranking
-          </h2>
-          <div className="bg-stone-900 rounded-2xl border border-stone-800 divide-y divide-stone-800">
-            {unranked.map((song) => {
-              const color = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
-              return (
-                <div key={song.song_id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-stone-800 flex items-center justify-center shrink-0">
-                    <Music className="w-3.5 h-3.5 text-stone-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-stone-400 truncate">{song.title}</div>
-                    <div className="mt-0.5">
-                      <span className="text-xs text-stone-600 truncate">{song.artist}</span>
-                    </div>
-                  </div>
-                  {canRank && (
-                    <button
-                      type="button"
-                      onClick={() => addToRanking(song.song_id)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-400 hover:bg-amber-950/30 hover:text-amber-400 transition-colors"
-                    >
-                      <Plus className="w-3 h-3" /> Add
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          {!allRanked && (
+            <p className="text-xs text-center text-stone-500">
+              Rank all {totalSongs} songs to submit
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={submitRanking}
+            disabled={isSubmitting || !allRanked}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
+              bg-amber-500 text-white hover:bg-amber-600 active:scale-95
+              disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+          >
+            {isSubmitting
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+              : <><Send className="w-4 h-4" /> {submitted ? 'Update Ranking' : 'Submit Ranking'}</>
+            }
+          </button>
         </div>
       )}
 
+      {/* ── Not ranked pool ─────────────────────────────────── */}
       {/* ── Live tallies ────────────────────────────────────── */}
       <LiveTallies entries={sorted} totalBorda={totalB} totalRankers={tally.total_rankers} leader={leader} />
 
@@ -410,55 +354,23 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
   )
 }
 
-// ── SubscriptionGate ──────────────────────────────────────────
-
-function SubscriptionGate() {
-  return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-stone-950 to-stone-900 rounded-2xl p-6 text-white border border-stone-800">
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-amber-500/20 blur-2xl pointer-events-none" />
-      <div className="relative space-y-3">
-        <div className="flex items-center gap-2">
-          <Lock className="w-5 h-5 text-amber-400" />
-          <span className="font-bold text-lg">Subscription Required</span>
-        </div>
-        <p className="text-sm text-stone-400 leading-relaxed">
-          Ranking in Rodeos is reserved for Stampede subscribers. Upgrade to submit
-          your ballot, earn credits, and shape which music wins.
-        </p>
-        <p className="text-xs text-stone-600">
-          Live tallies below are always visible — no weighting hidden.
-        </p>
-        <button
-          type="button"
-          className="w-full mt-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 font-semibold text-sm transition-colors"
-        >
-          Upgrade to Stampede Pro
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── RankingList ───────────────────────────────────────────────
 // Up/down arrow reorder list of songs in the voter's ballot.
 
 function RankingList({
   songs,
   canRank,
-  onRemove,
   onMoveUp,
   onMoveDown,
 }: {
-  songs: (SongTally & { entryIdx: number; entryName: string })[]
+  songs: SongTally[]
   canRank: boolean
-  onRemove: (song_id: string) => void
   onMoveUp: (idx: number) => void
   onMoveDown: (idx: number) => void
 }) {
   return (
     <ul className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden flex flex-col">
       {songs.map((song, index) => {
-        const color   = ENTRY_COLORS[song.entryIdx % ENTRY_COLORS.length]
         const rank    = index + 1
         const isFirst = index === 0
         const isLast  = index === songs.length - 1
@@ -523,17 +435,6 @@ function RankingList({
               )}
             </div>
 
-            {/* Remove button */}
-            {canRank && (
-              <button
-                type="button"
-                onClick={() => onRemove(song.song_id)}
-                className="shrink-0 p-1.5 rounded-lg text-stone-600 hover:text-red-400 hover:bg-red-950/20 transition-colors"
-                title="Remove from ranking"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </li>
         )
       })}

@@ -14,7 +14,8 @@ export async function GET(
 
   const svc = createServiceClient()
 
-  const { data: duel, error } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawDuel, error } = await svc
     .from('song_duels')
     .select(`
       id, title, description, status, end_date, winner_song_id, created_at,
@@ -24,7 +25,10 @@ export async function GET(
     .eq('id', params.id)
     .single()
 
-  if (error || !duel) return NextResponse.json({ error: 'Duel not found' }, { status: 404 })
+  if (error || !rawDuel) return NextResponse.json({ error: 'Duel not found' }, { status: 404 })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const duel = rawDuel as any
 
   // Vote tallies
   const { data: votes } = await svc
@@ -34,7 +38,7 @@ export async function GET(
 
   let left = 0, right = 0
   for (const v of votes ?? []) {
-    if (v.chosen_song_id === (duel.song_left as { id: string } | null)?.id) left++
+    if (v.chosen_song_id === duel.song_left?.id) left++
     else right++
   }
 

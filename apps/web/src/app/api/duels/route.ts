@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
   const unvotedOnly = request.nextUrl.searchParams.get('unvoted') === 'true'
 
   // Fetch all active duels with song details
-  const { data: duels, error: duelsErr } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawDuels, error: duelsErr } = await svc
     .from('song_duels')
     .select(`
       id, title, description, status, end_date, winner_song_id, created_at,
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
 
   if (duelsErr) return NextResponse.json({ error: duelsErr.message }, { status: 500 })
 
-  const duelList = duels ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const duelList = (rawDuels ?? []) as any[]
 
   // Caller's votes for these duels
   const duelIds = duelList.map((d) => d.id)
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     const duel = duelList.find((d) => d.id === v.duel_id)
     if (!duel) continue
     const t = tallyMap.get(v.duel_id) ?? { left: 0, right: 0, total: 0 }
-    if (v.chosen_song_id === (duel.song_left as { id: string } | null)?.id) t.left++
+    if (v.chosen_song_id === duel.song_left?.id) t.left++
     else t.right++
     t.total++
     tallyMap.set(v.duel_id, t)

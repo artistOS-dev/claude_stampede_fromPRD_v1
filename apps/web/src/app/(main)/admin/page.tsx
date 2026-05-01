@@ -3,8 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import {
   Users, Music2, Trophy, Star, Crown, Activity,
-  CheckCircle2, Clock, AlertCircle, TrendingUp,
+  CheckCircle2, Clock, AlertCircle, TrendingUp, Swords,
 } from 'lucide-react'
+import CreateDuelForm from '@/components/duels/CreateDuelForm'
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -120,6 +121,17 @@ export default async function AdminPage() {
       .order('created_at', { ascending: false })
       .limit(30),
   ])
+
+  // Song duels
+  const { data: duels } = await db
+    .from('song_duels')
+    .select(`
+      id, title, status, end_date, created_at,
+      song_left:circle_songs!song_left_id(title, artist),
+      song_right:circle_songs!song_right_id(title, artist)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(20)
 
   return (
     <div className="space-y-8">
@@ -258,6 +270,46 @@ export default async function AdminPage() {
         </Section>
 
       </div>
+
+      {/* ── Song Duels ──────────────────────────────────────────── */}
+      <Section title="Song Duels" icon={<Swords className="w-4 h-4 text-amber-400" />}>
+        <div className="space-y-4">
+          <CreateDuelForm />
+          <div className="space-y-1 pt-2">
+            {(duels ?? []).length === 0 ? (
+              <p className="text-sm text-stone-600 text-center py-4">No duels yet.</p>
+            ) : (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (duels ?? []).map((d: any) => (
+                <a
+                  key={d.id}
+                  href={`/duels/${d.id}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-stone-800 transition-colors group"
+                >
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${
+                    d.status === 'active' ? 'bg-green-400 animate-pulse' :
+                    d.status === 'closed' ? 'bg-stone-500' : 'bg-yellow-400'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate group-hover:text-amber-300">
+                      {d.title}
+                    </p>
+                    <p className="text-xs text-stone-600 truncate">
+                      {d.song_left?.title ?? '?'} vs {d.song_right?.title ?? '?'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs text-stone-500 capitalize">{d.status}</span>
+                    <p className="text-xs text-stone-700">
+                      {new Date(d.end_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </a>
+              ))
+            )}
+          </div>
+        </div>
+      </Section>
 
       {/* ── Platform Feed ─────────────────────────────────────────── */}
       <Section title="Platform Activity Feed (last 30)" icon={<Activity className="w-4 h-4 text-green-400" />}>

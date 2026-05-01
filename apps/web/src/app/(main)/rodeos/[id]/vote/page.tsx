@@ -368,12 +368,8 @@ export default function VotingPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-stone-400 truncate">{song.title}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="mt-0.5">
                       <span className="text-xs text-stone-600 truncate">{song.artist}</span>
-                      <span className={`text-xs px-1.5 py-0 rounded-full border font-medium ${color.badge}`}>
-                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
-                        {song.entryName}
-                      </span>
                     </div>
                   </div>
                   {canRank && (
@@ -517,12 +513,8 @@ function RankingList({
             {/* Song info */}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-white truncate">{song.title}</div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="mt-0.5">
                 <span className="text-xs text-stone-500 truncate">{song.artist}</span>
-                <span className={`text-xs px-1.5 py-0 rounded-full border font-medium ${color.badge}`}>
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${color.dot}`} />
-                  {song.entryName}
-                </span>
               </div>
               {song.borda_score > 0 && (
                 <div className="text-xs text-stone-600 mt-0.5 tabular-nums">

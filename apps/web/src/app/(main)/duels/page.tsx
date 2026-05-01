@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Swords, Timer, CheckCircle2, ChevronRight } from 'lucide-react'
+import CreateDuelForm from '@/components/duels/CreateDuelForm'
 
 interface Song {
   id: string
@@ -189,6 +190,9 @@ export default function DuelsPage() {
         </div>
         <p className="text-amber-200/70 text-sm">Two songs enter, one song wins. Swipe to vote.</p>
       </div>
+
+      {/* Create duel */}
+      <CreateDuelForm onCreated={load} />
 
       {isLoading && (
         <div className="flex justify-center py-20">

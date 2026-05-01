@@ -159,7 +159,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between px-4 py-3 bg-stone-950 text-left"
       >
-        <span className="text-sm font-semibold text-amber-300">+ Create New Duel</span>
+        <span className="text-sm font-semibold text-amber-300">+ Start a New Duel</span>
         <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 

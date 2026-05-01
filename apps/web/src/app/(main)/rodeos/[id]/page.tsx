@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Timer,
   Trophy,
-  Coins,
   Flame,
   Users,
   Music,
@@ -17,6 +16,8 @@ import {
   GripVertical,
   ListOrdered,
   Loader2,
+  Zap,
+  Crown,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -102,6 +103,30 @@ interface RodeoDetail {
   rodeo_results: RodeoResult | null
 }
 
+// ── Tally types ───────────────────────────────────────────────
+
+interface SongTally {
+  song_id: string
+  entry_id: string
+  title: string
+  artist: string
+  borda_score: number
+  ranker_count: number
+}
+
+interface EntryTally {
+  id: string
+  name: string
+  borda_score: number
+  songs: SongTally[]
+}
+
+interface TallyData {
+  entries: EntryTally[]
+  total_borda: number
+  total_rankers: number
+}
+
 // ── Constants ─────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
@@ -119,23 +144,7 @@ const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
   archived:{ dot: 'bg-stone-600',                label: 'Archived' },
 }
 
-const RECIPIENT_LABELS: Record<string, string> = {
-  winning_artist: 'Winning Artist',
-  songwriter:     'Songwriters',
-  band:           'Band',
-  young_bucks:    'Young Bucks',
-  core_artists:   'Core Artists',
-  users:          'Voters',
-  platform:       'Platform',
-}
-
 // ── Helpers ───────────────────────────────────────────────────
-
-function formatCredits(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return n.toFixed(0)
-}
 
 function getCountdown(endDate: string | null): string | null {
   if (!endDate) return null
@@ -162,9 +171,12 @@ export default function RodeoDetailPage() {
   const [rodeo, setRodeo] = useState<RodeoDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [tally, setTally] = useState<TallyData | null>(null)
 
   // Per-entry song order (drag-to-reorder during open phase)
   const [songOrders, setSongOrders] = useState<Record<string, EntrySong[]>>({})
+
+  const tallyPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -188,7 +200,24 @@ export default function RodeoDetailPage() {
     }
   }, [id])
 
+  const loadTally = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/rodeos/${id}/tally`)
+      if (!res.ok) return
+      const json: TallyData = await res.json()
+      setTally(json)
+    } catch { /* ignore */ }
+  }, [id])
+
   useEffect(() => { load() }, [load])
+
+  // Poll tally every 12 s when rodeo is in voting state
+  useEffect(() => {
+    if (!rodeo || rodeo.status !== 'voting') return
+    loadTally()
+    tallyPollRef.current = setInterval(loadTally, 12_000)
+    return () => { if (tallyPollRef.current) clearInterval(tallyPollRef.current) }
+  }, [rodeo?.status, loadTally])
 
   const reorderSongs = useCallback((entryId: string, fromIndex: number, toIndex: number) => {
     setSongOrders((prev) => {
@@ -231,7 +260,6 @@ export default function RodeoDetailPage() {
   const countdown   = getCountdown(rodeo.end_date)
   const isVoting    = rodeo.status === 'voting'
   const isFinished  = rodeo.status === 'closed' || rodeo.status === 'archived'
-  const pool        = rodeo.credit_pools
   const result      = rodeo.rodeo_results
   const entries     = (rodeo.rodeo_entries ?? []).filter((e) => e.status !== 'withdrawn')
 
@@ -384,12 +412,12 @@ export default function RodeoDetailPage() {
         )}
       </div>
 
-      {/* ── Ranking tallies (show when voting or finished) ─────── */}
-      {(isVoting || isFinished) && result && (
-        <VoteTallies
-          total={result.general_public_votes}
-          entries={entries}
-          songScores={songScores}
+      {/* ── Live Tallies (Borda, shown during voting) ──────────── */}
+      {isVoting && tally && (
+        <LiveTallies
+          entries={tally.entries}
+          totalBorda={tally.total_borda}
+          totalRankers={tally.total_rankers}
         />
       )}
 
@@ -423,11 +451,6 @@ export default function RodeoDetailPage() {
           />
         ))}
       </div>
-
-      {/* ── Credit pool breakdown ────────────────────────────── */}
-      {pool && (
-        <CreditPoolSection pool={pool} isFinished={isFinished} result={result} />
-      )}
 
       {/* ── Circle history links ─────────────────────────────── */}
       {entries.some((e) => e.circles) && (
@@ -493,58 +516,111 @@ function EntryChip({ entry, isWinner, isLeading }: { entry: Entry; isWinner: boo
   )
 }
 
-// ── VoteTallies ───────────────────────────────────────────────
+// ── LiveTallies ───────────────────────────────────────────────
 
-function VoteTallies({
-  total,
+function LiveTallies({
   entries,
-  songScores,
+  totalBorda,
+  totalRankers,
 }: {
-  total: number
-  entries: Entry[]
-  songScores: Map<string, { total_votes: number; weighted_score: number; circle_member_votes: number; general_public_votes: number }>
+  entries: EntryTally[]
+  totalBorda: number
+  totalRankers: number
 }) {
-  const entryTotals = new Map<string, number>()
-  entries.forEach((e) => {
-    let sum = 0
-    e.rodeo_entry_songs.forEach((es) => {
-      sum += songScores.get(es.song_id)?.weighted_score ?? 0
-    })
-    entryTotals.set(e.id, sum)
-  })
-
-  const maxScore = Math.max(0, ...Array.from(entryTotals.values()))
+  const tied = totalBorda === 0
+  const leader = entries.length > 0 ? [...entries].sort((a, b) => b.borda_score - a.borda_score)[0] : undefined
+  const leaderPct = leader && totalBorda > 0
+    ? Math.round((leader.borda_score / totalBorda) * 100)
+    : 50
 
   return (
-    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-4">
-      <h2 className="font-bold text-white flex items-center gap-2">
-        <Flame className="w-5 h-5 text-amber-400" />
-        Ranking Tallies
-      </h2>
+    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Zap className="w-5 h-5 text-amber-400" />
+          Live Tallies
+        </h2>
+        <span className="text-xs text-stone-600">
+          {totalRankers} ranker{totalRankers !== 1 ? 's' : ''} · {totalBorda.toFixed(0)} pts total
+        </span>
+      </div>
 
-      {entries.length > 0 && (
-        <div className="space-y-3">
-          {entries.map((e) => {
-            const score = entryTotals.get(e.id) ?? 0
-            const pct = maxScore > 0 ? (score / maxScore) * 100 : 0
-            return (
-              <div key={e.id}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium text-stone-300 truncate">{entryDisplayName(e)}</span>
-                  <span className="font-bold text-white tabular-nums ml-2">{score.toFixed(0)} pts</span>
-                </div>
-                <div className="h-2 bg-stone-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            )
-          })}
-          <div className="text-xs text-stone-600 text-right">{total} ranker{total !== 1 ? 's' : ''}</div>
+      {/* Tug-of-war bar */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs font-semibold text-stone-400 px-0.5">
+          <span className="truncate max-w-[40%]">{entries[0]?.name ?? '—'}</span>
+          <span className="truncate max-w-[40%] text-right">{entries[1]?.name ?? '—'}</span>
         </div>
-      )}
+        <div className="relative h-8 rounded-full bg-stone-800 overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700"
+            style={{ width: tied ? '50%' : `${leaderPct}%` }}
+          />
+          <div
+            className="absolute inset-y-0 right-0 bg-teal-400 transition-all duration-700"
+            style={{ width: tied ? '50%' : `${100 - leaderPct}%` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold text-white drop-shadow-sm select-none">
+              {tied ? 'TIED' : `${leaderPct}% — ${100 - leaderPct}%`}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Per-entry breakdown */}
+      <div className="grid gap-3">
+        {entries.map((entry, idx) => {
+          const pct       = totalBorda > 0 ? Math.round((entry.borda_score / totalBorda) * 100) : 50
+          const isLeading = entry.id === leader?.id && totalBorda > 0
+          return (
+            <div
+              key={entry.id}
+              className={`rounded-xl border p-4 ${isLeading ? 'border-amber-700 bg-amber-950/20' : 'border-stone-800 bg-stone-950'}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isLeading && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                  <span className="font-semibold text-stone-100 truncate text-sm">{entry.name}</span>
+                </div>
+                <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-amber-400' : 'text-stone-400'}`}>
+                  {entry.borda_score.toFixed(0)}
+                  <span className="text-xs font-normal text-stone-600 ml-1">pts</span>
+                </span>
+              </div>
+              <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-3">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-amber-500' : 'bg-teal-400'}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              {entry.songs.some((s) => s.borda_score > 0) && (
+                <div className="space-y-1 pt-1">
+                  {[...entry.songs]
+                    .sort((a, b) => b.borda_score - a.borda_score)
+                    .map((song) => {
+                      const maxSong = Math.max(...entry.songs.map((s) => s.borda_score), 1)
+                      return (
+                        <div key={song.song_id} className="flex items-center gap-2 text-xs text-stone-500">
+                          <span className="truncate flex-1 max-w-[50%]">{song.title}</span>
+                          <div className="flex-1 h-1 bg-stone-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-600/60 rounded-full"
+                              style={{ width: `${(song.borda_score / maxSong) * 100}%` }}
+                            />
+                          </div>
+                          <span className="tabular-nums w-10 text-right text-stone-600">
+                            {song.borda_score.toFixed(0)} pts
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -861,110 +937,3 @@ function CombinedSongsCard({
   )
 }
 
-// ── CreditPoolSection ─────────────────────────────────────────
-
-function CreditPoolSection({
-  pool,
-  isFinished,
-  result,
-}: {
-  pool: CreditPool
-  isFinished: boolean
-  result: RodeoResult | null
-}) {
-  const breakdown = [
-    { label: 'Sponsor Credits',     value: pool.sponsor_credits,      color: 'bg-yellow-400' },
-    { label: 'Circle Credits',      value: pool.circle_credits,       color: 'bg-amber-500' },
-    { label: 'Artist Credits',      value: pool.artist_credits,       color: 'bg-amber-400' },
-    { label: 'User-backed Credits', value: pool.user_backed_credits,  color: 'bg-teal-400' },
-  ].filter((b) => b.value > 0)
-
-  const net = pool.total * (1 - pool.platform_fee_pct / 100)
-
-  return (
-    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-4">
-      <h2 className="font-bold text-white flex items-center gap-2">
-        <Coins className="w-5 h-5 text-yellow-400" />
-        Credit Pool
-      </h2>
-
-      {/* Total */}
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-white">{formatCredits(pool.total)}</span>
-        <span className="text-sm text-stone-600">total credits</span>
-        {pool.platform_fee_pct > 0 && (
-          <span className="ml-auto text-xs text-stone-600">
-            {formatCredits(net)} after {pool.platform_fee_pct}% platform fee
-          </span>
-        )}
-      </div>
-
-      {/* Visual bar */}
-      {breakdown.length > 0 && (
-        <div className="h-3 flex rounded-full overflow-hidden gap-0.5">
-          {breakdown.map((b) => (
-            <div
-              key={b.label}
-              className={`${b.color} transition-all`}
-              style={{ width: `${(b.value / pool.total) * 100}%` }}
-              title={`${b.label}: ${formatCredits(b.value)}`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="grid grid-cols-2 gap-2">
-        {breakdown.map((b) => (
-          <div key={b.label} className="flex items-center gap-2 text-sm">
-            <div className={`w-2.5 h-2.5 rounded-sm ${b.color} shrink-0`} />
-            <span className="text-stone-400 truncate">{b.label}</span>
-            <span className="ml-auto font-medium text-stone-100 tabular-nums">{formatCredits(b.value)}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Distribution rules */}
-      {pool.distribution_rules && pool.distribution_rules.length > 0 && (
-        <div className="pt-3 border-t border-stone-800">
-          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
-            Prize Distribution
-          </div>
-          <div className="space-y-1.5">
-            {pool.distribution_rules.map((r) => (
-              <div key={r.id} className="flex items-center justify-between text-sm">
-                <span className="text-stone-400">{RECIPIENT_LABELS[r.recipient] ?? r.recipient}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-24 h-1.5 bg-stone-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${r.percentage}%` }} />
-                  </div>
-                  <span className="text-xs font-medium text-stone-300 tabular-nums w-8 text-right">
-                    {r.percentage}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Actual distributions (finished) */}
-      {isFinished && result && (
-        <div className="pt-3 border-t border-stone-800">
-          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
-            Credits Awarded
-          </div>
-          <div className="flex items-center gap-2 text-sm text-stone-500">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            Final results recorded
-            {result.finalized_at && (
-              <span className="text-stone-600 text-xs ml-auto">
-                {new Date(result.finalized_at).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}

@@ -11,8 +11,6 @@ import {
   Music,
   ChevronUp,
   ChevronDown,
-  Zap,
-  Crown,
   Send,
 } from 'lucide-react'
 
@@ -71,13 +69,6 @@ function LoadingSkeleton() {
     </div>
   )
 }
-
-// ── Palette for circle colour coding ─────────────────────────
-
-const ENTRY_COLORS = [
-  { badge: 'bg-amber-900/40 text-amber-300 border-amber-700', dot: 'bg-amber-400' },
-  { badge: 'bg-teal-900/40 text-teal-300 border-teal-700',   dot: 'bg-teal-400'  },
-]
 
 // ── Main page ─────────────────────────────────────────────────
 
@@ -230,10 +221,6 @@ export default function VotingPage() {
   const rankedSongs = rankedIds.map((id) => songMap.get(id)).filter(Boolean) as SongTally[]
   const allRanked   = rankedIds.length >= totalSongs
 
-  const sorted   = [...tally.entries].sort((a, b) => b.borda_score - a.borda_score)
-  const totalB   = tally.total_borda
-  const leader   = sorted[0]
-
   return (
     <div className="max-w-2xl mx-auto space-y-5 pb-20">
 
@@ -332,9 +319,6 @@ export default function VotingPage() {
       )}
 
       {/* ── Not ranked pool ─────────────────────────────────── */}
-      {/* ── Live tallies ────────────────────────────────────── */}
-      <LiveTallies entries={sorted} totalBorda={totalB} totalRankers={tally.total_rankers} leader={leader} />
-
     </div>
   )
 }
@@ -442,124 +426,3 @@ function RankingList({
   )
 }
 
-// ── LiveTallies ───────────────────────────────────────────────
-
-function LiveTallies({
-  entries,
-  totalBorda,
-  totalRankers,
-  leader,
-}: {
-  entries: EntryTally[]
-  totalBorda: number
-  totalRankers: number
-  leader: EntryTally | undefined
-}) {
-  const tied = totalBorda === 0
-
-  const leaderPct = leader && totalBorda > 0
-    ? Math.round((leader.borda_score / totalBorda) * 100)
-    : 50
-
-  return (
-    <div className="bg-stone-900 rounded-2xl border border-stone-700 p-5 space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-bold text-white flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-400" />
-          Live Tallies
-        </h2>
-        <span className="text-xs text-stone-600">
-          {totalRankers} ranker{totalRankers !== 1 ? 's' : ''} · {totalBorda.toFixed(0)} pts total
-        </span>
-      </div>
-
-      {/* Tug-of-war bar */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs font-semibold text-stone-400 px-0.5">
-          <span className="truncate max-w-[40%]">{entries[0]?.name ?? '—'}</span>
-          <span className="truncate max-w-[40%] text-right">{entries[1]?.name ?? '—'}</span>
-        </div>
-        <div className="relative h-8 rounded-full bg-stone-800 overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700"
-            style={{ width: tied ? '50%' : `${leaderPct}%` }}
-          />
-          <div
-            className="absolute inset-y-0 right-0 bg-teal-400 transition-all duration-700"
-            style={{ width: tied ? '50%' : `${100 - leaderPct}%` }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-bold text-white drop-shadow-sm select-none">
-              {tied ? 'TIED' : `${leaderPct}% — ${100 - leaderPct}%`}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Per-entry breakdown */}
-      <div className="grid gap-3">
-        {entries.map((entry, idx) => {
-          const pct       = totalBorda > 0 ? Math.round((entry.borda_score / totalBorda) * 100) : 50
-          const isLeading = entry.id === leader?.id && totalBorda > 0
-          return (
-            <div
-              key={entry.id}
-              className={`rounded-xl border p-4 ${isLeading ? 'border-amber-700 bg-amber-950/20' : 'border-stone-800 bg-stone-950'}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  {isLeading && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                  <span className="font-semibold text-stone-100 truncate text-sm">{entry.name}</span>
-                </div>
-                <span className={`text-lg font-bold tabular-nums ${isLeading ? 'text-amber-400' : 'text-stone-400'}`}>
-                  {entry.borda_score.toFixed(0)}
-                  <span className="text-xs font-normal text-stone-600 ml-1">pts</span>
-                </span>
-              </div>
-              <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-3">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-amber-500' : 'bg-teal-400'}`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              {/* Per-song scores */}
-              {entry.songs.some((s) => s.borda_score > 0) && (
-                <div className="space-y-1 pt-1">
-                  {[...entry.songs]
-                    .sort((a, b) => b.borda_score - a.borda_score)
-                    .map((song) => {
-                      const maxSong = Math.max(...entry.songs.map((s) => s.borda_score), 1)
-                      return (
-                        <div key={song.song_id} className="flex items-center gap-2 text-xs text-stone-500">
-                          <span className="truncate flex-1 max-w-[50%]">{song.title}</span>
-                          <div className="flex-1 h-1 bg-stone-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-amber-600/60 rounded-full"
-                              style={{ width: `${(song.borda_score / maxSong) * 100}%` }}
-                            />
-                          </div>
-                          <span className="tabular-nums w-10 text-right text-stone-600">
-                            {song.borda_score.toFixed(0)} pts
-                          </span>
-                        </div>
-                      )
-                    })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── SongLabelBadge ────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function SongLabelBadge({ label }: { label: 'studio' | 'live' }) {
-  if (label === 'live') {
-    return <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 font-medium">Live</span>
-  }
-  return <span className="text-xs px-1.5 py-0.5 rounded bg-stone-800 text-stone-500 font-medium">Studio</span>
-}

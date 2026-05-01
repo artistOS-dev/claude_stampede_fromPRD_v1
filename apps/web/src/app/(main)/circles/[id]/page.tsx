@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import AddSongForm from '@/components/circles/AddSongForm'
 
 interface Song {
   id: string
@@ -1910,59 +1911,11 @@ export default function CircleDetailPage() {
 
           {/* Add song form */}
           {showAddSong && (
-            <div className="bg-amber-950/20 border border-amber-800 rounded-2xl p-5 space-y-3">
-              <h3 className="font-semibold text-white text-sm">Share a new song</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Input
-                  label="Song title *"
-                  type="text"
-                  id="song-title"
-                  value={songTitle}
-                  onChange={(e) => setSongTitle(e.target.value)}
-                  placeholder="e.g. Fast Car"
-                />
-                <Input
-                  label="Artist *"
-                  type="text"
-                  id="song-artist"
-                  value={songArtist}
-                  onChange={(e) => setSongArtist(e.target.value)}
-                  placeholder="e.g. Tracy Chapman"
-                />
-                <Input
-                  label="Album"
-                  type="text"
-                  id="song-album"
-                  value={songAlbum}
-                  onChange={(e) => setSongAlbum(e.target.value)}
-                  placeholder="Optional"
-                />
-                <Input
-                  label="Spotify link"
-                  type="url"
-                  id="song-spotify"
-                  value={songSpotify}
-                  onChange={(e) => setSongSpotify(e.target.value)}
-                  placeholder="https://open.spotify.com/…"
-                />
-              </div>
-              {addSongError && (
-                <p className="text-sm text-red-400">{addSongError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="primary"
-                  loading={addingSong}
-                  disabled={!songTitle.trim() || !songArtist.trim()}
-                  onClick={handleAddSong}
-                >
-                  Share
-                </Button>
-                <Button variant="secondary" onClick={() => setShowAddSong(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
+            <AddSongForm
+              circleId={id}
+              onAdded={loadSongs}
+              onClose={() => setShowAddSong(false)}
+            />
           )}
 
           {songsLoading && (

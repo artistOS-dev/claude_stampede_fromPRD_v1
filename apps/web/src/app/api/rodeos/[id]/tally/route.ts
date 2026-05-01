@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // GET /api/rodeos/[id]/tally
 // Returns per-song and per-entry Borda scores computed from rodeo_rankings.
@@ -26,8 +26,10 @@ export async function GET(
     return NextResponse.json({ error: rankErr.message }, { status: 500 })
   }
 
-  // Entries with their songs
-  const { data: entries, error: entriesErr } = await supabase
+  // Entries with their songs — use service client so RLS on circle_songs
+  // doesn't hide song titles from users who aren't members of those circles.
+  const svc = createServiceClient()
+  const { data: entries, error: entriesErr } = await svc
     .from('rodeo_entries')
     .select(`
       id, circle_id, artist_id, credits_contributed,

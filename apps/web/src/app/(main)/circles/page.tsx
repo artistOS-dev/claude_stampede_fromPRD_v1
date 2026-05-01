@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Search } from 'lucide-react'
+import { Users, Search, ChevronDown } from 'lucide-react'
 import CircleCard, { type CircleData } from '@/components/signup/CircleCard'
 import { createClient } from '@/lib/supabase/client'
 
@@ -12,6 +12,7 @@ export default function CirclesPage() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [canCreateCircle, setCanCreateCircle] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -187,9 +188,19 @@ export default function CirclesPage() {
       </div>
 
       {canCreateCircle && (
-        <div className="bg-gradient-to-br from-amber-950/20 via-stone-900 to-stone-900 rounded-2xl border-2 border-amber-800 p-5 space-y-4 shadow-sm">
-          <h2 className="text-lg font-bold text-amber-200">🎸 Create Circle (Producer)</h2>
-          <form onSubmit={handleCreateCircle} className="space-y-3">
+        <div className="bg-gradient-to-br from-amber-950/20 via-stone-900 to-stone-900 rounded-2xl border-2 border-amber-800 shadow-sm overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setCreateOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left"
+          >
+            <h2 className="text-lg font-bold text-amber-200">🎸 Create Circle (Producer)</h2>
+            <ChevronDown
+              className={`w-5 h-5 text-amber-400 transition-transform duration-200 ${createOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {createOpen && (
+          <form onSubmit={handleCreateCircle} className="px-5 pb-5 space-y-3">
             <input
               type="text"
               required
@@ -270,6 +281,7 @@ export default function CirclesPage() {
               {creating ? 'Creating…' : 'Create Circle'}
             </button>
           </form>
+          )}
         </div>
       )}
 

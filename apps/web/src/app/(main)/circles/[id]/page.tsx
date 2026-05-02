@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import AddSongForm from '@/components/circles/AddSongForm'
 import SpotifyInlinePlayer from '@/components/circles/SpotifyInlinePlayer'
+import AddArtistForm from '@/components/circles/AddArtistForm'
 
 interface Song {
   id: string
@@ -30,6 +31,8 @@ interface Song {
 interface Artist {
   id: string
   artist_name: string
+  spotify_url: string | null
+  spotify_image_url: string | null
   created_at: string
   added_by: string
   profiles: { display_name: string } | null
@@ -1543,9 +1546,6 @@ export default function CircleDetailPage() {
   const [artists, setArtists] = useState<Artist[]>([])
   const [artistsLoading, setArtistsLoading] = useState(true)
   const [artistsError, setArtistsError] = useState<string | null>(null)
-  const [artistName, setArtistName] = useState('')
-  const [addingArtist, setAddingArtist] = useState(false)
-  const [addArtistError, setAddArtistError] = useState<string | null>(null)
 
   // Nominations state
   const [nominations, setNominations] = useState<Nomination[]>([])
@@ -1744,27 +1744,6 @@ export default function CircleDetailPage() {
     } catch {
       // Revert on failure
       loadSongs()
-    }
-  }
-
-  const handleAddArtist = async () => {
-    if (!artistName.trim()) return
-    setAddingArtist(true)
-    setAddArtistError(null)
-    try {
-      const res = await fetch(`/api/circles/${id}/artists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artist_name: artistName.trim() }),
-      })
-      const data: { success?: boolean; error?: string } = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to add artist')
-      setArtistName('')
-      loadArtists()
-    } catch (err) {
-      setAddArtistError(err instanceof Error ? err.message : 'Failed to add artist')
-    } finally {
-      setAddingArtist(false)
     }
   }
 
@@ -2309,34 +2288,7 @@ export default function CircleDetailPage() {
           </div>
 
           {/* Add artist form */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                label=""
-                type="text"
-                id="artist-name"
-                value={artistName}
-                onChange={(e) => { setArtistName(e.target.value); setAddArtistError(null) }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddArtist() }}
-                placeholder="Artist name…"
-              />
-            </div>
-            <div className="pt-0.5">
-              <Button
-                variant="primary"
-                loading={addingArtist}
-                disabled={!artistName.trim()}
-                onClick={handleAddArtist}
-                className="mt-0.5"
-              >
-                <Plus className="w-4 h-4" />
-                Add
-              </Button>
-            </div>
-          </div>
-          {addArtistError && (
-            <p className="text-sm text-red-400">{addArtistError}</p>
-          )}
+          <AddArtistForm circleId={id} onAdded={loadArtists} />
 
           {artistsLoading && (
             <div className="flex justify-center py-12">
@@ -2363,12 +2315,34 @@ export default function CircleDetailPage() {
                   key={artist.id}
                   className="bg-stone-900 rounded-xl border border-stone-700 shadow-sm p-4 flex items-center gap-3"
                 >
-                  <div className="w-10 h-10 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                    <Music2 className="w-5 h-5 text-amber-400" />
-                  </div>
+                  {/* Avatar — Spotify photo or placeholder */}
+                  {artist.spotify_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={artist.spotify_image_url}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                      <Music2 className="w-5 h-5 text-amber-400" />
+                    </div>
+                  )}
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-white truncate">{artist.artist_name}</p>
+                      {artist.spotify_url ? (
+                        <a
+                          href={artist.spotify_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-white truncate hover:text-green-400 transition-colors"
+                        >
+                          {artist.artist_name}
+                        </a>
+                      ) : (
+                        <p className="font-semibold text-white truncate">{artist.artist_name}</p>
+                      )}
                       {artist.tier && TIER_STYLES[artist.tier] && (
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${TIER_STYLES[artist.tier].bg} ${TIER_STYLES[artist.tier].text}`}>
                           {TIER_STYLES[artist.tier].label}

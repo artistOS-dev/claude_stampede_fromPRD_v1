@@ -20,10 +20,8 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
   const [results, setResults]       = useState<SpotifyArtistResult[]>([])
   const [searching, setSearching]   = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [notConfigured, setNotConfigured] = useState(false)
 
   const [picked, setPicked]         = useState<SpotifyArtistResult | null>(null)
-  const [name, setName]             = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
@@ -34,7 +32,6 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
   const search = useCallback((q: string) => {
     setQuery(q)
     setPicked(null)
-    setName(q)
     if (debounce.current) clearTimeout(debounce.current)
     if (!q.trim()) { setResults([]); setDropdownOpen(false); return }
     debounce.current = setTimeout(async () => {
@@ -43,7 +40,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
         const res = await fetch(`/api/artists/spotify-search?q=${encodeURIComponent(q)}`)
         if (!res.ok) return
         const json: { artists: SpotifyArtistResult[]; error?: string } = await res.json()
-        if (json.error === 'not_configured') { setNotConfigured(true); return }
+        if (json.error === 'not_configured') return   // no credentials — just let user type name
         setResults(json.artists ?? [])
         setDropdownOpen(true)
       } finally { setSearching(false) }
@@ -52,7 +49,6 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
   const pick = useCallback((r: SpotifyArtistResult) => {
     setPicked(r)
-    setName(r.name)
     setQuery('')
     setResults([])
     setDropdownOpen(false)
@@ -60,13 +56,14 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
   const clear = useCallback(() => {
     setPicked(null)
-    setName('')
     setQuery('')
   }, [])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    // If a Spotify result was picked use it; otherwise use whatever was typed
+    const artistName = picked?.name ?? query.trim()
+    if (!artistName) return
     setError(null)
     setSubmitting(true)
     try {
@@ -74,34 +71,35 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          artist_name: name.trim(),
+          artist_name: artistName,
           spotify_url: picked?.spotify_url ?? null,
           spotify_image_url: picked?.image_url ?? null,
         }),
       })
       const data: { success?: boolean; error?: string } = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to add artist')
-      setName('')
-      setPicked(null)
       setQuery('')
+      setPicked(null)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2500)
       onAdded()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add artist')
     } finally { setSubmitting(false) }
-  }, [name, picked, circleId, onAdded])
+  }, [picked, query, circleId, onAdded])
+
+  const canSubmit = !!(picked?.name ?? query.trim())
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
 
-      {/* Search / picked */}
-      {!picked ? (
+      {/* Search box — hidden once an artist is picked */}
+      {!picked && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
           <input
             type="text"
-            placeholder={notConfigured ? 'Type artist name…' : 'Search Spotify for an artist…'}
+            placeholder="Search Spotify or type name…"
             value={query}
             onChange={(e) => search(e.target.value)}
             onFocus={() => results.length > 0 && setDropdownOpen(true)}
@@ -109,7 +107,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
             className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           {searching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
           )}
 
           {dropdownOpen && results.length > 0 && (
@@ -119,7 +117,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
                   <button
                     type="button"
                     onMouseDown={() => pick(r)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-amber-950/30 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-green-950/30 transition-colors text-left"
                   >
                     {r.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -145,13 +143,15 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
           {!searching && query.trim() && results.length === 0 && dropdownOpen && (
             <div className="absolute z-50 w-full mt-1 bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-sm text-stone-500">
-              No results found on Spotify.
+              No Spotify results — artist will be added by name only.
             </div>
           )}
         </div>
-      ) : (
-        /* Picked artist preview */
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-amber-700/50 rounded-xl">
+      )}
+
+      {/* Picked artist preview */}
+      {picked && (
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-green-700/50 rounded-xl">
           {picked.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picked.image_url} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
@@ -180,18 +180,6 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
         </div>
       )}
 
-      {/* Name field (visible when not picked via Spotify, or when manually editing) */}
-      {!picked && (
-        <input
-          type="text"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Artist name *"
-          className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-      )}
-
       {error && (
         <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-lg px-3 py-2">{error}</p>
       )}
@@ -201,7 +189,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
       <button
         type="submit"
-        disabled={submitting || !name.trim()}
+        disabled={submitting || !canSubmit}
         className="px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
       >
         {submitting ? 'Adding…' : 'Add Artist'}

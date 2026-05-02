@@ -31,13 +31,15 @@ export default function SpotifyInlinePlayer({ url }: { url: string }) {
             <X className="w-3 h-3" /> Close player
           </button>
           <iframe
+            title="Spotify player"
             src={embedUrl}
             width="100%"
-            height="80"
+            height="152"
+            frameBorder="0"
+            // eslint-disable-next-line react/no-unknown-property
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
+            allowFullScreen
             className="rounded-xl"
-            style={{ border: 'none' }}
           />
         </div>
       )}

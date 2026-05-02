@@ -19,7 +19,7 @@ export async function GET(
   ])
 
   const isSuperAdmin = profile?.is_super_admin === true
-  const isBoardMember = ['board', 'founder'].includes(membership?.role ?? '')
+  const isBoardMember = ['board', 'founder', 'admin'].includes(membership?.role ?? '')
 
   if (!isBoardMember && !isSuperAdmin) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })

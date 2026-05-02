@@ -14,7 +14,7 @@ export async function GET() {
     .select('role, circles(id, name, description, member_count, personality_tags, image_url)')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .in('role', ['board', 'founder'])
+    .in('role', ['board', 'founder', 'admin'])
 
   if (error) {
     console.error('circles/mine error:', error)

@@ -14,7 +14,7 @@ export async function GET(
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const [{ data: membership }, { data: profile }] = await Promise.all([
-    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).eq('status', 'active').in('role', ['board', 'founder']).maybeSingle(),
+    supabase.from('circle_members').select('role').eq('circle_id', params.id).eq('user_id', user.id).eq('status', 'active').in('role', ['board', 'founder', 'admin']).maybeSingle(),
     supabase.from('profiles').select('is_super_admin, subscription_tier').eq('id', user.id).maybeSingle(),
   ])
 

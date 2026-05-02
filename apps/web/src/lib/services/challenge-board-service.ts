@@ -67,7 +67,7 @@ export const ChallengeBoardService = {
       .eq('status', 'active')
       .single()
 
-    if (!membership || !['board', 'founder'].includes(membership.role)) {
+    if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
       return { data: null, error: new BoardError('Only board members or founders can submit challenge proposals', 'NOT_AUTHORIZED', 403) }
     }
 
@@ -188,7 +188,7 @@ export const ChallengeBoardService = {
         .eq('status', 'active')
         .single()
 
-      if (!membership || !['board', 'founder'].includes(membership.role)) {
+      if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
         return { data: null, error: new BoardError('Only board members or founders can vote on proposals', 'NOT_AUTHORIZED', 403) }
       }
     }
@@ -218,7 +218,7 @@ export const ChallengeBoardService = {
       .select('user_id')
       .eq('circle_id', proposal.circle_id)
       .eq('status', 'active')
-      .in('role', ['board', 'founder'])
+      .in('role', ['board', 'founder', 'admin'])
 
     const totalSeats = boardMembers?.length ?? 1
 
@@ -352,6 +352,6 @@ export const ChallengeBoardService = {
       .select('user_id, role, profiles(display_name, avatar_url)')
       .eq('circle_id', circle_id)
       .eq('status', 'active')
-      .in('role', ['board', 'founder'])
+      .in('role', ['board', 'founder', 'admin'])
   },
 }

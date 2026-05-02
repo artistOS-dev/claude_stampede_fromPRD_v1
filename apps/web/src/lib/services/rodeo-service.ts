@@ -133,7 +133,7 @@ export const RodeoService = {
       .eq('status', 'active')
       .single()
 
-    if (!membership || !['board', 'founder'].includes(membership.role)) {
+    if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
       return { data: null, error: new RodeoError('Only board members or founders can initiate challenges', 'NOT_AUTHORIZED', 403) }
     }
 
@@ -325,7 +325,7 @@ export const RodeoService = {
       .eq('status', 'active')
       .single()
 
-    if (!membership || !['board', 'founder'].includes(membership.role)) {
+    if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
       return { data: null, error: new RodeoError('Only board members or founders can accept challenges', 'NOT_AUTHORIZED', 403) }
     }
 
@@ -479,7 +479,7 @@ export const RodeoService = {
       .eq('status', 'active')
       .single()
 
-    if (!membership || !['board', 'founder'].includes(membership.role)) {
+    if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
       return { data: null, error: new RodeoError('Only board members or founders can decline challenges', 'NOT_AUTHORIZED', 403) }
     }
 
@@ -569,7 +569,7 @@ export const RodeoService = {
         .eq('status', 'active')
         .single()
 
-      if (!membership || !['board', 'founder'].includes(membership.role)) {
+      if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
         return { data: null, error: new RodeoError('Not authorized to lock songs', 'NOT_AUTHORIZED', 403) }
       }
     } else if (entry.artist_id && entry.artist_id !== user.id) {

@@ -24,7 +24,7 @@ export async function GET(
   }
 
   // super_admin always sees board-only events; superfan and actual board members also do
-  const isBoardMember = isSuperAdmin || isSuperfan || ['board', 'founder'].includes(membership?.role ?? '')
+  const isBoardMember = isSuperAdmin || isSuperfan || ['board', 'founder', 'admin'].includes(membership?.role ?? '')
 
   const url = new URL(req.url)
   const limit = parseInt(url.searchParams.get('limit') ?? '50')

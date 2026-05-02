@@ -9,10 +9,28 @@ import {
   Loader2,
   AlertCircle,
   Music,
-  ChevronUp,
-  ChevronDown,
+  GripVertical,
   Send,
 } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  UniqueIdentifier,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -82,9 +100,7 @@ export default function VotingPage() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState<string | null>(null)
 
-  // Local ranking state — ordered song_ids in the voter's current ballot
   const [rankedIds, setRankedIds] = useState<string[]>([])
-  // Whether the voter has submitted at least once this session
   const [submitted, setSubmitted]       = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError]   = useState<string | null>(null)
@@ -105,7 +121,6 @@ export default function VotingPage() {
       }
       const json: TallyData = await res.json()
       setTally(json)
-      // Seed on first load: start from existing ranking, append any unranked songs
       if (!initialised.current) {
         const interleaved: string[] = []
         const maxLen = Math.max(...json.entries.map((e) => e.songs.length), 0)
@@ -115,7 +130,7 @@ export default function VotingPage() {
           }
         }
         const prev = json.my_ranking ?? []
-        const full = [...prev, ...interleaved.filter((id) => !prev.includes(id))]
+        const full = [...prev, ...interleaved.filter((sid) => !prev.includes(sid))]
         setRankedIds(full)
         if (prev.length > 0) setSubmitted(true)
         initialised.current = true
@@ -147,24 +162,10 @@ export default function VotingPage() {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
   }, [meta?.end_date])
 
-  // ── Ranking mutations ────────────────────────────────────
+  // ── Reorder handler ──────────────────────────────────────
 
-  const moveUp = useCallback((idx: number) => {
-    if (idx === 0) return
-    setRankedIds((prev) => {
-      const next = [...prev]
-      ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
-      return next
-    })
-  }, [])
-
-  const moveDown = useCallback((idx: number) => {
-    setRankedIds((prev) => {
-      if (idx >= prev.length - 1) return prev
-      const next = [...prev]
-      ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
-      return next
-    })
+  const handleReorder = useCallback((newIds: string[]) => {
+    setRankedIds(newIds)
   }, [])
 
   // ── Submit ranking ───────────────────────────────────────
@@ -211,20 +212,18 @@ export default function VotingPage() {
   const isOpen    = meta?.status === 'voting' && !isExpired
   const canRank   = isOpen
 
-  // Flat song map for quick lookup
   const songMap = new Map<string, SongTally>()
   tally.entries.forEach((entry) => {
     entry.songs.forEach((song) => songMap.set(song.song_id, song))
   })
 
   const totalSongs  = tally.entries.reduce((n, e) => n + e.songs.length, 0)
-  const rankedSongs = rankedIds.map((id) => songMap.get(id)).filter(Boolean) as SongTally[]
+  const rankedSongs = rankedIds.map((sid) => songMap.get(sid)).filter(Boolean) as SongTally[]
   const allRanked   = rankedIds.length >= totalSongs
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 pb-20">
 
-      {/* Back */}
       <BackButton onClick={() => router.push(`/rodeos/${id}`)} label="Back to Rodeo" />
 
       {/* ── Header ─────────────────────────────────────────── */}
@@ -254,11 +253,10 @@ export default function VotingPage() {
           </p>
         ) : (
           <p className="mt-3 text-xs text-amber-200/60 leading-relaxed">
-            Use the arrows to order all {totalSongs} songs from favourite to least favourite, then submit.
+            Drag songs into your preferred order — #1 at the top. Hit Submit when done.
           </p>
         )}
       </div>
-
 
       {/* ── Submitted banner ────────────────────────────────── */}
       {submitted && canRank && (
@@ -286,11 +284,10 @@ export default function VotingPage() {
           Your Ranking
           <span className="text-xs font-normal text-stone-500">{rankedIds.length} of {totalSongs} songs</span>
         </h2>
-        <RankingList
+        <DraggableRankingList
           songs={rankedSongs}
           canRank={canRank}
-          onMoveUp={moveUp}
-          onMoveDown={moveDown}
+          onReorder={handleReorder}
         />
       </div>
 
@@ -317,8 +314,6 @@ export default function VotingPage() {
           </button>
         </div>
       )}
-
-      {/* ── Not ranked pool ─────────────────────────────────── */}
     </div>
   )
 }
@@ -338,91 +333,150 @@ function BackButton({ onClick, label = 'Back' }: { onClick: () => void; label?: 
   )
 }
 
-// ── RankingList ───────────────────────────────────────────────
-// Up/down arrow reorder list of songs in the voter's ballot.
+// ── DraggableRankingList ──────────────────────────────────────
 
-function RankingList({
+function DraggableRankingList({
   songs,
   canRank,
-  onMoveUp,
-  onMoveDown,
+  onReorder,
 }: {
   songs: SongTally[]
   canRank: boolean
-  onMoveUp: (idx: number) => void
-  onMoveDown: (idx: number) => void
+  onReorder: (newIds: string[]) => void
 }) {
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
+
+  // Desktop: start after 5px movement; mobile: start after 200ms hold
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
+
+  const activeSong  = activeId ? songs.find((s) => s.song_id === activeId) : null
+  const activeIndex = activeSong ? songs.indexOf(activeSong) : -1
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveId(null)
+    if (!over || active.id === over.id) return
+    const oldIdx = songs.findIndex((s) => s.song_id === active.id)
+    const newIdx = songs.findIndex((s) => s.song_id === over.id)
+    onReorder(arrayMove(songs.map((s) => s.song_id), oldIdx, newIdx))
+  }
+
   return (
-    <ul className="bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden flex flex-col">
-      {songs.map((song, index) => {
-        const rank    = index + 1
-        const isFirst = index === 0
-        const isLast  = index === songs.length - 1
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
+      <SortableContext items={songs.map((s) => s.song_id)} strategy={verticalListSortingStrategy}>
+        <ul className="bg-stone-900 rounded-2xl border border-stone-700 divide-y divide-stone-800 overflow-hidden">
+          {songs.map((song, index) => (
+            <SortableSongItem
+              key={song.song_id}
+              song={song}
+              index={index}
+              canRank={canRank}
+            />
+          ))}
+        </ul>
+      </SortableContext>
 
-        return (
-          <li
-            key={song.song_id}
-            className="flex items-center gap-3 px-3 py-3 border-b border-stone-800 last:border-b-0 bg-stone-900 hover:bg-stone-800/40 transition-colors"
-          >
-            {/* Up / down arrows */}
-            {canRank ? (
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <button
-                  type="button"
-                  disabled={isFirst}
-                  onClick={() => onMoveUp(index)}
-                  className="p-0.5 rounded text-stone-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  title="Move up"
-                >
-                  <ChevronUp className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={isLast}
-                  onClick={() => onMoveDown(index)}
-                  className="p-0.5 rounded text-stone-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  title="Move down"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="w-5 shrink-0" />
-            )}
-
-            {/* Rank badge */}
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
-              rank === 1
-                ? 'bg-amber-500 text-white'
-                : rank === 2
-                ? 'bg-stone-600 text-stone-200'
-                : 'bg-stone-700 text-stone-500'
-            }`}>
-              {rank}
-            </span>
-
-            {/* Song icon */}
-            <div className="w-8 h-8 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0">
-              <Music className="w-3.5 h-3.5 text-amber-400" />
-            </div>
-
-            {/* Song info */}
+      {/* Floating card while dragging */}
+      <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
+        {activeSong && (
+          <div className="flex items-center gap-3 px-3 py-3 bg-stone-800 rounded-xl border-2 border-amber-500 shadow-2xl shadow-black/60 cursor-grabbing">
+            <GripVertical className="w-4 h-4 text-amber-400 shrink-0" />
+            <RankBadge rank={activeIndex + 1} />
+            <SongIcon />
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white truncate">{song.title}</div>
-              <div className="mt-0.5">
-                <span className="text-xs text-stone-500 truncate">{song.artist}</span>
-              </div>
-              {song.borda_score > 0 && (
-                <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
-                  {song.borda_score.toFixed(0)} pts · {song.ranker_count} ranker{song.ranker_count !== 1 ? 's' : ''}
-                </div>
-              )}
+              <div className="text-sm font-semibold text-white truncate">{activeSong.title}</div>
+              <div className="text-xs text-stone-400 truncate mt-0.5">{activeSong.artist}</div>
             </div>
-
-          </li>
-        )
-      })}
-    </ul>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   )
 }
 
+// ── SortableSongItem ──────────────────────────────────────────
+
+function SortableSongItem({
+  song,
+  index,
+  canRank,
+}: {
+  song: SongTally
+  index: number
+  canRank: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: song.song_id,
+    disabled: !canRank,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const rank = index + 1
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-3 py-3 transition-colors select-none
+        ${isDragging ? 'opacity-30 bg-stone-800' : 'bg-stone-900 hover:bg-stone-800/40'}
+        ${canRank ? 'cursor-grab active:cursor-grabbing' : ''}
+      `}
+      {...(canRank ? { ...attributes, ...listeners } : {})}
+    >
+      {/* Visual drag handle */}
+      <GripVertical className={`w-4 h-4 shrink-0 ${canRank ? 'text-stone-600' : 'invisible'}`} />
+
+      <RankBadge rank={rank} />
+      <SongIcon />
+
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">{song.title}</div>
+        <div className="text-xs text-stone-500 truncate mt-0.5">{song.artist}</div>
+        {song.borda_score > 0 && (
+          <div className="text-xs text-stone-600 mt-0.5 tabular-nums">
+            {song.borda_score.toFixed(0)} pts · {song.ranker_count} ranker{song.ranker_count !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+    </li>
+  )
+}
+
+// ── Small shared sub-components ───────────────────────────────
+
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${
+      rank === 1 ? 'bg-amber-500 text-white' :
+      rank === 2 ? 'bg-stone-600 text-stone-200' :
+      'bg-stone-700 text-stone-500'
+    }`}>
+      {rank}
+    </span>
+  )
+}
+
+function SongIcon() {
+  return (
+    <div className="w-8 h-8 rounded-lg bg-amber-950/20 flex items-center justify-center shrink-0">
+      <Music className="w-3.5 h-3.5 text-amber-400" />
+    </div>
+  )
+}

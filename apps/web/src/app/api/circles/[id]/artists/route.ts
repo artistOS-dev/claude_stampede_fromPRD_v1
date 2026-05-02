@@ -4,6 +4,8 @@ import { z } from 'zod'
 
 const addArtistSchema = z.object({
   artist_name: z.string().min(1).max(200),
+  spotify_url: z.string().url().optional().nullable(),
+  spotify_image_url: z.string().url().optional().nullable(),
 })
 
 export async function GET(
@@ -16,7 +18,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('circle_artists')
-    .select('id, artist_name, created_at, added_by, profiles!circle_artists_added_by_fkey(display_name)')
+    .select('id, artist_name, spotify_url, spotify_image_url, created_at, added_by, profiles!circle_artists_added_by_fkey(display_name)')
     .eq('circle_id', params.id)
     .order('artist_name', { ascending: true })
 

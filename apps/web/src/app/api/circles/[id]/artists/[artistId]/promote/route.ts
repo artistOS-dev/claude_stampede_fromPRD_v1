@@ -20,7 +20,7 @@ export async function POST(
     .eq('user_id', user.id)
     .maybeSingle()
 
-  if (!membership || !['board', 'founder'].includes(membership.role)) {
+  if (!membership || !['board', 'founder', 'admin'].includes(membership.role)) {
     return NextResponse.json({ error: 'Board members only' }, { status: 403 })
   }
 

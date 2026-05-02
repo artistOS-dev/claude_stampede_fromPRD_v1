@@ -20,7 +20,7 @@ export async function GET(
   const isSuperfan = !isSuperAdmin && profile?.subscription_tier === 'superfan'
   const canViewAll = isSuperAdmin || isSuperfan
 
-  if ((!myMembership || !['board', 'founder'].includes(myMembership.role)) && !canViewAll) {
+  if ((!myMembership || !['board', 'founder', 'admin'].includes(myMembership.role)) && !canViewAll) {
     return NextResponse.json({ error: 'Board or founder access required' }, { status: 403 })
   }
 
@@ -59,7 +59,7 @@ export async function GET(
     }
   })
 
-  const myRole = myMembership?.role ?? (isSuperAdmin ? 'founder' : isSuperfan ? 'viewer' : null)
+  const myRole = myMembership?.role ?? (isSuperAdmin ? 'admin' : isSuperfan ? 'viewer' : null)
   return NextResponse.json({ my_role: myRole, members, read_only: !myMembership && isSuperfan })
 }
 
@@ -78,8 +78,8 @@ export async function PATCH(
 
   const patcherIsSuperAdmin = patchProfile?.is_super_admin === true
 
-  if (!patcherIsSuperAdmin && (!myMembership || myMembership.role !== 'founder')) {
-    return NextResponse.json({ error: 'Founder access required' }, { status: 403 })
+  if (!patcherIsSuperAdmin && (!myMembership || !['founder', 'admin'].includes(myMembership.role))) {
+    return NextResponse.json({ error: 'Founder or admin access required' }, { status: 403 })
   }
 
   let body: { user_id?: string; role?: string }
@@ -113,8 +113,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Member not found' }, { status: 404 })
   }
 
-  if (targetMembership.role === 'founder') {
-    return NextResponse.json({ error: 'Founder role cannot be changed here' }, { status: 400 })
+  if (['founder', 'admin'].includes(targetMembership.role)) {
+    return NextResponse.json({ error: 'Founder and admin roles cannot be changed here' }, { status: 400 })
   }
 
   const serviceSupabase = createServiceClient()

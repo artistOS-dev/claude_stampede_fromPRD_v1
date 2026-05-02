@@ -99,13 +99,14 @@ const EVENT_ICONS: Record<string, string> = {
   member_joined:         '👋',
 }
 
-function RoleBadge({ role }: { role: 'member' | 'board' | 'founder' }) {
+function RoleBadge({ role }: { role: 'member' | 'board' | 'founder' | 'admin' }) {
   const styles = {
+    admin:   'bg-blue-950/40 text-blue-300 border-blue-700',
     founder: 'bg-yellow-950/40 text-yellow-300 border-yellow-700',
     board:   'bg-amber-950/40 text-amber-300 border-amber-700',
     member:  'bg-stone-800 text-stone-400 border-stone-700',
   }
-  const labels = { founder: '👑 Founder', board: '🛡 Board', member: '✓ Member' }
+  const labels = { admin: '⚡ Admin', founder: '👑 Founder', board: '🛡 Board', member: '✓ Member' }
   return (
     <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${styles[role]}`}>
       {labels[role]}
@@ -582,7 +583,7 @@ function BoardInboxTab({
   onViewRodeo: (id: string) => void
 }) {
   const [boardMembers, setBoardMembers] = useState<CircleBoardMember[]>([])
-  const [myRole, setMyRole] = useState<'member' | 'board' | 'founder' | null>(null)
+  const [myRole, setMyRole] = useState<'member' | 'board' | 'founder' | 'admin' | null>(null)
   const [membersLoading, setMembersLoading] = useState(false)
   const [membersError, setMembersError] = useState<string | null>(null)
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
@@ -606,7 +607,7 @@ function BoardInboxTab({
     try {
       const res = await fetch(`/api/circles/${circleId}/board-members`)
       if (!res.ok) throw new Error('Failed to load board members')
-      const json: { my_role: 'member' | 'board' | 'founder' | 'viewer'; members: CircleBoardMember[]; read_only?: boolean } = await res.json()
+      const json: { my_role: 'member' | 'board' | 'founder' | 'admin' | 'viewer'; members: CircleBoardMember[]; read_only?: boolean } = await res.json()
       setMyRole(json.my_role === 'viewer' ? null : json.my_role)
       setBoardMembers(json.members ?? [])
     } catch {
@@ -775,7 +776,7 @@ function BoardInboxTab({
               <div className="col-span-2 text-right">Action</div>
             </div>
             {boardMembers.map((member) => {
-              const canEdit = !readOnly && myRole === 'founder' && member.role !== 'founder'
+              const canEdit = !readOnly && ['founder', 'admin'].includes(myRole ?? '') && !['founder', 'admin'].includes(member.role)
               const promote = member.role === 'member'
               const demote = member.role === 'board'
 
@@ -791,7 +792,9 @@ function BoardInboxTab({
                   </div>
                   <div className="col-span-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
-                      member.role === 'founder'
+                      member.role === 'admin'
+                        ? 'bg-blue-950/30 text-blue-300'
+                        : member.role === 'founder'
                         ? 'bg-yellow-950/30 text-yellow-300'
                         : member.role === 'board'
                         ? 'bg-amber-900/30 text-amber-400'
@@ -831,9 +834,9 @@ function BoardInboxTab({
           </div>
         )}
 
-        {!readOnly && myRole !== 'founder' && !membersLoading && (
+        {!readOnly && !['founder', 'admin'].includes(myRole ?? '') && !membersLoading && (
           <p className="text-xs text-stone-500">
-            Only founders can change board roles.
+            Only founders and admins can change board roles.
           </p>
         )}
       </div>
@@ -1503,7 +1506,7 @@ interface IncomingChallenge {
 
 interface CircleBoardMember {
   user_id: string
-  role: 'member' | 'board' | 'founder'
+  role: 'member' | 'board' | 'founder' | 'admin'
   status: 'active' | 'pending' | 'banned'
   joined_at: string
   display_name: string | null
@@ -1517,7 +1520,7 @@ export default function CircleDetailPage() {
   const [isViewAllUser, setIsViewAllUser] = useState(false)
 
   // Circle header info
-  const [circleInfo, setCircleInfo] = useState<{ name: string; member_count: number; my_role: 'member' | 'board' | 'founder' | null } | null>(null)
+  const [circleInfo, setCircleInfo] = useState<{ name: string; member_count: number; my_role: 'member' | 'board' | 'founder' | 'admin' | null } | null>(null)
 
   // Rodeo history state
   const [rodeoHistory, setRodeoHistory] = useState<RodeoHistoryData | null>(null)

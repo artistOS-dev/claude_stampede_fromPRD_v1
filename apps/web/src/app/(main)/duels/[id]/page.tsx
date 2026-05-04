@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Timer, CheckCircle2, Swords, Trophy } from 'lucide-react'
+import { ArrowLeft, Timer, CheckCircle2, Swords, Trophy, Music, ChevronRight, RotateCcw } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -42,9 +42,76 @@ function getCountdown(endDate: string): string {
   return `${mins}m ${secs}s`
 }
 
-// ── Swipe card ────────────────────────────────────────────────
+// ── Song vote card ─────────────────────────────────────────────
 
-function SwipeCard({
+function SongCard({
+  song,
+  accent,
+  isVoting,
+  isPending,
+  onClick,
+}: {
+  song: Song | null
+  accent: 'amber' | 'teal'
+  isVoting: boolean
+  isPending: boolean
+  onClick: () => void
+}) {
+  const a = accent === 'amber'
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isVoting}
+      className={`group w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-150
+        active:scale-[0.98] disabled:cursor-not-allowed
+        ${a
+          ? 'border-stone-700 bg-stone-900 hover:border-amber-600 hover:bg-amber-950/20'
+          : 'border-stone-700 bg-stone-900 hover:border-teal-600  hover:bg-teal-950/20'
+        }`}
+    >
+      {/* Cover art */}
+      {song?.cover_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={song.cover_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
+      ) : (
+        <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0
+          ${a ? 'bg-amber-950/30 border border-amber-800/30' : 'bg-teal-950/30 border border-teal-800/30'}`}>
+          <Music className={`w-7 h-7 ${a ? 'text-amber-600' : 'text-teal-600'}`} />
+        </div>
+      )}
+
+      {/* Song info */}
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-white truncate text-base leading-snug">{song?.title}</p>
+        <p className="text-sm text-stone-400 truncate mt-0.5">{song?.artist}</p>
+        {song?.album && (
+          <p className="text-xs text-stone-600 truncate mt-0.5 italic">{song.album}</p>
+        )}
+      </div>
+
+      {/* CTA arrow / spinner */}
+      <div className="shrink-0">
+        {isPending ? (
+          <div className={`w-9 h-9 rounded-full border-2 border-t-transparent animate-spin
+            ${a ? 'border-amber-500' : 'border-teal-500'}`} />
+        ) : (
+          <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-colors
+            ${a
+              ? 'border-amber-800 text-amber-700 group-hover:bg-amber-600 group-hover:border-amber-600 group-hover:text-white'
+              : 'border-teal-800  text-teal-700  group-hover:bg-teal-600  group-hover:border-teal-600  group-hover:text-white'
+            }`}>
+            <ChevronRight className="w-5 h-5" />
+          </div>
+        )}
+      </div>
+    </button>
+  )
+}
+
+// ── Voting panel ──────────────────────────────────────────────
+
+function VotingPanel({
   duel,
   onVote,
   isVoting,
@@ -53,147 +120,59 @@ function SwipeCard({
   onVote: (songId: string) => void
   isVoting: boolean
 }) {
-  const cardRef   = useRef<HTMLDivElement>(null)
-  const startX    = useRef(0)
-  const startY    = useRef(0)
-  const [dragX, setDragX]       = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const [hint, setHint]         = useState<'left' | 'right' | null>(null)
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
-  const THRESHOLD = 80  // px needed to trigger a vote
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (isVoting) return
-    startX.current = e.clientX
-    startY.current = e.clientY
-    setDragging(true)
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return
-    const dx = e.clientX - startX.current
-    const dy = e.clientY - startY.current
-    // Only activate horizontal drag if x-movement dominates
-    if (Math.abs(dx) < Math.abs(dy) && Math.abs(dx) < 10) return
-    setDragX(dx)
-    setHint(dx > 20 ? 'left' : dx < -20 ? 'right' : null)
-  }
-
-  const onPointerUp = () => {
-    if (!dragging) return
-    setDragging(false)
-    const dx = dragX
-    setDragX(0)
-    setHint(null)
-    if (dx >  THRESHOLD && duel.song_left)  onVote(duel.song_left.id)
-    if (dx < -THRESHOLD && duel.song_right) onVote(duel.song_right.id)
-  }
-
-  const rotate = dragging ? Math.min(Math.max(dragX / 15, -12), 12) : 0
-  const opacity = dragging ? Math.max(1 - Math.abs(dragX) / 300, 0.6) : 1
+  const vote = useCallback((songId: string) => {
+    setPendingId(songId)
+    onVote(songId)
+  }, [onVote])
 
   return (
-    <div className="relative select-none touch-pan-y">
-      {/* Direction hints */}
-      <div className={`absolute inset-y-0 left-0 w-24 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-150 ${hint === 'left' ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="bg-amber-500/90 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
-          ← {duel.song_left?.title?.split(' ').slice(0, 2).join(' ')}
+    <div className="space-y-3">
+      <p className="text-center text-xs text-stone-500 uppercase tracking-widest font-semibold">
+        Tap to cast your vote
+      </p>
+
+      <SongCard
+        song={duel.song_left}
+        accent="amber"
+        isVoting={isVoting}
+        isPending={pendingId === duel.song_left?.id && isVoting}
+        onClick={() => duel.song_left && vote(duel.song_left.id)}
+      />
+
+      {/* VS divider */}
+      <div className="flex items-center gap-3 py-0.5">
+        <div className="flex-1 h-px bg-stone-800" />
+        <div className="flex items-center gap-1.5">
+          <Swords className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-black text-stone-500 tracking-widest">VS</span>
         </div>
-      </div>
-      <div className={`absolute inset-y-0 right-0 w-24 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-150 ${hint === 'right' ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="bg-teal-500/90 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
-          {duel.song_right?.title?.split(' ').slice(0, 2).join(' ')} →
-        </div>
+        <div className="flex-1 h-px bg-stone-800" />
       </div>
 
-      {/* Draggable card */}
-      <div
-        ref={cardRef}
-        className="cursor-grab active:cursor-grabbing"
-        style={{
-          transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-          opacity,
-          transition: dragging ? 'none' : 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease',
-        }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-2xl">
-          <div className="grid grid-cols-[1fr_auto_1fr]">
-            {/* Left song */}
-            <div className={`p-5 flex flex-col items-center text-center gap-2 border-r border-stone-700 transition-colors ${hint === 'left' ? 'bg-amber-950/30' : ''}`}>
-              <div className="w-16 h-16 rounded-xl bg-amber-900/20 border border-amber-800/30 flex items-center justify-center">
-                <span className="text-3xl">🎵</span>
-              </div>
-              <div>
-                <p className="font-bold text-white text-sm leading-snug">{duel.song_left?.title}</p>
-                <p className="text-xs text-stone-500 mt-0.5">{duel.song_left?.artist}</p>
-                {duel.song_left?.album && (
-                  <p className="text-xs text-stone-700 mt-0.5 italic">{duel.song_left.album}</p>
-                )}
-              </div>
-            </div>
-
-            {/* VS */}
-            <div className="flex items-center justify-center px-3 bg-stone-950/50">
-              <div className="flex flex-col items-center gap-1">
-                <Swords className="w-5 h-5 text-amber-500" />
-                <span className="text-xs font-bold text-stone-600">VS</span>
-              </div>
-            </div>
-
-            {/* Right song */}
-            <div className={`p-5 flex flex-col items-center text-center gap-2 border-l border-stone-700 transition-colors ${hint === 'right' ? 'bg-teal-950/30' : ''}`}>
-              <div className="w-16 h-16 rounded-xl bg-teal-900/20 border border-teal-800/30 flex items-center justify-center">
-                <span className="text-3xl">🎵</span>
-              </div>
-              <div>
-                <p className="font-bold text-white text-sm leading-snug">{duel.song_right?.title}</p>
-                <p className="text-xs text-stone-500 mt-0.5">{duel.song_right?.artist}</p>
-                {duel.song_right?.album && (
-                  <p className="text-xs text-stone-700 mt-0.5 italic">{duel.song_right.album}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Drag hint strip */}
-          <div className="px-5 py-3 bg-stone-950/50 flex items-center justify-between text-xs text-stone-600 border-t border-stone-800">
-            <span>← swipe left to vote</span>
-            <span>swipe right to vote →</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Tap buttons fallback */}
-      <div className="grid grid-cols-2 gap-3 mt-4">
-        <button
-          type="button"
-          disabled={isVoting}
-          onClick={() => duel.song_left && onVote(duel.song_left.id)}
-          className="py-3 rounded-xl bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white font-semibold text-sm transition-colors"
-        >
-          Vote ← {duel.song_left?.title?.split(' ').slice(0, 2).join(' ')}
-        </button>
-        <button
-          type="button"
-          disabled={isVoting}
-          onClick={() => duel.song_right && onVote(duel.song_right.id)}
-          className="py-3 rounded-xl bg-teal-700 hover:bg-teal-600 disabled:opacity-40 text-white font-semibold text-sm transition-colors"
-        >
-          Vote {duel.song_right?.title?.split(' ').slice(0, 2).join(' ')} →
-        </button>
-      </div>
+      <SongCard
+        song={duel.song_right}
+        accent="teal"
+        isVoting={isVoting}
+        isPending={pendingId === duel.song_right?.id && isVoting}
+        onClick={() => duel.song_right && vote(duel.song_right.id)}
+      />
     </div>
   )
 }
 
-// ── Results view ─────────────────────────────────────────────
+// ── Results view ──────────────────────────────────────────────
 
-function ResultsView({ duel }: { duel: DuelDetail }) {
+function ResultsView({
+  duel,
+  canChange,
+  onChangeVote,
+}: {
+  duel: DuelDetail
+  canChange: boolean
+  onChangeVote: () => void
+}) {
   const { left, right, total } = duel.tally
   const leftPct  = total > 0 ? Math.round((left  / total) * 100) : 50
   const rightPct = total > 0 ? Math.round((right / total) * 100) : 50
@@ -220,18 +199,41 @@ function ResultsView({ duel }: { duel: DuelDetail }) {
         </div>
       )}
 
-      {/* Tally bars */}
+      {/* Voted confirmation */}
+      {duel.my_vote && (
+        <div className="flex items-center justify-between gap-3 bg-green-950/20 border border-green-800/50 rounded-2xl px-5 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+            <p className="text-sm text-green-300">
+              You voted for{' '}
+              <span className="font-semibold">
+                {myVoteLeft ? duel.song_left?.title : duel.song_right?.title}
+              </span>
+            </p>
+          </div>
+          {canChange && (
+            <button
+              type="button"
+              onClick={onChangeVote}
+              className="shrink-0 flex items-center gap-1 text-xs text-stone-500 hover:text-stone-300 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" /> Change
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Tug-of-war bar */}
       <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-white">Final Results</h3>
+          <h3 className="font-bold text-white text-sm">Results</h3>
           <span className="text-xs text-stone-500">{total} vote{total !== 1 ? 's' : ''}</span>
         </div>
 
-        {/* Tug-of-war bar */}
         <div>
-          <div className="flex justify-between text-xs font-semibold text-stone-400 px-0.5 mb-1.5">
-            <span className="truncate max-w-[40%]">{duel.song_left?.title}</span>
-            <span className="truncate max-w-[40%] text-right">{duel.song_right?.title}</span>
+          <div className="flex justify-between text-xs font-semibold text-stone-400 mb-1.5 px-0.5">
+            <span className="truncate max-w-[42%]">{duel.song_left?.title}</span>
+            <span className="truncate max-w-[42%] text-right">{duel.song_right?.title}</span>
           </div>
           <div className="relative h-8 rounded-full bg-stone-800 overflow-hidden">
             <div className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700"
@@ -239,33 +241,34 @@ function ResultsView({ duel }: { duel: DuelDetail }) {
             <div className="absolute inset-y-0 right-0 bg-teal-400 transition-all duration-700"
               style={{ width: `${rightPct}%` }} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-white drop-shadow-sm">
+              <span className="text-xs font-bold text-white drop-shadow">
                 {leftPct}% — {rightPct}%
               </span>
             </div>
           </div>
         </div>
 
-        {/* Per-song rows */}
         {[
           { song: duel.song_left,  votes: left,  pct: leftPct,  isWinner: winnerIsLeft,  myVote: myVoteLeft,  color: 'bg-amber-500' },
-          { song: duel.song_right, votes: right, pct: rightPct, isWinner: winnerIsRight, myVote: myVoteRight, color: 'bg-teal-400' },
+          { song: duel.song_right, votes: right, pct: rightPct, isWinner: winnerIsRight, myVote: myVoteRight, color: 'bg-teal-400'  },
         ].map(({ song, votes, pct, isWinner, myVote, color }) => (
-          <div key={song?.id} className={`rounded-xl border p-4 ${isWinner ? 'border-yellow-700 bg-yellow-950/10' : 'border-stone-800 bg-stone-950'}`}>
+          <div key={song?.id}
+            className={`rounded-xl border p-4 ${isWinner ? 'border-yellow-700 bg-yellow-950/10' : 'border-stone-800 bg-stone-950'}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 {isWinner && <Trophy className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                {myVote && !isWinner && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                {myVote && !isWinner && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />}
                 <span className="font-semibold text-stone-100 truncate text-sm">{song?.title}</span>
-                {myVote && <span className="text-xs text-stone-500">(your pick)</span>}
+                {myVote && <span className="text-xs text-stone-500 shrink-0">(your pick)</span>}
               </div>
-              <span className={`text-lg font-bold tabular-nums ${isWinner ? 'text-yellow-400' : 'text-stone-400'}`}>
+              <span className={`text-lg font-bold tabular-nums shrink-0 ${isWinner ? 'text-yellow-400' : 'text-stone-400'}`}>
                 {pct}%
                 <span className="text-xs font-normal text-stone-600 ml-1">({votes})</span>
               </span>
             </div>
             <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full transition-all duration-700 ${color}`}
+                style={{ width: `${pct}%` }} />
             </div>
           </div>
         ))}
@@ -280,12 +283,13 @@ export default function DuelPage() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
 
-  const [duel, setDuel]         = useState<DuelDetail | null>(null)
-  const [isLoading, setLoading] = useState(true)
-  const [fetchError, setError]  = useState<string | null>(null)
-  const [isVoting, setVoting]   = useState(false)
-  const [voteError, setVoteErr] = useState<string | null>(null)
+  const [duel, setDuel]           = useState<DuelDetail | null>(null)
+  const [isLoading, setLoading]   = useState(true)
+  const [fetchError, setError]    = useState<string | null>(null)
+  const [isVoting, setVoting]     = useState(false)
+  const [voteError, setVoteErr]   = useState<string | null>(null)
   const [countdown, setCountdown] = useState<string | null>(null)
+  const [changingVote, setChangingVote] = useState(false)
 
   const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -325,8 +329,8 @@ export default function DuelPage() {
       })
       const json: { error?: string } = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Vote failed')
-      // Optimistic update then reload for real tally
       setDuel((prev) => prev ? { ...prev, my_vote: chosenSongId } : prev)
+      setChangingVote(false)
       await load()
     } catch (err) {
       setVoteErr(err instanceof Error ? err.message : 'Vote failed')
@@ -358,14 +362,14 @@ export default function DuelPage() {
   const isOpen   = duel.status === 'active' && !duel.is_expired
   const isClosed = duel.status === 'closed' || duel.is_expired
   const hasVoted = !!duel.my_vote
+  const showVoting = isOpen && (!hasVoted || changingVote)
 
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-20">
       {/* Back */}
       <button type="button" onClick={() => router.push('/duels')}
         className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400 transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        All Duels
+        <ArrowLeft className="w-4 h-4" /> All Duels
       </button>
 
       {/* Header */}
@@ -377,7 +381,7 @@ export default function DuelPage() {
               <span className="text-xs font-medium text-amber-200/70 uppercase tracking-wide">
                 {isOpen ? 'Voting Live' : 'Voting Closed'}
               </span>
-              {hasVoted && (
+              {hasVoted && !changingVote && (
                 <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
                   <CheckCircle2 className="w-3 h-3" /> Voted
                 </span>
@@ -397,45 +401,28 @@ export default function DuelPage() {
         </div>
       </div>
 
-      {/* Voting UI or results */}
-      {isOpen && !hasVoted ? (
+      {/* Closed banner */}
+      {isClosed && !duel.winner_song_id && (
+        <div className="flex items-center gap-3 bg-stone-900 border border-stone-700 rounded-2xl px-5 py-4">
+          <Swords className="w-5 h-5 text-stone-500 shrink-0" />
+          <p className="text-sm text-stone-400">This duel has ended. Results below.</p>
+        </div>
+      )}
+
+      {/* Voting cards or results */}
+      {showVoting ? (
         <>
-          <SwipeCard duel={duel} onVote={handleVote} isVoting={isVoting} />
-          {isVoting && (
-            <p className="text-center text-sm text-amber-400 animate-pulse">Submitting vote…</p>
-          )}
+          <VotingPanel duel={duel} onVote={handleVote} isVoting={isVoting} />
           {voteError && (
             <p className="text-center text-sm text-red-400">{voteError}</p>
           )}
         </>
       ) : (
-        <>
-          {/* Voted confirmation when still open */}
-          {isOpen && hasVoted && (
-            <div className="flex items-center gap-3 bg-green-950/20 border border-green-800/50 rounded-2xl px-5 py-4">
-              <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
-              <div>
-                <p className="font-semibold text-green-300 text-sm">Your vote is in!</p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  You voted for{' '}
-                  <span className="font-medium">
-                    {duel.my_vote === duel.song_left?.id ? duel.song_left?.title : duel.song_right?.title}
-                  </span>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Closed banner */}
-          {isClosed && !duel.winner_song_id && (
-            <div className="flex items-center gap-3 bg-stone-900 border border-stone-700 rounded-2xl px-5 py-4">
-              <Swords className="w-5 h-5 text-stone-500 shrink-0" />
-              <p className="text-sm text-stone-400">This duel has ended. Results below.</p>
-            </div>
-          )}
-
-          <ResultsView duel={duel} />
-        </>
+        <ResultsView
+          duel={duel}
+          canChange={isOpen && hasVoted}
+          onChangeVote={() => setChangingVote(true)}
+        />
       )}
     </div>
   )

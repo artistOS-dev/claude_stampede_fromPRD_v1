@@ -10,11 +10,12 @@ import Step2Verify from './Step2Verify'
 import Step3Profile from './Step3Profile'
 import Step4Subscription from './Step4Subscription'
 import Step5Quiz from './Step5Quiz'
-import Step6Circles from './Step6Circles'
+import Step6ArtistTaste, { type FavoriteArtist } from './Step6ArtistTaste'
+import Step7Circles from './Step6Circles'
 
 const SESSION_STORAGE_KEY = 'stampede_signup_state'
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 interface SignupState {
   step: Step
@@ -25,6 +26,8 @@ interface SignupState {
   role: 'fan' | 'artist' | 'producer' | null
   tier: 'free' | 'fan' | 'superfan' | null
   personalityTypes: string[]
+  favoriteGenres: string[]
+  favoriteArtists: FavoriteArtist[]
   joinedCircles: string[]
 }
 
@@ -37,6 +40,8 @@ const DEFAULT_STATE: SignupState = {
   role: null,
   tier: null,
   personalityTypes: [],
+  favoriteGenres: [],
+  favoriteArtists: [],
   joinedCircles: [],
 }
 
@@ -95,7 +100,6 @@ export default function SignupWizard({
       const saved = loadState()
       let nextState = { ...saved }
 
-      // If verification failed, send user back to step 2 so they can resend the email
       if (verificationError) {
         nextState = { ...nextState, step: saved.step >= 2 ? 2 : 1 }
         setStateRaw(nextState)
@@ -103,13 +107,10 @@ export default function SignupWizard({
         return
       }
 
-      // If initialStep is provided via URL (e.g., from email callback), override
       if (initialStep && initialStep > saved.step) {
         nextState = { ...nextState, step: initialStep }
       }
 
-      // If we're at step 3+ but don't have userId (e.g., email opened in new tab),
-      // try to get it from the active Supabase auth session
       if (nextState.step >= 3 && !nextState.userId) {
         try {
           const supabase = createClient()
@@ -178,8 +179,16 @@ export default function SignupWizard({
     [setState]
   )
 
-  // Step 6 → complete
+  // Step 6 → 7 (artist taste collected)
   const handleStep6Success = useCallback(
+    (favoriteGenres: string[], favoriteArtists: FavoriteArtist[]) => {
+      setState((prev) => ({ ...prev, favoriteGenres, favoriteArtists, step: 7 }))
+    },
+    [setState]
+  )
+
+  // Step 7 → complete
+  const handleStep7Success = useCallback(
     (joinedCircles: string[]) => {
       setState((prev) => ({ ...prev, joinedCircles }))
       clearState()
@@ -195,6 +204,10 @@ export default function SignupWizard({
 
   const handleSkipQuiz = useCallback(() => {
     setState((prev) => ({ ...prev, personalityTypes: [], step: 6 }))
+  }, [setState])
+
+  const handleSkipArtistTaste = useCallback(() => {
+    setState((prev) => ({ ...prev, favoriteGenres: [], favoriteArtists: [], step: 7 }))
   }, [setState])
 
   const handleSkipCircles = useCallback(() => {
@@ -240,9 +253,9 @@ export default function SignupWizard({
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-start py-8 px-4 sm:px-6">
         <div className="w-full max-w-lg">
-          {/* Progress bar (shown on steps 1-6) */}
+          {/* Progress bar */}
           <div className="mb-8">
-            <ProgressBar currentStep={step} totalSteps={6} />
+            <ProgressBar currentStep={step} totalSteps={7} />
           </div>
 
           {/* Verification error banner */}
@@ -285,7 +298,6 @@ export default function SignupWizard({
             )}
 
             {step === 3 && !userId && (
-              // Edge case: userId lost somehow, restart from step 1
               <Step1Credentials
                 initialEmail={email}
                 onSuccess={handleStep1Success}
@@ -307,18 +319,26 @@ export default function SignupWizard({
             )}
 
             {step === 6 && (
-              <Step6Circles
+              <Step6ArtistTaste
+                personalityTypes={personalityTypes}
+                onSuccess={handleStep6Success}
+                onSkip={handleSkipArtistTaste}
+              />
+            )}
+
+            {step === 7 && (
+              <Step7Circles
                 personalityTypes={personalityTypes}
                 preselectedCircleId={preselectedCircleId}
                 inviterName={inviterName}
-                onSuccess={handleStep6Success}
+                onSuccess={handleStep7Success}
                 onSkip={handleSkipCircles}
               />
             )}
           </div>
 
-          {/* Back navigation (steps 3+) */}
-          {step >= 3 && step <= 5 && (
+          {/* Back navigation (steps 3–6) */}
+          {step >= 3 && step <= 6 && (
             <button
               type="button"
               onClick={() => goToStep((step - 1) as Step)}

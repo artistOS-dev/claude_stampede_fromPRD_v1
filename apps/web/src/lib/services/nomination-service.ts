@@ -9,7 +9,7 @@ export const NOMINATION_SLOTS: Record<
   free:     { young_buck: 1, rising_star: 2 },
   fan:      { young_buck: 2, rising_star: 4 },
   superfan: { young_buck: 5, rising_star: 10 },
-  artist:   { young_buck: 7, rising_star: 15 },
+  artist_manager: { young_buck: 7, rising_star: 15 },
   stampede_producer: { young_buck: 7, rising_star: 15 },
 }
 

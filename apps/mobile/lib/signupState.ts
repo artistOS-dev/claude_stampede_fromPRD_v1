@@ -8,7 +8,7 @@ export type SignupState = {
   userId: string | null
   displayName: string
   avatarUrl: string | null
-  role: 'fan' | 'artist' | 'stampede_producer' | null
+  role: 'fan' | 'artist_manager' | 'stampede_producer' | null
   tier: 'free' | 'fan' | 'superfan' | null
   personalityTypes: string[]
   joinedCircles: string[]

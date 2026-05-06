@@ -37,7 +37,7 @@ const createCircleSchema = z.object({
   core_artists: z.array(z.string().min(1).max(120)).max(25).default([]),
   max_members: z.number().int().positive().optional().nullable(),
   is_paid: z.boolean().default(false),
-  required_tier: z.enum(['free', 'fan', 'superfan', 'artist', 'stampede_producer']).optional().nullable(),
+  required_tier: z.enum(['free', 'fan', 'superfan', 'artist_manager', 'stampede_producer']).optional().nullable(),
   personality_tags: z.array(z.string().min(1).max(60)).max(25).default([]),
   image_url: z.string().url().optional().nullable(),
 })

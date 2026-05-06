@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Swords, Timer, CheckCircle2, ChevronRight } from 'lucide-react'
 import CreateDuelForm from '@/components/duels/CreateDuelForm'
+import { createClient } from '@/lib/supabase/client'
 
 interface Song {
   id: string
@@ -158,9 +159,10 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
 
 export default function DuelsPage() {
   const router = useRouter()
-  const [duels, setDuels]       = useState<Duel[]>([])
-  const [isLoading, setLoading] = useState(true)
-  const [error, setError]       = useState<string | null>(null)
+  const [duels, setDuels]             = useState<Duel[]>([])
+  const [isLoading, setLoading]       = useState(true)
+  const [error, setError]             = useState<string | null>(null)
+  const [canCreateDuel, setCanCreate] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -177,6 +179,23 @@ export default function DuelsPage() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    const loadRole = async () => {
+      const supabase = createClient()
+      const { data: auth } = await supabase.auth.getUser()
+      if (!auth.user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, is_super_admin')
+        .eq('id', auth.user.id)
+        .maybeSingle()
+      setCanCreate(
+        profile?.role === 'stampede_producer' || profile?.is_super_admin === true
+      )
+    }
+    loadRole()
+  }, [])
+
   const active = duels.filter((d) => d.status === 'active' && !d.is_expired)
   const closed = duels.filter((d) => d.status === 'closed' || d.is_expired)
 
@@ -191,8 +210,8 @@ export default function DuelsPage() {
         <p className="text-amber-200/70 text-sm">Two songs enter, one song wins. Swipe to vote.</p>
       </div>
 
-      {/* Create duel */}
-      <CreateDuelForm onCreated={load} />
+      {/* Create duel — only stampede producers and admins */}
+      {canCreateDuel && <CreateDuelForm onCreated={load} />}
 
       {isLoading && (
         <div className="flex justify-center py-20">

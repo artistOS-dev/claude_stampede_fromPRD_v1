@@ -220,6 +220,7 @@ function ResultsView({
   const winnerIsRight = duel.winner_song_id === duel.song_right?.id
   const myVoteLeft  = duel.my_vote === duel.song_left?.id
   const myVoteRight = duel.my_vote === duel.song_right?.id
+  const myRatings   = duel.my_ratings ?? {}
 
   return (
     <div className="space-y-4">
@@ -295,13 +296,22 @@ function ResultsView({
           <div key={song?.id}
             className={`rounded-xl border p-4 ${isWinner ? 'border-yellow-700 bg-yellow-950/10' : 'border-stone-800 bg-stone-950'}`}>
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 min-w-0">
-                {isWinner && <Trophy className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                {myVote && !isWinner && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />}
-                <span className="font-semibold text-stone-100 truncate text-sm">{song?.title}</span>
-                {myVote && <span className="text-xs text-stone-500 shrink-0">(your pick)</span>}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  {isWinner && <Trophy className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                  {myVote && !isWinner && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />}
+                  <span className="font-semibold text-stone-100 truncate text-sm">{song?.title}</span>
+                  {myVote && <span className="text-xs text-stone-500 shrink-0">(your pick)</span>}
+                </div>
+                {song && (
+                  <RatingBadge
+                    myRating={myRatings[song.id] ?? null}
+                    avgRating={song.avg_rating}
+                    ratingCount={song.rating_count}
+                  />
+                )}
               </div>
-              <span className={`text-lg font-bold tabular-nums shrink-0 ${isWinner ? 'text-yellow-400' : 'text-stone-400'}`}>
+              <span className={`text-lg font-bold tabular-nums shrink-0 ml-3 ${isWinner ? 'text-yellow-400' : 'text-stone-400'}`}>
                 {pct}%
                 <span className="text-xs font-normal text-stone-600 ml-1">({votes})</span>
               </span>

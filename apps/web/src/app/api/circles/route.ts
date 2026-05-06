@@ -37,7 +37,7 @@ const createCircleSchema = z.object({
   core_artists: z.array(z.string().min(1).max(120)).max(25).default([]),
   max_members: z.number().int().positive().optional().nullable(),
   is_paid: z.boolean().default(false),
-  required_tier: z.enum(['free', 'fan', 'superfan', 'artist', 'producer']).optional().nullable(),
+  required_tier: z.enum(['free', 'fan', 'superfan', 'artist', 'stampede_producer']).optional().nullable(),
   personality_tags: z.array(z.string().min(1).max(60)).max(25).default([]),
   image_url: z.string().url().optional().nullable(),
 })
@@ -133,12 +133,12 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_super_admin')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile || profile.role !== 'producer') {
-    return NextResponse.json({ error: 'Only producers can create circles' }, { status: 403 })
+  if (!profile || (profile.role !== 'stampede_producer' && !profile.is_super_admin)) {
+    return NextResponse.json({ error: 'Only Stampede Producers can create circles' }, { status: 403 })
   }
 
   let body: unknown

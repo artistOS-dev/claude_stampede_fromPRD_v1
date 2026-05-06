@@ -44,7 +44,7 @@ const TIER_COLORS: Record<string, string> = {
   fan:       'text-teal-400',
   superfan:  'text-amber-400',
   artist:    'text-amber-400',
-  producer:  'text-yellow-400',
+  stampede_producer: 'text-yellow-400',
 }
 
 const RODEO_STATUS: Record<string, { dot: string; label: string }> = {

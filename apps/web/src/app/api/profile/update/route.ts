@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 const updateProfileSchema = z.object({
   display_name: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
-  role: z.enum(['fan', 'artist', 'producer']),
+  role: z.enum(['fan', 'artist', 'stampede_producer']),
   avatar_url: z.string().url().optional().nullable(),
 })
 

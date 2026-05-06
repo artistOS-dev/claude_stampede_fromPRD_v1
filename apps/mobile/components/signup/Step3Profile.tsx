@@ -15,7 +15,7 @@ import { saveSignupState } from '../../lib/signupState'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 
-type Role = 'fan' | 'artist' | 'stampede_producer'
+type Role = 'fan' | 'artist_manager' | 'stampede_producer'
 
 interface Step3Props {
   initialDisplayName?: string
@@ -26,8 +26,8 @@ interface Step3Props {
 }
 
 const ROLES: { id: Role; label: string; icon: string; description: string }[] = [
-  { id: 'fan', label: 'Fan', icon: '🎵', description: 'I love country music' },
-  { id: 'artist', label: 'Artist', icon: '🎸', description: 'I make country music' },
+  { id: 'fan',               label: 'Fan',               icon: '🎵', description: 'I love country music' },
+  { id: 'artist_manager',    label: 'Artist Manager',    icon: '🎸', description: 'I manage artists or perform country music' },
   { id: 'stampede_producer', label: 'Stampede Producer', icon: '🎙️', description: 'I create circles and curate the community' },
 ]
 

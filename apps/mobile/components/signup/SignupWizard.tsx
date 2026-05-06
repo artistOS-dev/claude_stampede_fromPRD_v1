@@ -71,7 +71,7 @@ export default function SignupWizard() {
   const handleStep3Success = async (
     displayName: string,
     avatarUrl: string | null,
-    role: 'fan' | 'artist' | 'stampede_producer'
+    role: 'fan' | 'artist_manager' | 'stampede_producer'
   ) => {
     await updateState({ step: 4, displayName, avatarUrl, role })
   }

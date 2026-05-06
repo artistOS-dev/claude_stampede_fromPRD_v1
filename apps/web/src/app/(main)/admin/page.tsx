@@ -43,7 +43,7 @@ const TIER_COLORS: Record<string, string> = {
   free:      'text-stone-500',
   fan:       'text-teal-400',
   superfan:  'text-amber-400',
-  artist:    'text-amber-400',
+  artist_manager: 'text-amber-400',
   stampede_producer: 'text-yellow-400',
 }
 

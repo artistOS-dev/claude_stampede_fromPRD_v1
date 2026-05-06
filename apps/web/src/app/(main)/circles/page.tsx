@@ -264,7 +264,7 @@ export default function CirclesPage() {
                 <option value="free">free</option>
                 <option value="fan">fan</option>
                 <option value="superfan">superfan</option>
-                <option value="artist">artist</option>
+                <option value="artist_manager">artist_manager</option>
                 <option value="stampede_producer">stampede_producer</option>
               </select>
             )}

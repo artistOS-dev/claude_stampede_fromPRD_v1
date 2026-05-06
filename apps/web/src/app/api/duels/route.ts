@@ -91,6 +91,17 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Only Stampede Producers and superadmins may create duels
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, is_super_admin')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || (profile.role !== 'stampede_producer' && !profile.is_super_admin)) {
+    return NextResponse.json({ error: 'Only Stampede Producers can create duels' }, { status: 403 })
+  }
+
   let body: {
     title: string
     description?: string

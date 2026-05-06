@@ -65,7 +65,7 @@ export default function CirclesPage() {
         .select('role')
         .eq('id', auth.user.id)
         .maybeSingle()
-      setCanCreateCircle(profile?.role === 'producer')
+      setCanCreateCircle(profile?.role === 'stampede_producer')
     }
     loadRole()
   }, [])
@@ -194,7 +194,7 @@ export default function CirclesPage() {
             onClick={() => setCreateOpen((o) => !o)}
             className="w-full flex items-center justify-between px-5 py-4 text-left"
           >
-            <h2 className="text-lg font-bold text-amber-200">🎸 Create Circle (Producer)</h2>
+            <h2 className="text-lg font-bold text-amber-200">🎸 Create Circle (Stampede Producer)</h2>
             <ChevronDown
               className={`w-5 h-5 text-amber-400 transition-transform duration-200 ${createOpen ? 'rotate-180' : ''}`}
             />
@@ -265,7 +265,7 @@ export default function CirclesPage() {
                 <option value="fan">fan</option>
                 <option value="superfan">superfan</option>
                 <option value="artist">artist</option>
-                <option value="producer">producer</option>
+                <option value="stampede_producer">stampede_producer</option>
               </select>
             )}
             {createError && (

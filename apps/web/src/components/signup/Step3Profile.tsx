@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
-type Role = 'fan' | 'artist' | 'producer'
+type Role = 'fan' | 'artist' | 'stampede_producer'
 
 interface Step3Props {
   userId: string
@@ -22,7 +22,7 @@ type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
 const ROLE_OPTIONS: { id: Role; label: string; description: string; emoji: string }[] = [
   { id: 'fan', label: 'Fan', description: "I'm here to discover and celebrate music", emoji: '🎵' },
   { id: 'artist', label: 'Artist', description: "I make or perform country music", emoji: '🎸' },
-  { id: 'producer', label: 'Producer / Circle Founder', description: "I help build country music communities", emoji: '🎙️' },
+  { id: 'stampede_producer', label: 'Stampede Producer', description: "I create circles and curate the community", emoji: '🎙️' },
 ]
 
 function generateInitialsAvatar(name: string): string {

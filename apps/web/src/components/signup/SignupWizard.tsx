@@ -23,7 +23,7 @@ interface SignupState {
   userId: string | null
   displayName: string
   avatarUrl: string | null
-  role: 'fan' | 'artist' | 'producer' | null
+  role: 'fan' | 'artist' | 'stampede_producer' | null
   tier: 'free' | 'fan' | 'superfan' | null
   personalityTypes: string[]
   favoriteGenres: string[]
@@ -157,7 +157,7 @@ export default function SignupWizard({
 
   // Step 3 → 4
   const handleStep3Success = useCallback(
-    (displayName: string, avatarUrl: string | null, role: 'fan' | 'artist' | 'producer') => {
+    (displayName: string, avatarUrl: string | null, role: 'fan' | 'artist' | 'stampede_producer') => {
       setState((prev) => ({ ...prev, displayName, avatarUrl, role, step: 4 }))
     },
     [setState]

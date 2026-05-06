@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Timer, CheckCircle2, Swords, Trophy, Music, ChevronRight, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Timer, CheckCircle2, Swords, Trophy, Music, ChevronRight, RotateCcw, Star } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -12,6 +12,8 @@ interface Song {
   artist: string
   album: string | null
   cover_url: string | null
+  avg_rating: number | null
+  rating_count: number
 }
 
 interface DuelDetail {
@@ -26,6 +28,7 @@ interface DuelDetail {
   song_right: Song | null
   tally: { left: number; right: number; total: number }
   my_vote: string | null
+  my_ratings: Record<string, number>
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -42,16 +45,46 @@ function getCountdown(endDate: string): string {
   return `${mins}m ${secs}s`
 }
 
+// ── Rating badge ──────────────────────────────────────────────
+
+function RatingBadge({ myRating, avgRating, ratingCount }: {
+  myRating?: number | null
+  avgRating?: number | null
+  ratingCount?: number
+}) {
+  if (myRating) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 mt-1">
+        <Star className="w-3 h-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+        {myRating}/5
+        <span className="text-amber-600 font-normal">your rating</span>
+      </span>
+    )
+  }
+  if (avgRating && avgRating > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-400 mt-1">
+        <Star className="w-3 h-3 fill-stone-500 text-stone-500" aria-hidden="true" />
+        {Number(avgRating).toFixed(1)}/5
+        <span className="text-stone-600 font-normal">avg{ratingCount ? ` · ${ratingCount}` : ''}</span>
+      </span>
+    )
+  }
+  return null
+}
+
 // ── Song vote card ─────────────────────────────────────────────
 
 function SongCard({
   song,
+  myRating,
   accent,
   isVoting,
   isPending,
   onClick,
 }: {
   song: Song | null
+  myRating?: number | null
   accent: 'amber' | 'teal'
   isVoting: boolean
   isPending: boolean
@@ -88,6 +121,11 @@ function SongCard({
         {song?.album && (
           <p className="text-xs text-stone-600 truncate mt-0.5 italic">{song.album}</p>
         )}
+        <RatingBadge
+          myRating={myRating}
+          avgRating={song?.avg_rating}
+          ratingCount={song?.rating_count}
+        />
       </div>
 
       {/* CTA arrow / spinner */}
@@ -135,6 +173,7 @@ function VotingPanel({
 
       <SongCard
         song={duel.song_left}
+        myRating={duel.song_left ? (duel.my_ratings[duel.song_left.id] ?? null) : null}
         accent="amber"
         isVoting={isVoting}
         isPending={pendingId === duel.song_left?.id && isVoting}
@@ -153,6 +192,7 @@ function VotingPanel({
 
       <SongCard
         song={duel.song_right}
+        myRating={duel.song_right ? (duel.my_ratings[duel.song_right.id] ?? null) : null}
         accent="teal"
         isVoting={isVoting}
         isPending={pendingId === duel.song_right?.id && isVoting}

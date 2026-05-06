@@ -19,8 +19,8 @@ export async function GET(
     .from('song_duels')
     .select(`
       id, title, description, status, end_date, winner_song_id, created_at,
-      song_left:circle_songs!song_left_id(id, title, artist, album, cover_url),
-      song_right:circle_songs!song_right_id(id, title, artist, album, cover_url)
+      song_left:circle_songs!song_left_id(id, title, artist, album, cover_url, avg_rating, rating_count),
+      song_right:circle_songs!song_right_id(id, title, artist, album, cover_url, avg_rating, rating_count)
     `)
     .eq('id', params.id)
     .single()
@@ -30,11 +30,18 @@ export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const duel = rawDuel as any
 
-  // Vote tallies
-  const { data: votes } = await svc
-    .from('song_duel_votes')
-    .select('chosen_song_id')
-    .eq('duel_id', params.id)
+  const songLeftId  = duel.song_left?.id  as string | undefined
+  const songRightId = duel.song_right?.id as string | undefined
+  const songIds = [songLeftId, songRightId].filter(Boolean) as string[]
+
+  // Vote tallies, caller's vote, and caller's song ratings — all in parallel
+  const [{ data: votes }, { data: myVote }, { data: myRatings }] = await Promise.all([
+    svc.from('song_duel_votes').select('chosen_song_id').eq('duel_id', params.id),
+    svc.from('song_duel_votes').select('chosen_song_id').eq('duel_id', params.id).eq('voter_id', user.id).maybeSingle(),
+    songIds.length > 0
+      ? svc.from('song_ratings').select('song_id, rating').eq('user_id', user.id).in('song_id', songIds)
+      : Promise.resolve({ data: [] }),
+  ])
 
   let left = 0, right = 0
   for (const v of votes ?? []) {
@@ -42,19 +49,18 @@ export async function GET(
     else right++
   }
 
-  // Caller's vote
-  const { data: myVote } = await svc
-    .from('song_duel_votes')
-    .select('chosen_song_id')
-    .eq('duel_id', params.id)
-    .eq('voter_id', user.id)
-    .maybeSingle()
+  // Map song_id → user's rating for easy lookup on the client
+  const myRatingMap: Record<string, number> = {}
+  for (const r of myRatings ?? []) {
+    myRatingMap[r.song_id] = r.rating
+  }
 
   return NextResponse.json({
     duel: {
       ...duel,
       tally: { left, right, total: left + right },
       my_vote: myVote?.chosen_song_id ?? null,
+      my_ratings: myRatingMap,
       is_expired: new Date(duel.end_date).getTime() < Date.now(),
     },
   })

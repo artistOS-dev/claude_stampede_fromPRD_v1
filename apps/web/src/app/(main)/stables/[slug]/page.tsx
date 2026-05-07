@@ -116,7 +116,7 @@ function StarRating({
           />
         </button>
       ))}
-      {rating !== null && (
+      {rating != null && (
         <span className="text-xs text-stone-500 ml-1">
           {rating.toFixed(1)} ({count})
         </span>
@@ -224,7 +224,7 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
           <div>
             <h3 className="font-bold text-white">Add Song to Catalog</h3>
             {spotifyAvailable === true && <p className="text-xs text-green-400 mt-0.5">Searching Spotify</p>}
-            {spotifyAvailable === false && <p className="text-xs text-stone-500 mt-0.5">Searching iTunes</p>}
+            {spotifyAvailable === false && <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Spotify not configured)</p>}
           </div>
           <button type="button" onClick={onClose} className="text-stone-500 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -1109,7 +1109,7 @@ export default function StableDetailPage() {
       {showAddSong && (
         <AddSongModal
           slug={slug}
-          onAdded={(song) => { setData((d) => d ? { ...d, songs: [song, ...d.songs] } : d); setShowAddSong(false) }}
+          onAdded={(song) => { setData((d) => d ? { ...d, songs: [{ ...song, avg_rating: null, rating_count: 0, my_rating: null }, ...d.songs] } : d); setShowAddSong(false) }}
           onClose={() => setShowAddSong(false)}
         />
       )}

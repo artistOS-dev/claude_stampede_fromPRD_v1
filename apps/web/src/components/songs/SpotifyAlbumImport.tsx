@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Search, ChevronRight, ChevronLeft, Music, Check, X, Disc, AlertCircle } from 'lucide-react'
-import type { SpotifyArtistResult } from '@/lib/spotify'
-import type { SpotifyAlbumResult } from '@/app/api/songs/spotify-artist-albums/route'
-import type { SpotifyAlbumWithTracks, SpotifyTrackResult } from '@/app/api/songs/spotify-album/route'
+import type { SpotifyArtistResult, SpotifyAlbumResult, SpotifyAlbumWithTracks, SpotifyTrackResult } from '@/lib/spotify'
 
 interface BulkSong {
   title: string

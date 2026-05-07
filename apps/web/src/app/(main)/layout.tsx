@@ -59,6 +59,12 @@ export default async function MainLayout({
               Circles
             </a>
             <a
+              href="/stables"
+              className="px-3 py-2 text-sm font-medium text-stone-300 hover:text-amber-400 hover:bg-amber-950/20 rounded-lg transition-colors"
+            >
+              Stables
+            </a>
+            <a
               href="/rodeos"
               className="px-3 py-2 text-sm font-medium text-stone-300 hover:text-amber-400 hover:bg-amber-950/20 rounded-lg transition-colors"
             >

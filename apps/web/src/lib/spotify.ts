@@ -109,7 +109,7 @@ export function mapSpotifyAlbumFull(a: any): SpotifyAlbumWithTracks {
   const coverUrl = album.cover_url
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tracks: SpotifyTrackResult[] = ((a.tracks?.items ?? []) as any[]).map((t) =>
-    mapSpotifyTrack(t, coverUrl)
+    mapSpotifyTrack(t, coverUrl ?? undefined)
   )
   return { ...album, tracks }
 }

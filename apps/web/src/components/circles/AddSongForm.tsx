@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Search, Music, X, ExternalLink } from 'lucide-react'
+import type { SpotifyTrackResult } from '@/app/api/songs/spotify-search/route'
 import type { MetadataResult } from '@/app/api/songs/metadata-search/route'
 
 interface Props {
@@ -10,22 +11,57 @@ interface Props {
   onClose: () => void
 }
 
+type SearchResult = {
+  id: string
+  title: string
+  artist: string
+  album: string
+  cover_url: string | null
+  spotify_url: string | null
+  source_url: string | null
+  source_label: 'Spotify' | 'iTunes'
+}
+
+function fromSpotify(t: SpotifyTrackResult): SearchResult {
+  return {
+    id: t.id,
+    title: t.title,
+    artist: t.artist,
+    album: t.album,
+    cover_url: t.cover_url,
+    spotify_url: t.spotify_url,
+    source_url: t.spotify_url,
+    source_label: 'Spotify',
+  }
+}
+
+function fromItunes(r: MetadataResult): SearchResult {
+  return {
+    id: r.id,
+    title: r.title,
+    artist: r.artist,
+    album: r.album ?? '',
+    cover_url: r.cover_url,
+    spotify_url: null,
+    source_url: r.source_url ?? null,
+    source_label: 'iTunes',
+  }
+}
+
 export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
-  // Search state
-  const [query, setQuery]       = useState('')
-  const [results, setResults]   = useState<MetadataResult[]>([])
+  const [query, setQuery]     = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [spotifyAvailable, setSpotifyAvailable] = useState<boolean | null>(null)
 
-  // Form state (pre-filled from search or typed manually)
-  const [title, setTitle]         = useState('')
-  const [artist, setArtist]       = useState('')
-  const [album, setAlbum]         = useState('')
-  const [spotifyUrl, setSpotify]  = useState('')
-  const [coverUrl, setCoverUrl]   = useState<string | null>(null)
-  const [pickedResult, setPicked] = useState<MetadataResult | null>(null)
+  const [title, setTitle]       = useState('')
+  const [artist, setArtist]     = useState('')
+  const [album, setAlbum]       = useState('')
+  const [spotifyUrl, setSpotify] = useState('')
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [picked, setPicked]     = useState<SearchResult | null>(null)
 
-  // Submit state
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
 
@@ -36,24 +72,40 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
     setPicked(null)
     if (debounce.current) clearTimeout(debounce.current)
     if (!q.trim()) { setResults([]); setDropdownOpen(false); return }
+
     debounce.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`/api/songs/metadata-search?q=${encodeURIComponent(q)}`)
-        if (!res.ok) return
-        const json: { results: MetadataResult[] } = await res.json()
-        setResults(json.results ?? [])
-        setDropdownOpen(true)
+        // Try Spotify first
+        const spotifyRes = await fetch(`/api/songs/spotify-search?q=${encodeURIComponent(q)}&limit=20`)
+        if (spotifyRes.ok) {
+          const json: { tracks: SpotifyTrackResult[]; spotify_available: boolean } = await spotifyRes.json()
+          if (json.spotify_available) {
+            setSpotifyAvailable(true)
+            setResults(json.tracks.map(fromSpotify))
+            setDropdownOpen(true)
+            return
+          }
+        }
+        // Fall back to iTunes
+        setSpotifyAvailable(false)
+        const itunesRes = await fetch(`/api/songs/metadata-search?q=${encodeURIComponent(q)}`)
+        if (itunesRes.ok) {
+          const json: { results: MetadataResult[] } = await itunesRes.json()
+          setResults((json.results ?? []).map(fromItunes))
+          setDropdownOpen(true)
+        }
       } finally { setSearching(false) }
     }, 350)
   }, [])
 
-  const pick = useCallback((r: MetadataResult) => {
+  const pick = useCallback((r: SearchResult) => {
     setPicked(r)
     setTitle(r.title)
     setArtist(r.artist)
-    setAlbum(r.album ?? '')
+    setAlbum(r.album)
     setCoverUrl(r.cover_url)
+    setSpotify(r.spotify_url ?? '')
     setQuery('')
     setResults([])
     setDropdownOpen(false)
@@ -94,14 +146,22 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
   return (
     <div className="bg-amber-950/20 border border-amber-800 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white text-sm">Share a new song</h3>
+        <div>
+          <h3 className="font-semibold text-white text-sm">Share a new song</h3>
+          {spotifyAvailable === true && (
+            <p className="text-xs text-green-400 mt-0.5">Searching Spotify</p>
+          )}
+          {spotifyAvailable === false && (
+            <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Spotify not configured)</p>
+          )}
+        </div>
         <button type="button" onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Search */}
-      {!pickedResult && (
+      {!picked && (
         <div className="relative">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
@@ -120,7 +180,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
           </div>
 
           {dropdownOpen && results.length > 0 && (
-            <ul className="absolute z-50 w-full mt-1 bg-stone-800 border border-stone-700 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+            <ul className="absolute z-50 w-full mt-1 bg-stone-800 border border-stone-700 rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto">
               {results.map((r) => (
                 <li key={r.id}>
                   <button
@@ -136,7 +196,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
                         <Music className="w-4 h-4 text-stone-500" />
                       </div>
                     )}
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-white truncate">{r.title}</p>
                       <p className="text-xs text-stone-500 truncate">{r.artist}{r.album ? ` · ${r.album}` : ''}</p>
                     </div>
@@ -155,23 +215,23 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
       )}
 
       {/* Picked result preview */}
-      {pickedResult && (
+      {picked && (
         <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-amber-700/50 rounded-xl">
-          {pickedResult.cover_url ? (
+          {picked.cover_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={pickedResult.cover_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+            <img src={picked.cover_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
           ) : (
             <div className="w-12 h-12 rounded-lg bg-stone-700 flex items-center justify-center shrink-0">
               <Music className="w-5 h-5 text-stone-500" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{pickedResult.title}</p>
-            <p className="text-xs text-stone-400 truncate">{pickedResult.artist}{pickedResult.album ? ` · ${pickedResult.album}` : ''}</p>
-            {pickedResult.source_url && (
-              <a href={pickedResult.source_url} target="_blank" rel="noopener noreferrer"
+            <p className="text-sm font-semibold text-white truncate">{picked.title}</p>
+            <p className="text-xs text-stone-400 truncate">{picked.artist}{picked.album ? ` · ${picked.album}` : ''}</p>
+            {picked.source_url && (
+              <a href={picked.source_url} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 mt-0.5">
-                <ExternalLink className="w-3 h-3" /> Apple Music
+                <ExternalLink className="w-3 h-3" /> {picked.source_label}
               </a>
             )}
           </div>
@@ -186,45 +246,27 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-stone-400 mb-1">Title *</label>
-            <input
-              required
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+            <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Fast Car"
-              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-400 mb-1">Artist *</label>
-            <input
-              required
-              type="text"
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
+            <input required type="text" value={artist} onChange={(e) => setArtist(e.target.value)}
               placeholder="e.g. Tracy Chapman"
-              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-400 mb-1">Album</label>
-            <input
-              type="text"
-              value={album}
-              onChange={(e) => setAlbum(e.target.value)}
+            <input type="text" value={album} onChange={(e) => setAlbum(e.target.value)}
               placeholder="Optional"
-              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-400 mb-1">Spotify link</label>
-            <input
-              type="url"
-              value={spotifyUrl}
-              onChange={(e) => setSpotify(e.target.value)}
+            <input type="url" value={spotifyUrl} onChange={(e) => setSpotify(e.target.value)}
               placeholder="https://open.spotify.com/…"
-              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+              className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
         </div>
 
@@ -233,18 +275,12 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
         )}
 
         <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={submitting || !title.trim() || !artist.trim()}
-            className="px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
-          >
+          <button type="submit" disabled={submitting || !title.trim() || !artist.trim()}
+            className="px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
             {submitting ? 'Sharing…' : 'Share'}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-sm font-medium transition-colors"
-          >
+          <button type="button" onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-sm font-medium transition-colors">
             Cancel
           </button>
         </div>

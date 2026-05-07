@@ -13,6 +13,7 @@ import Input from '@/components/ui/Input'
 import AddSongForm from '@/components/circles/AddSongForm'
 import SpotifyInlinePlayer from '@/components/circles/SpotifyInlinePlayer'
 import AddArtistForm from '@/components/circles/AddArtistForm'
+import SpotifyAlbumImport from '@/components/songs/SpotifyAlbumImport'
 
 interface Song {
   id: string
@@ -1538,6 +1539,7 @@ export default function CircleDetailPage() {
   const [songsLoading, setSongsLoading] = useState(true)
   const [songsError, setSongsError] = useState<string | null>(null)
   const [showAddSong, setShowAddSong] = useState(false)
+  const [showBulkImport, setShowBulkImport] = useState(false)
   const [songTitle, setSongTitle] = useState('')
   const [songArtist, setSongArtist] = useState('')
   const [songAlbum, setSongAlbum] = useState('')
@@ -1886,10 +1888,19 @@ export default function CircleDetailPage() {
             <h2 className="text-lg font-bold text-white">
               Shared Songs <span className="text-stone-600 font-normal text-base">({songs.length})</span>
             </h2>
-            <Button variant="primary" onClick={() => setShowAddSong((v) => !v)}>
-              <Plus className="w-4 h-4" />
-              Share a song
-            </Button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkImport(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-400 bg-green-950/20 border border-green-800/40 rounded-lg hover:bg-green-950/40 transition-colors"
+              >
+                Import album
+              </button>
+              <Button variant="primary" onClick={() => setShowAddSong((v) => !v)}>
+                <Plus className="w-4 h-4" />
+                Share a song
+              </Button>
+            </div>
           </div>
 
           {/* Add song form */}
@@ -1898,6 +1909,24 @@ export default function CircleDetailPage() {
               circleId={id}
               onAdded={loadSongs}
               onClose={() => setShowAddSong(false)}
+            />
+          )}
+
+          {/* Bulk import modal */}
+          {showBulkImport && (
+            <SpotifyAlbumImport
+              onImport={async (songs) => {
+                const res = await fetch(`/api/circles/${id}/songs/bulk`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ songs }),
+                })
+                const json: { inserted: number; skipped: number } = await res.json()
+                if (!res.ok) throw new Error((json as { error?: string }).error ?? 'Import failed')
+                loadSongs()
+                return json
+              }}
+              onClose={() => setShowBulkImport(false)}
             />
           )}
 

@@ -41,6 +41,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
   const [artistQuery, setArtistQuery]   = useState('')
   const [artists, setArtists]           = useState<SpotifyArtistResult[]>([])
   const [artistSearching, setArtistSearching] = useState(false)
+  const [spotifyConfigured, setSpotifyConfigured] = useState<boolean | null>(null)
   const [selectedArtist, setSelectedArtist]   = useState<SpotifyArtistResult | null>(null)
 
   // Step 2
@@ -68,8 +69,14 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
       try {
         const res = await fetch(`/api/artists/spotify-search?q=${encodeURIComponent(q)}`)
         if (res.ok) {
-          const json: { artists: SpotifyArtistResult[] } = await res.json()
-          setArtists(json.artists ?? [])
+          const json: { artists: SpotifyArtistResult[]; error?: string } = await res.json()
+          if (json.error === 'not_configured') {
+            setSpotifyConfigured(false)
+            setArtists([])
+          } else {
+            setSpotifyConfigured(true)
+            setArtists(json.artists ?? [])
+          }
         }
       } finally { setArtistSearching(false) }
     }, 350)
@@ -344,6 +351,12 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
+              {spotifyConfigured === false && (
+                <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-950/30 border border-amber-800 rounded-lg px-3 py-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  Spotify is not configured. Add <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_ID</code> and <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_SECRET</code> to your environment.
+                </div>
+              )}
               {artists.length > 0 && (
                 <ul className="space-y-1">
                   {artists.map((a) => (

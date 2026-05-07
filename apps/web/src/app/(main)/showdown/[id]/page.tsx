@@ -16,7 +16,7 @@ interface Song {
   rating_count: number
 }
 
-interface DuelDetail {
+interface ShowdownDetail {
   id: string
   title: string
   description: string | null
@@ -103,7 +103,6 @@ function SongCard({
           : 'border-stone-700 bg-stone-900 hover:border-teal-600  hover:bg-teal-950/20'
         }`}
     >
-      {/* Cover art */}
       {song?.cover_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={song.cover_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
@@ -114,7 +113,6 @@ function SongCard({
         </div>
       )}
 
-      {/* Song info */}
       <div className="flex-1 min-w-0">
         <p className="font-bold text-white truncate text-base leading-snug">{song?.title}</p>
         <p className="text-sm text-stone-400 truncate mt-0.5">{song?.artist}</p>
@@ -128,7 +126,6 @@ function SongCard({
         />
       </div>
 
-      {/* CTA arrow / spinner */}
       <div className="shrink-0">
         {isPending ? (
           <div className={`w-9 h-9 rounded-full border-2 border-t-transparent animate-spin
@@ -150,11 +147,11 @@ function SongCard({
 // ── Voting panel ──────────────────────────────────────────────
 
 function VotingPanel({
-  duel,
+  showdown,
   onVote,
   isVoting,
 }: {
-  duel: DuelDetail
+  showdown: ShowdownDetail
   onVote: (songId: string) => void
   isVoting: boolean
 }) {
@@ -172,15 +169,14 @@ function VotingPanel({
       </p>
 
       <SongCard
-        song={duel.song_left}
-        myRating={duel.song_left ? (duel.my_ratings[duel.song_left.id] ?? null) : null}
+        song={showdown.song_left}
+        myRating={showdown.song_left ? (showdown.my_ratings[showdown.song_left.id] ?? null) : null}
         accent="amber"
         isVoting={isVoting}
-        isPending={pendingId === duel.song_left?.id && isVoting}
-        onClick={() => duel.song_left && vote(duel.song_left.id)}
+        isPending={pendingId === showdown.song_left?.id && isVoting}
+        onClick={() => showdown.song_left && vote(showdown.song_left.id)}
       />
 
-      {/* VS divider */}
       <div className="flex items-center gap-3 py-0.5">
         <div className="flex-1 h-px bg-stone-800" />
         <div className="flex items-center gap-1.5">
@@ -191,12 +187,12 @@ function VotingPanel({
       </div>
 
       <SongCard
-        song={duel.song_right}
-        myRating={duel.song_right ? (duel.my_ratings[duel.song_right.id] ?? null) : null}
+        song={showdown.song_right}
+        myRating={showdown.song_right ? (showdown.my_ratings[showdown.song_right.id] ?? null) : null}
         accent="teal"
         isVoting={isVoting}
-        isPending={pendingId === duel.song_right?.id && isVoting}
-        onClick={() => duel.song_right && vote(duel.song_right.id)}
+        isPending={pendingId === showdown.song_right?.id && isVoting}
+        onClick={() => showdown.song_right && vote(showdown.song_right.id)}
       />
     </div>
   )
@@ -205,50 +201,48 @@ function VotingPanel({
 // ── Results view ──────────────────────────────────────────────
 
 function ResultsView({
-  duel,
+  showdown,
   canChange,
   onChangeVote,
 }: {
-  duel: DuelDetail
+  showdown: ShowdownDetail
   canChange: boolean
   onChangeVote: () => void
 }) {
-  const { left, right, total } = duel.tally
+  const { left, right, total } = showdown.tally
   const leftPct  = total > 0 ? Math.round((left  / total) * 100) : 50
   const rightPct = total > 0 ? Math.round((right / total) * 100) : 50
-  const winnerIsLeft  = duel.winner_song_id === duel.song_left?.id
-  const winnerIsRight = duel.winner_song_id === duel.song_right?.id
-  const myVoteLeft  = duel.my_vote === duel.song_left?.id
-  const myVoteRight = duel.my_vote === duel.song_right?.id
-  const myRatings   = duel.my_ratings ?? {}
+  const winnerIsLeft  = showdown.winner_song_id === showdown.song_left?.id
+  const winnerIsRight = showdown.winner_song_id === showdown.song_right?.id
+  const myVoteLeft    = showdown.my_vote === showdown.song_left?.id
+  const myVoteRight   = showdown.my_vote === showdown.song_right?.id
+  const myRatings     = showdown.my_ratings ?? {}
 
   return (
     <div className="space-y-4">
-      {/* Winner banner */}
-      {duel.winner_song_id && (
+      {showdown.winner_song_id && (
         <div className="flex items-center gap-3 bg-yellow-950/20 border border-yellow-700/60 rounded-2xl px-5 py-4">
           <Trophy className="w-6 h-6 text-yellow-400 shrink-0" />
           <div>
             <p className="text-xs text-yellow-600 font-medium uppercase tracking-wide">Winner</p>
             <p className="font-bold text-yellow-300 text-lg">
-              {winnerIsLeft ? duel.song_left?.title : duel.song_right?.title}
+              {winnerIsLeft ? showdown.song_left?.title : showdown.song_right?.title}
             </p>
             <p className="text-xs text-yellow-700">
-              {winnerIsLeft ? duel.song_left?.artist : duel.song_right?.artist}
+              {winnerIsLeft ? showdown.song_left?.artist : showdown.song_right?.artist}
             </p>
           </div>
         </div>
       )}
 
-      {/* Voted confirmation */}
-      {duel.my_vote && (
+      {showdown.my_vote && (
         <div className="flex items-center justify-between gap-3 bg-green-950/20 border border-green-800/50 rounded-2xl px-5 py-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
             <p className="text-sm text-green-300">
               You voted for{' '}
               <span className="font-semibold">
-                {myVoteLeft ? duel.song_left?.title : duel.song_right?.title}
+                {myVoteLeft ? showdown.song_left?.title : showdown.song_right?.title}
               </span>
             </p>
           </div>
@@ -264,7 +258,6 @@ function ResultsView({
         </div>
       )}
 
-      {/* Tug-of-war bar */}
       <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-white text-sm">Results</h3>
@@ -273,8 +266,8 @@ function ResultsView({
 
         <div>
           <div className="flex justify-between text-xs font-semibold text-stone-400 mb-1.5 px-0.5">
-            <span className="truncate max-w-[42%]">{duel.song_left?.title}</span>
-            <span className="truncate max-w-[42%] text-right">{duel.song_right?.title}</span>
+            <span className="truncate max-w-[42%]">{showdown.song_left?.title}</span>
+            <span className="truncate max-w-[42%] text-right">{showdown.song_right?.title}</span>
           </div>
           <div className="relative h-8 rounded-full bg-stone-800 overflow-hidden">
             <div className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-700"
@@ -290,8 +283,8 @@ function ResultsView({
         </div>
 
         {[
-          { song: duel.song_left,  votes: left,  pct: leftPct,  isWinner: winnerIsLeft,  myVote: myVoteLeft,  color: 'bg-amber-500' },
-          { song: duel.song_right, votes: right, pct: rightPct, isWinner: winnerIsRight, myVote: myVoteRight, color: 'bg-teal-400'  },
+          { song: showdown.song_left,  votes: left,  pct: leftPct,  isWinner: winnerIsLeft,  myVote: myVoteLeft,  color: 'bg-amber-500' },
+          { song: showdown.song_right, votes: right, pct: rightPct, isWinner: winnerIsRight, myVote: myVoteRight, color: 'bg-teal-400'  },
         ].map(({ song, votes, pct, isWinner, myVote, color }) => (
           <div key={song?.id}
             className={`rounded-xl border p-4 ${isWinner ? 'border-yellow-700 bg-yellow-950/10' : 'border-stone-800 bg-stone-950'}`}>
@@ -329,16 +322,16 @@ function ResultsView({
 
 // ── Main page ─────────────────────────────────────────────────
 
-export default function DuelPage() {
+export default function ShowdownDetailPage() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
 
-  const [duel, setDuel]           = useState<DuelDetail | null>(null)
-  const [isLoading, setLoading]   = useState(true)
-  const [fetchError, setError]    = useState<string | null>(null)
-  const [isVoting, setVoting]     = useState(false)
-  const [voteError, setVoteErr]   = useState<string | null>(null)
-  const [countdown, setCountdown] = useState<string | null>(null)
+  const [showdown, setShowdown]     = useState<ShowdownDetail | null>(null)
+  const [isLoading, setLoading]     = useState(true)
+  const [fetchError, setError]      = useState<string | null>(null)
+  const [isVoting, setVoting]       = useState(false)
+  const [voteError, setVoteErr]     = useState<string | null>(null)
+  const [countdown, setCountdown]   = useState<string | null>(null)
   const [changingVote, setChangingVote] = useState(false)
 
   const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -346,10 +339,10 @@ export default function DuelPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/duels/${id}`)
-      if (!res.ok) { setError('Duel not found.'); setLoading(false); return }
-      const json: { duel: DuelDetail } = await res.json()
-      setDuel(json.duel)
+      const res = await fetch(`/api/showdown/${id}`)
+      if (!res.ok) { setError('Showdown not found.'); setLoading(false); return }
+      const json: { showdown: ShowdownDetail } = await res.json()
+      setShowdown(json.showdown)
     } finally { setLoading(false) }
   }, [id])
 
@@ -360,32 +353,32 @@ export default function DuelPage() {
   }, [load])
 
   useEffect(() => {
-    if (!duel?.end_date) return
-    const tick = () => setCountdown(getCountdown(duel.end_date))
+    if (!showdown?.end_date) return
+    const tick = () => setCountdown(getCountdown(showdown.end_date))
     tick()
     countdownRef.current = setInterval(tick, 1_000)
     return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
-  }, [duel?.end_date])
+  }, [showdown?.end_date])
 
   const handleVote = useCallback(async (chosenSongId: string) => {
-    if (!duel || isVoting) return
+    if (!showdown || isVoting) return
     setVoting(true)
     setVoteErr(null)
     try {
-      const res = await fetch(`/api/duels/${id}/vote`, {
+      const res = await fetch(`/api/showdown/${id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chosen_song_id: chosenSongId }),
       })
       const json: { error?: string } = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Vote failed')
-      setDuel((prev) => prev ? { ...prev, my_vote: chosenSongId } : prev)
+      setShowdown((prev) => prev ? { ...prev, my_vote: chosenSongId } : prev)
       setChangingVote(false)
       await load()
     } catch (err) {
       setVoteErr(err instanceof Error ? err.message : 'Vote failed')
     } finally { setVoting(false) }
-  }, [duel, id, isVoting, load])
+  }, [showdown, id, isVoting, load])
 
   if (isLoading) {
     return (
@@ -395,7 +388,7 @@ export default function DuelPage() {
     )
   }
 
-  if (fetchError || !duel) {
+  if (fetchError || !showdown) {
     return (
       <div className="space-y-4">
         <button type="button" onClick={() => router.back()}
@@ -403,26 +396,24 @@ export default function DuelPage() {
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <div className="bg-red-950/30 border border-red-800 rounded-xl p-6 text-center text-red-400">
-          {fetchError ?? 'Duel not found.'}
+          {fetchError ?? 'Showdown not found.'}
         </div>
       </div>
     )
   }
 
-  const isOpen   = duel.status === 'active' && !duel.is_expired
-  const isClosed = duel.status === 'closed' || duel.is_expired
-  const hasVoted = !!duel.my_vote
+  const isOpen   = showdown.status === 'active' && !showdown.is_expired
+  const isClosed = showdown.status === 'closed' || showdown.is_expired
+  const hasVoted = !!showdown.my_vote
   const showVoting = isOpen && (!hasVoted || changingVote)
 
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-20">
-      {/* Back */}
-      <button type="button" onClick={() => router.push('/duels')}
+      <button type="button" onClick={() => router.push('/showdown')}
         className="flex items-center gap-2 text-sm text-stone-500 hover:text-amber-400 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> All Duels
+        <ArrowLeft className="w-4 h-4" /> All Showdowns
       </button>
 
-      {/* Header */}
       <div className="bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 rounded-2xl p-6 border border-amber-800/40 shadow-lg">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
@@ -437,9 +428,9 @@ export default function DuelPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-xl font-bold font-display text-amber-100">{duel.title}</h1>
-            {duel.description && (
-              <p className="text-sm text-amber-200/60 mt-1">{duel.description}</p>
+            <h1 className="text-xl font-bold font-display text-amber-100">{showdown.title}</h1>
+            {showdown.description && (
+              <p className="text-sm text-amber-200/60 mt-1">{showdown.description}</p>
             )}
           </div>
           {countdown && isOpen && (
@@ -451,25 +442,23 @@ export default function DuelPage() {
         </div>
       </div>
 
-      {/* Closed banner */}
-      {isClosed && !duel.winner_song_id && (
+      {isClosed && !showdown.winner_song_id && (
         <div className="flex items-center gap-3 bg-stone-900 border border-stone-700 rounded-2xl px-5 py-4">
           <Swords className="w-5 h-5 text-stone-500 shrink-0" />
-          <p className="text-sm text-stone-400">This duel has ended. Results below.</p>
+          <p className="text-sm text-stone-400">This showdown has ended. Results below.</p>
         </div>
       )}
 
-      {/* Voting cards or results */}
       {showVoting ? (
         <>
-          <VotingPanel duel={duel} onVote={handleVote} isVoting={isVoting} />
+          <VotingPanel showdown={showdown} onVote={handleVote} isVoting={isVoting} />
           {voteError && (
             <p className="text-center text-sm text-red-400">{voteError}</p>
           )}
         </>
       ) : (
         <ResultsView
-          duel={duel}
+          showdown={showdown}
           canChange={isOpen && hasVoted}
           onChangeVote={() => setChangingVote(true)}
         />

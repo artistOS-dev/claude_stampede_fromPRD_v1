@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 
-// POST /api/duels/[id]/vote
+// POST /api/showdown/[id]/vote
 // Body: { chosen_song_id: string }
-// One vote per user per duel; duel must be active and not expired.
+// One vote per user per showdown; showdown must be active and not expired.
 
 export async function POST(
   request: NextRequest,
@@ -25,24 +25,22 @@ export async function POST(
 
   const svc = createServiceClient()
 
-  // Validate duel
-  const { data: duel } = await svc
-    .from('song_duels')
+  const { data: showdown } = await svc
+    .from('song_showdowns')
     .select('status, end_date, song_left_id, song_right_id')
     .eq('id', params.id)
     .single()
 
-  if (!duel) return NextResponse.json({ error: 'Duel not found' }, { status: 404 })
-  if (duel.status !== 'active')
-    return NextResponse.json({ error: 'Duel is not open for voting' }, { status: 400 })
-  if (new Date(duel.end_date).getTime() < Date.now())
+  if (!showdown) return NextResponse.json({ error: 'Showdown not found' }, { status: 404 })
+  if (showdown.status !== 'active')
+    return NextResponse.json({ error: 'Showdown is not open for voting' }, { status: 400 })
+  if (new Date(showdown.end_date).getTime() < Date.now())
     return NextResponse.json({ error: 'Voting deadline has passed' }, { status: 400 })
-  if (chosen_song_id !== duel.song_left_id && chosen_song_id !== duel.song_right_id)
-    return NextResponse.json({ error: 'Chosen song is not in this duel' }, { status: 400 })
+  if (chosen_song_id !== showdown.song_left_id && chosen_song_id !== showdown.song_right_id)
+    return NextResponse.json({ error: 'Chosen song is not in this showdown' }, { status: 400 })
 
-  // Upsert — allow changing vote while duel is still open
   const { error: voteErr } = await svc
-    .from('song_duel_votes')
+    .from('song_showdown_votes')
     .upsert(
       { duel_id: params.id, voter_id: user.id, chosen_song_id, voted_at: new Date().toISOString() },
       { onConflict: 'duel_id,voter_id' }

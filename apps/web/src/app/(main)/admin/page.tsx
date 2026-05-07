@@ -5,7 +5,7 @@ import {
   Users, Music2, Trophy, Star, Crown, Activity,
   CheckCircle2, Clock, AlertCircle, TrendingUp, Swords,
 } from 'lucide-react'
-import CreateDuelForm from '@/components/duels/CreateDuelForm'
+import CreateShowdownForm from '@/components/showdown/CreateShowdownForm'
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -122,9 +122,9 @@ export default async function AdminPage() {
       .limit(30),
   ])
 
-  // Song duels
+  // Showdowns
   const { data: duels } = await db
-    .from('song_duels')
+    .from('song_showdowns')
     .select(`
       id, title, status, end_date, created_at,
       song_left:circle_songs!song_left_id(title, artist),
@@ -271,19 +271,19 @@ export default async function AdminPage() {
 
       </div>
 
-      {/* ── Song Duels ──────────────────────────────────────────── */}
-      <Section title="Song Duels" icon={<Swords className="w-4 h-4 text-amber-400" />}>
+      {/* ── Showdowns ──────────────────────────────────────────── */}
+      <Section title="Showdowns" icon={<Swords className="w-4 h-4 text-amber-400" />}>
         <div className="space-y-4">
-          <CreateDuelForm />
+          <CreateShowdownForm />
           <div className="space-y-1 pt-2">
             {(duels ?? []).length === 0 ? (
-              <p className="text-sm text-stone-600 text-center py-4">No duels yet.</p>
+              <p className="text-sm text-stone-600 text-center py-4">No showdowns yet.</p>
             ) : (
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (duels ?? []).map((d: any) => (
                 <a
                   key={d.id}
-                  href={`/duels/${d.id}`}
+                  href={`/showdown/${d.id}`}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-stone-800 transition-colors group"
                 >
                   <div className={`w-2 h-2 rounded-full shrink-0 ${

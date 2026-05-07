@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import LogoutButton from '@/components/auth/LogoutButton'
-import DuelsNavLink from '@/components/nav/DuelsNavLink'
+import ShowdownNavLink from '@/components/nav/ShowdownNavLink'
 
 export default async function MainLayout({
   children,
@@ -70,7 +70,7 @@ export default async function MainLayout({
             >
               Circuits
             </a>
-            <DuelsNavLink />
+            <ShowdownNavLink />
             {isSuperAdmin && (
               <a
                 href="/admin"

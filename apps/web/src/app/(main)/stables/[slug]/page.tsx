@@ -140,13 +140,58 @@ function timeAgo(iso: string): string {
 // ── Add Song Modal ────────────────────────────────────────────────────────────
 
 function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song: Song) => void; onClose: () => void }) {
-  const [title, setTitle]   = useState('')
-  const [artist, setArtist] = useState('')
-  const [album, setAlbum]   = useState('')
-  const [year, setYear]     = useState('')
+  const [query, setQuery]       = useState('')
+  const [results, setResults]   = useState<{ id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }[]>([])
+  const [searching, setSearching] = useState(false)
+  const [dropdownOpen, setDropdown] = useState(false)
+  const [spotifyAvailable, setSpotifyAvailable] = useState<boolean | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [title, setTitle]     = useState('')
+  const [artist, setArtist]   = useState('')
+  const [album, setAlbum]     = useState('')
+  const [year, setYear]       = useState('')
   const [spotify, setSpotify] = useState('')
+  const [coverUrl, setCover]  = useState<string | null>(null)
+  const [picked, setPicked]   = useState(false)
+
   const [submitting, setSub] = useState(false)
   const [error, setError]   = useState<string | null>(null)
+
+  const search = useCallback((q: string) => {
+    setQuery(q)
+    setPicked(false)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!q.trim()) { setResults([]); setDropdown(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/songs/spotify-search?q=${encodeURIComponent(q)}&limit=20`)
+        if (res.ok) {
+          const json: { tracks: { id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }[]; spotify_available: boolean } = await res.json()
+          if (json.spotify_available) {
+            setSpotifyAvailable(true)
+            setResults(json.tracks)
+            setDropdown(true)
+            return
+          }
+        }
+        setSpotifyAvailable(false)
+        const fallback = await fetch(`/api/songs/metadata-search?q=${encodeURIComponent(q)}`)
+        if (fallback.ok) {
+          const json: { results: { id: string; title: string; artist: string; album?: string; cover_url: string | null; source_url?: string }[] } = await fallback.json()
+          setResults((json.results ?? []).map((r) => ({ id: r.id, title: r.title, artist: r.artist, album: r.album ?? '', cover_url: r.cover_url, spotify_url: '' })))
+          setDropdown(true)
+        }
+      } finally { setSearching(false) }
+    }, 350)
+  }, [])
+
+  const pick = (r: { id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }) => {
+    setTitle(r.title); setArtist(r.artist); setAlbum(r.album)
+    setCover(r.cover_url); setSpotify(r.spotify_url)
+    setPicked(true); setQuery(''); setResults([]); setDropdown(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,11 +202,11 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
-          artist: artist.trim(),
+          title: title.trim(), artist: artist.trim(),
           album: album.trim() || null,
           release_year: year ? Number(year) : null,
           spotify_url: spotify.trim() || null,
+          cover_url: coverUrl || null,
         }),
       })
       const json: { song?: Song; error?: string } = await res.json()
@@ -176,40 +221,82 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-stone-900 border border-stone-700 rounded-2xl shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-800">
-          <h3 className="font-bold text-white">Add Song to Catalog</h3>
+          <div>
+            <h3 className="font-bold text-white">Add Song to Catalog</h3>
+            {spotifyAvailable === true && <p className="text-xs text-green-400 mt-0.5">Searching Spotify</p>}
+            {spotifyAvailable === false && <p className="text-xs text-stone-500 mt-0.5">Searching iTunes</p>}
+          </div>
           <button type="button" onClick={onClose} className="text-stone-500 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-3">
-          {[
-            { label: 'Title *', value: title, set: setTitle, placeholder: 'Song title', required: true },
-            { label: 'Artist *', value: artist, set: setArtist, placeholder: 'Artist name', required: true },
-            { label: 'Album', value: album, set: setAlbum, placeholder: 'Album name', required: false },
-            { label: 'Release Year', value: year, set: setYear, placeholder: '2024', required: false },
-            { label: 'Spotify URL', value: spotify, set: setSpotify, placeholder: 'https://open.spotify.com/…', required: false },
-          ].map(({ label, value, set, placeholder, required }) => (
-            <div key={label}>
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1">{label}</p>
-              <input
-                type="text"
-                required={required}
-                value={value}
-                onChange={(e) => set(e.target.value)}
-                placeholder={placeholder}
-                className="w-full px-3 py-2 rounded-lg border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+        <div className="p-5 space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+            <input type="text" placeholder="Search song or artist…" value={query}
+              onChange={(e) => search(e.target.value)}
+              onFocus={() => results.length > 0 && setDropdown(true)}
+              onBlur={() => setTimeout(() => setDropdown(false), 200)}
+              className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />}
+            {dropdownOpen && results.length > 0 && (
+              <ul className="absolute z-50 w-full mt-1 bg-stone-800 border border-stone-700 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+                {results.map((r) => (
+                  <li key={r.id}>
+                    <button type="button" onMouseDown={() => pick(r)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-amber-950/30 transition-colors text-left">
+                      {r.cover_url
+                        ? <img src={r.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        : <div className="w-10 h-10 rounded-lg bg-stone-700 flex items-center justify-center shrink-0"><Music className="w-4 h-4 text-stone-500" /></div>}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{r.title}</p>
+                        <p className="text-xs text-stone-500 truncate">{r.artist}{r.album ? ` · ${r.album}` : ''}</p>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Picked preview */}
+          {picked && (
+            <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-amber-700/50 rounded-xl">
+              {coverUrl
+                ? <img src={coverUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                : <div className="w-10 h-10 rounded-lg bg-stone-700 flex items-center justify-center shrink-0"><Music className="w-4 h-4 text-stone-500" /></div>}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{title}</p>
+                <p className="text-xs text-stone-400 truncate">{artist}{album ? ` · ${album}` : ''}</p>
+              </div>
+              <button type="button" onClick={() => { setPicked(false); setTitle(''); setArtist(''); setAlbum(''); setCover(null); setSpotify('') }}
+                className="shrink-0 text-stone-500 hover:text-stone-300 transition-colors"><X className="w-4 h-4" /></button>
             </div>
-          ))}
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting || !title.trim() || !artist.trim()}
-            className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
-          >
-            {submitting ? 'Adding…' : 'Add Song'}
-          </button>
-        </form>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Title *', value: title, set: setTitle, required: true },
+                { label: 'Artist *', value: artist, set: setArtist, required: true },
+                { label: 'Album', value: album, set: setAlbum, required: false },
+                { label: 'Year', value: year, set: setYear, required: false },
+              ].map(({ label, value, set, required }) => (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1">{label}</p>
+                  <input type="text" required={required} value={value} onChange={(e) => set(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                </div>
+              ))}
+            </div>
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            <button type="submit" disabled={submitting || !title.trim() || !artist.trim()}
+              className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
+              {submitting ? 'Adding…' : 'Add Song'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )

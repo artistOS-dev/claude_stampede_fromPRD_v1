@@ -103,14 +103,14 @@ function SongPicker({
   )
 }
 
-export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }) {
-  const [open, setOpen]           = useState(false)
-  const [songLeft, setSongLeft]   = useState<SongResult | null>(null)
-  const [songRight, setSongRight] = useState<SongResult | null>(null)
-  const [title, setTitle]         = useState('')
-  const [description, setDesc]    = useState('')
-  const [endDate, setEndDate]     = useState('')
-  const [status, setStatus]       = useState<'draft' | 'active'>('active')
+export default function CreateShowdownForm({ onCreated }: { onCreated?: () => void }) {
+  const [open, setOpen]             = useState(false)
+  const [songLeft, setSongLeft]     = useState<SongResult | null>(null)
+  const [songRight, setSongRight]   = useState<SongResult | null>(null)
+  const [title, setTitle]           = useState('')
+  const [description, setDesc]      = useState('')
+  const [endDate, setEndDate]       = useState('')
+  const [status, setStatus]         = useState<'draft' | 'active'>('active')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
   const [success, setSuccess]       = useState(false)
@@ -127,7 +127,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
     }
     setSubmitting(true)
     try {
-      const res = await fetch('/api/duels', {
+      const res = await fetch('/api/showdown', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,7 +140,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
         }),
       })
       const json: { error?: string } = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Failed to create duel')
+      if (!res.ok) throw new Error(json.error ?? 'Failed to create showdown')
       setSuccess(true)
       setSongLeft(null); setSongRight(null)
       setTitle(''); setDesc(''); setEndDate('')
@@ -148,7 +148,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
       setTimeout(() => setSuccess(false), 3000)
       onCreated?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create duel')
+      setError(err instanceof Error ? err.message : 'Failed to create showdown')
     } finally { setSubmitting(false) }
   }, [songLeft, songRight, title, description, endDate, status, onCreated])
 
@@ -159,7 +159,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between px-4 py-3 bg-stone-950 text-left"
       >
-        <span className="text-sm font-semibold text-amber-300">+ Start a New Duel</span>
+        <span className="text-sm font-semibold text-amber-300">+ Start a New Showdown</span>
         <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -219,7 +219,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
             <p className="text-sm text-red-400 bg-red-950/30 border border-red-800 rounded-lg px-3 py-2">{error}</p>
           )}
           {success && (
-            <p className="text-sm text-green-400 bg-green-950/30 border border-green-800 rounded-lg px-3 py-2">Duel created!</p>
+            <p className="text-sm text-green-400 bg-green-950/30 border border-green-800 rounded-lg px-3 py-2">Showdown created!</p>
           )}
 
           <button
@@ -227,7 +227,7 @@ export default function CreateDuelForm({ onCreated }: { onCreated?: () => void }
             disabled={submitting || !songLeft || !songRight || !endDate}
             className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
           >
-            {submitting ? 'Creating…' : 'Create Duel'}
+            {submitting ? 'Creating…' : 'Create Showdown'}
           </button>
         </form>
       )}

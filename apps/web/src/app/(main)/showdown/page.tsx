@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Swords, Timer, CheckCircle2, ChevronRight } from 'lucide-react'
-import CreateDuelForm from '@/components/duels/CreateDuelForm'
+import CreateShowdownForm from '@/components/showdown/CreateShowdownForm'
 import { createClient } from '@/lib/supabase/client'
 
 interface Song {
@@ -14,7 +14,7 @@ interface Song {
   cover_url: string | null
 }
 
-interface Duel {
+interface Showdown {
   id: string
   title: string
   description: string | null
@@ -39,15 +39,15 @@ function getCountdown(endDate: string): string {
   return `${mins}m left`
 }
 
-function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
-  const isOpen    = duel.status === 'active' && !duel.is_expired
-  const isClosed  = duel.status === 'closed' || duel.is_expired
-  const hasVoted  = !!duel.my_vote
-  const { left, right, total } = duel.tally
+function ShowdownCard({ showdown, onClick }: { showdown: Showdown; onClick: () => void }) {
+  const isOpen    = showdown.status === 'active' && !showdown.is_expired
+  const isClosed  = showdown.status === 'closed' || showdown.is_expired
+  const hasVoted  = !!showdown.my_vote
+  const { left, right, total } = showdown.tally
   const leftPct   = total > 0 ? Math.round((left  / total) * 100) : 50
   const rightPct  = total > 0 ? Math.round((right / total) * 100) : 50
-  const winnerIsLeft  = duel.winner_song_id === duel.song_left?.id
-  const winnerIsRight = duel.winner_song_id === duel.song_right?.id
+  const winnerIsLeft  = showdown.winner_song_id === showdown.song_left?.id
+  const winnerIsRight = showdown.winner_song_id === showdown.song_right?.id
 
   return (
     <button
@@ -55,11 +55,9 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
       onClick={onClick}
       className="w-full text-left bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden hover:border-amber-700/60 transition-colors group"
     >
-      {/* Status bar */}
       <div className={`h-1 w-full ${isOpen ? 'bg-green-500' : 'bg-stone-600'}`} />
 
       <div className="p-5 space-y-4">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -75,30 +73,28 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
               )}
             </div>
             <h3 className="font-bold text-white text-sm leading-snug group-hover:text-amber-300 transition-colors">
-              {duel.title}
+              {showdown.title}
             </h3>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {isOpen && (
               <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
                 <Timer className="w-3.5 h-3.5" />
-                {getCountdown(duel.end_date)}
+                {getCountdown(showdown.end_date)}
               </span>
             )}
             <ChevronRight className="w-4 h-4 text-stone-600 group-hover:text-amber-400 transition-colors" />
           </div>
         </div>
 
-        {/* VS card */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          {/* Left */}
           <div className={`text-center rounded-xl px-3 py-3 border transition-colors ${
             winnerIsLeft ? 'border-yellow-600 bg-yellow-950/20' :
-            duel.my_vote === duel.song_left?.id ? 'border-amber-600 bg-amber-950/20' :
+            showdown.my_vote === showdown.song_left?.id ? 'border-amber-600 bg-amber-950/20' :
             'border-stone-700 bg-stone-800/50'
           }`}>
-            <p className="text-xs font-bold text-stone-100 truncate">{duel.song_left?.title ?? '—'}</p>
-            <p className="text-xs text-stone-500 truncate mt-0.5">{duel.song_left?.artist ?? ''}</p>
+            <p className="text-xs font-bold text-stone-100 truncate">{showdown.song_left?.title ?? '—'}</p>
+            <p className="text-xs text-stone-500 truncate mt-0.5">{showdown.song_left?.artist ?? ''}</p>
             {(isClosed || hasVoted) && (
               <p className="text-sm font-bold text-amber-400 mt-1.5 tabular-nums">{leftPct}%</p>
             )}
@@ -109,21 +105,19 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
             <span className="text-xs font-bold text-stone-600">VS</span>
           </div>
 
-          {/* Right */}
           <div className={`text-center rounded-xl px-3 py-3 border transition-colors ${
             winnerIsRight ? 'border-yellow-600 bg-yellow-950/20' :
-            duel.my_vote === duel.song_right?.id ? 'border-amber-600 bg-amber-950/20' :
+            showdown.my_vote === showdown.song_right?.id ? 'border-amber-600 bg-amber-950/20' :
             'border-stone-700 bg-stone-800/50'
           }`}>
-            <p className="text-xs font-bold text-stone-100 truncate">{duel.song_right?.title ?? '—'}</p>
-            <p className="text-xs text-stone-500 truncate mt-0.5">{duel.song_right?.artist ?? ''}</p>
+            <p className="text-xs font-bold text-stone-100 truncate">{showdown.song_right?.title ?? '—'}</p>
+            <p className="text-xs text-stone-500 truncate mt-0.5">{showdown.song_right?.artist ?? ''}</p>
             {(isClosed || hasVoted) && (
               <p className="text-sm font-bold text-amber-400 mt-1.5 tabular-nums">{rightPct}%</p>
             )}
           </div>
         </div>
 
-        {/* Progress bar (visible after voting or when closed) */}
         {(isClosed || hasVoted) && total > 0 && (
           <div className="space-y-1">
             <div className="relative h-2 rounded-full bg-stone-800 overflow-hidden">
@@ -136,20 +130,18 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
           </div>
         )}
 
-        {/* Winner badge */}
-        {isClosed && duel.winner_song_id && (
+        {isClosed && showdown.winner_song_id && (
           <div className="flex items-center gap-2 bg-yellow-950/20 border border-yellow-700/50 rounded-xl px-3 py-2">
             <span className="text-yellow-400 text-sm">🏆</span>
             <span className="text-sm font-semibold text-yellow-300">
-              {winnerIsLeft ? duel.song_left?.title : duel.song_right?.title} wins
+              {winnerIsLeft ? showdown.song_left?.title : showdown.song_right?.title} wins
             </span>
           </div>
         )}
 
-        {/* CTA */}
         {isOpen && !hasVoted && (
           <div className="text-center">
-            <span className="text-xs text-amber-400 font-semibold">Swipe to vote →</span>
+            <span className="text-xs text-amber-400 font-semibold">Tap to vote →</span>
           </div>
         )}
       </div>
@@ -157,21 +149,21 @@ function DuelCard({ duel, onClick }: { duel: Duel; onClick: () => void }) {
   )
 }
 
-export default function DuelsPage() {
+export default function ShowdownPage() {
   const router = useRouter()
-  const [duels, setDuels]             = useState<Duel[]>([])
-  const [isLoading, setLoading]       = useState(true)
-  const [error, setError]             = useState<string | null>(null)
-  const [canCreateDuel, setCanCreate] = useState(false)
+  const [showdowns, setShowdowns]   = useState<Showdown[]>([])
+  const [isLoading, setLoading]     = useState(true)
+  const [error, setError]           = useState<string | null>(null)
+  const [canCreate, setCanCreate]   = useState(false)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/duels')
+      const res = await fetch('/api/showdown')
       if (!res.ok) throw new Error('Failed to load')
-      const json: { duels: Duel[] } = await res.json()
-      setDuels(json.duels ?? [])
+      const json: { showdowns: Showdown[] } = await res.json()
+      setShowdowns(json.showdowns ?? [])
     } catch {
-      setError('Could not load duels. Please refresh.')
+      setError('Could not load showdowns. Please refresh.')
     } finally {
       setLoading(false)
     }
@@ -196,22 +188,20 @@ export default function DuelsPage() {
     loadRole()
   }, [])
 
-  const active = duels.filter((d) => d.status === 'active' && !d.is_expired)
-  const closed = duels.filter((d) => d.status === 'closed' || d.is_expired)
+  const active = showdowns.filter((d) => d.status === 'active' && !d.is_expired)
+  const closed = showdowns.filter((d) => d.status === 'closed' || d.is_expired)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="rounded-2xl bg-gradient-to-br from-amber-900 via-stone-800 to-stone-900 p-6 border border-amber-800/40 shadow-lg">
         <div className="flex items-center gap-3 mb-1">
           <Swords className="w-7 h-7 text-amber-300" />
-          <h1 className="text-3xl font-extrabold font-display tracking-tight text-amber-100">Song Duels</h1>
+          <h1 className="text-3xl font-extrabold font-display tracking-tight text-amber-100">Showdown</h1>
         </div>
-        <p className="text-amber-200/70 text-sm">Two songs enter, one song wins. Swipe to vote.</p>
+        <p className="text-amber-200/70 text-sm">Two songs enter, one song wins. Vote to decide.</p>
       </div>
 
-      {/* Create duel — only stampede producers and admins */}
-      {canCreateDuel && <CreateDuelForm onCreated={load} />}
+      {canCreate && <CreateShowdownForm onCreated={load} />}
 
       {isLoading && (
         <div className="flex justify-center py-20">
@@ -223,10 +213,10 @@ export default function DuelsPage() {
         <div className="bg-red-950/30 border border-red-800 rounded-xl p-4 text-sm text-red-400">{error}</div>
       )}
 
-      {!isLoading && !error && duels.length === 0 && (
+      {!isLoading && !error && showdowns.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Swords className="w-12 h-12 text-stone-700 mb-3" />
-          <p className="text-stone-500 font-medium">No duels yet</p>
+          <p className="text-stone-500 font-medium">No showdowns yet</p>
           <p className="text-stone-600 text-sm mt-1">Check back soon for new matchups</p>
         </div>
       )}
@@ -235,16 +225,16 @@ export default function DuelsPage() {
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-stone-400 uppercase tracking-wide px-1">Live Now</h2>
           {active.map((d) => (
-            <DuelCard key={d.id} duel={d} onClick={() => router.push(`/duels/${d.id}`)} />
+            <ShowdownCard key={d.id} showdown={d} onClick={() => router.push(`/showdown/${d.id}`)} />
           ))}
         </div>
       )}
 
       {!isLoading && closed.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-bold text-stone-400 uppercase tracking-wide px-1">Past Duels</h2>
+          <h2 className="text-sm font-bold text-stone-400 uppercase tracking-wide px-1">Past Showdowns</h2>
           {closed.map((d) => (
-            <DuelCard key={d.id} duel={d} onClick={() => router.push(`/duels/${d.id}`)} />
+            <ShowdownCard key={d.id} showdown={d} onClick={() => router.push(`/showdown/${d.id}`)} />
           ))}
         </div>
       )}

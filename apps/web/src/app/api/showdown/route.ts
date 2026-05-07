@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 
-// GET /api/duels
-// Returns active + closed duels enriched with vote tallies and the
+// GET /api/showdown
+// Returns active + closed showdowns enriched with vote tallies and the
 // caller's own vote. Query ?unvoted=true returns only the count of
-// active duels the caller hasn't voted on (used for the nav badge).
+// active showdowns the caller hasn't voted on (used for the nav badge).
 //
-// POST /api/duels — superadmin only
+// POST /api/showdown — stampede_producer or superadmin only
 // Body: { title, description?, song_left_id, song_right_id, end_date, status }
 
 export async function GET(request: NextRequest) {
@@ -17,10 +17,9 @@ export async function GET(request: NextRequest) {
   const svc = createServiceClient()
   const unvotedOnly = request.nextUrl.searchParams.get('unvoted') === 'true'
 
-  // Fetch all active duels with song details
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawDuels, error: duelsErr } = await svc
-    .from('song_duels')
+  const { data: rawShowdowns, error: showdownsErr } = await svc
+    .from('song_showdowns')
     .select(`
       id, title, description, status, end_date, winner_song_id, created_at,
       song_left:circle_songs!song_left_id(id, title, artist, album, cover_url),
@@ -29,25 +28,24 @@ export async function GET(request: NextRequest) {
     .in('status', ['active', 'closed'])
     .order('created_at', { ascending: false })
 
-  if (duelsErr) return NextResponse.json({ error: duelsErr.message }, { status: 500 })
+  if (showdownsErr) return NextResponse.json({ error: showdownsErr.message }, { status: 500 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const duelList = (rawDuels ?? []) as any[]
+  const showdownList = (rawShowdowns ?? []) as any[]
 
-  // Caller's votes for these duels
-  const duelIds = duelList.map((d) => d.id)
-  const { data: myVotes } = duelIds.length > 0
+  const showdownIds = showdownList.map((d) => d.id)
+  const { data: myVotes } = showdownIds.length > 0
     ? await svc
-        .from('song_duel_votes')
+        .from('song_showdown_votes')
         .select('duel_id, chosen_song_id')
         .eq('voter_id', user.id)
-        .in('duel_id', duelIds)
+        .in('duel_id', showdownIds)
     : { data: [] }
 
   const myVoteMap = new Map((myVotes ?? []).map((v) => [v.duel_id, v.chosen_song_id]))
 
   if (unvotedOnly) {
-    const unvotedCount = duelList.filter(
+    const unvotedCount = showdownList.filter(
       (d) => d.status === 'active' &&
              new Date(d.end_date).getTime() > Date.now() &&
              !myVoteMap.has(d.id)
@@ -55,35 +53,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ unvoted_count: unvotedCount })
   }
 
-  // Vote tallies per duel (service client bypasses RLS)
-  const { data: allVotes } = duelIds.length > 0
+  const { data: allVotes } = showdownIds.length > 0
     ? await svc
-        .from('song_duel_votes')
+        .from('song_showdown_votes')
         .select('duel_id, chosen_song_id')
-        .in('duel_id', duelIds)
+        .in('duel_id', showdownIds)
     : { data: [] }
 
-  // Build tally map: duelId → { left: n, right: n, total: n }
   type Tally = { left: number; right: number; total: number }
   const tallyMap = new Map<string, Tally>()
   for (const v of allVotes ?? []) {
-    const duel = duelList.find((d) => d.id === v.duel_id)
-    if (!duel) continue
+    const showdown = showdownList.find((d) => d.id === v.duel_id)
+    if (!showdown) continue
     const t = tallyMap.get(v.duel_id) ?? { left: 0, right: 0, total: 0 }
-    if (v.chosen_song_id === duel.song_left?.id) t.left++
+    if (v.chosen_song_id === showdown.song_left?.id) t.left++
     else t.right++
     t.total++
     tallyMap.set(v.duel_id, t)
   }
 
-  const enriched = duelList.map((d) => ({
+  const enriched = showdownList.map((d) => ({
     ...d,
     tally: tallyMap.get(d.id) ?? { left: 0, right: 0, total: 0 },
     my_vote: myVoteMap.get(d.id) ?? null,
     is_expired: new Date(d.end_date).getTime() < Date.now(),
   }))
 
-  return NextResponse.json({ duels: enriched })
+  return NextResponse.json({ showdowns: enriched })
 }
 
 export async function POST(request: NextRequest) {
@@ -91,7 +87,6 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Only Stampede Producers and superadmins may create duels
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, is_super_admin')
@@ -99,7 +94,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   if (!profile || (profile.role !== 'stampede_producer' && !profile.is_super_admin)) {
-    return NextResponse.json({ error: 'Only Stampede Producers can create duels' }, { status: 403 })
+    return NextResponse.json({ error: 'Only Stampede Producers can create showdowns' }, { status: 403 })
   }
 
   let body: {
@@ -127,8 +122,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'status must be draft or active' }, { status: 400 })
 
   const svc = createServiceClient()
-  const { data: duel, error } = await svc
-    .from('song_duels')
+  const { data: showdown, error } = await svc
+    .from('song_showdowns')
     .insert({
       title: title.trim(),
       description: description?.trim() || null,
@@ -143,5 +138,5 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ duel }, { status: 201 })
+  return NextResponse.json({ showdown }, { status: 201 })
 }

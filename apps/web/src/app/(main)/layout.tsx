@@ -64,6 +64,12 @@ export default async function MainLayout({
             >
               Rodeos
             </a>
+            <a
+              href="/circuits"
+              className="px-3 py-2 text-sm font-medium text-stone-300 hover:text-amber-400 hover:bg-amber-950/20 rounded-lg transition-colors"
+            >
+              Circuits
+            </a>
             <DuelsNavLink />
             {isSuperAdmin && (
               <a

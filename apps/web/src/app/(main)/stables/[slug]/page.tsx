@@ -6,8 +6,9 @@ import {
   ArrowLeft, Users, Music, ShoppingBag, FileText, Info,
   Star, Trash2, Plus, ExternalLink, MapPin, Tag, Radio,
   Instagram, Youtube, Globe, Edit2, CheckCircle2, X,
-  Search, Package, Swords,
+  Search, Package, Swords, Disc,
 } from 'lucide-react'
+import SpotifyAlbumImport from '@/components/songs/SpotifyAlbumImport'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -527,9 +528,10 @@ export default function StableDetailPage() {
   const [followLoading, setFollowLoading] = useState(false)
 
   // Modals
-  const [showAddSong, setShowAddSong]   = useState(false)
-  const [showAddMerch, setShowAddMerch] = useState(false)
-  const [showEdit, setShowEdit]         = useState(false)
+  const [showAddSong, setShowAddSong]     = useState(false)
+  const [showBulkImport, setShowBulkImport] = useState(false)
+  const [showAddMerch, setShowAddMerch]   = useState(false)
+  const [showEdit, setShowEdit]           = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -827,10 +829,16 @@ export default function StableDetailPage() {
         {tab === 'songs' && (
           <div className="space-y-3">
             {is_manager && (
-              <button type="button" onClick={() => setShowAddSong(true)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 border border-dashed border-stone-700 rounded-xl text-sm text-stone-400 hover:text-amber-400 hover:border-amber-700 transition-colors">
-                <Plus className="w-4 h-4" /> Add Song to Catalog
-              </button>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowAddSong(true)}
+                  className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-dashed border-stone-700 rounded-xl text-sm text-stone-400 hover:text-amber-400 hover:border-amber-700 transition-colors">
+                  <Plus className="w-4 h-4" /> Add single song
+                </button>
+                <button type="button" onClick={() => setShowBulkImport(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-green-800/40 bg-green-950/10 rounded-xl text-sm text-green-400 hover:bg-green-950/30 transition-colors">
+                  <Disc className="w-4 h-4" /> Import album
+                </button>
+              </div>
             )}
             {songs.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -1016,6 +1024,24 @@ export default function StableDetailPage() {
           slug={slug}
           onAdded={(song) => { setData((d) => d ? { ...d, songs: [song, ...d.songs] } : d); setShowAddSong(false) }}
           onClose={() => setShowAddSong(false)}
+        />
+      )}
+      {showBulkImport && (
+        <SpotifyAlbumImport
+          onImport={async (songs) => {
+            const res = await fetch(`/api/stables/${slug}/songs/bulk`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ songs }),
+            })
+            const json: { inserted: number; skipped: number; songs?: Song[] } = await res.json()
+            if (!res.ok) throw new Error((json as { error?: string }).error ?? 'Import failed')
+            if (json.songs) {
+              setData((d) => d ? { ...d, songs: [...(json.songs ?? []).map((s) => ({ ...s, avg_rating: null, rating_count: 0, my_rating: null })), ...d.songs] } : d)
+            }
+            return json
+          }}
+          onClose={() => setShowBulkImport(false)}
         />
       )}
       {showAddMerch && (

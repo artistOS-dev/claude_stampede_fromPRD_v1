@@ -11,6 +11,30 @@ export interface SpotifyArtistResult {
   popularity: number
 }
 
+export interface SpotifyTrackResult {
+  id: string
+  title: string
+  artist: string
+  album: string
+  cover_url: string | null
+  spotify_url: string
+  duration_ms: number
+}
+
+export interface SpotifyAlbumResult {
+  id: string
+  name: string
+  artist: string
+  cover_url: string | null
+  spotify_url: string
+  total_tracks: number
+  release_date: string
+}
+
+export interface SpotifyAlbumWithTracks extends SpotifyAlbumResult {
+  tracks: SpotifyTrackResult[]
+}
+
 let tokenCache: { token: string; expiresAt: number } | null = null
 
 export async function getSpotifyToken(): Promise<string | null> {
@@ -48,4 +72,44 @@ export function mapSpotifyArtist(a: any): SpotifyArtistResult {
     followers: (a.followers?.total as number) ?? 0,
     popularity: (a.popularity as number) ?? 0,
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapSpotifyTrack(t: any, albumImageUrl?: string): SpotifyTrackResult {
+  const cover = albumImageUrl ?? (t.album?.images?.[0]?.url as string | undefined) ?? null
+  const artistNames = (t.artists as { name: string }[])?.map((a) => a.name).join(', ') ?? ''
+  return {
+    id: t.id as string,
+    title: t.name as string,
+    artist: artistNames,
+    album: (t.album?.name as string) ?? '',
+    cover_url: cover,
+    spotify_url: (t.external_urls?.spotify as string) ?? `https://open.spotify.com/track/${t.id}`,
+    duration_ms: (t.duration_ms as number) ?? 0,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapSpotifyAlbum(a: any): SpotifyAlbumResult {
+  const artistNames = (a.artists as { name: string }[])?.map((ar) => ar.name).join(', ') ?? ''
+  return {
+    id: a.id as string,
+    name: a.name as string,
+    artist: artistNames,
+    cover_url: (a.images?.[0]?.url as string) ?? null,
+    spotify_url: (a.external_urls?.spotify as string) ?? `https://open.spotify.com/album/${a.id}`,
+    total_tracks: (a.total_tracks as number) ?? 0,
+    release_date: (a.release_date as string) ?? '',
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapSpotifyAlbumFull(a: any): SpotifyAlbumWithTracks {
+  const album = mapSpotifyAlbum(a)
+  const coverUrl = album.cover_url
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tracks: SpotifyTrackResult[] = ((a.tracks?.items ?? []) as any[]).map((t) =>
+    mapSpotifyTrack(t, coverUrl ?? undefined)
+  )
+  return { ...album, tracks }
 }

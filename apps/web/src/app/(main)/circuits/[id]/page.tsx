@@ -95,7 +95,7 @@ function SongSearchModal({
     debounce.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(q)}&limit=10`)
+        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(q)}&limit=20&source=all`)
         if (!res.ok) return
         const json: { songs: SongResult[] } = await res.json()
         setResults(json.songs ?? [])
@@ -144,7 +144,10 @@ function SongSearchModal({
               )
             })}
             {!loading && results.length === 0 && query && (
-              <p className="text-center text-stone-500 text-sm py-4">No songs found</p>
+              <div className="text-center py-4 space-y-1">
+                <p className="text-stone-500 text-sm">No songs found</p>
+                <p className="text-stone-600 text-xs">Add songs to your stable or a circle first</p>
+              </div>
             )}
           </div>
         </div>
@@ -165,7 +168,7 @@ function DuelCard({
   duel: CircuitDuel
   myParticipantIds: Set<string>
   onVote: (duelId: string, participantId: string) => void
-  onPickSong: (duelId: string, side: 'left' | 'right') => void
+  onPickSong: (duelId: string, side: 'left' | 'right', artistName: string) => void
   isVoting: boolean
 }) {
   const { left, right } = duel.tally
@@ -233,7 +236,7 @@ function DuelCard({
             ) : iAm && isSong ? (
               <button
                 type="button"
-                onClick={() => onPickSong(duel.id, side)}
+                onClick={() => onPickSong(duel.id, side, participant?.artist_name ?? '')}
                 className="mt-1 flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
               >
                 <Music className="w-3 h-3" /> Pick your song
@@ -340,7 +343,7 @@ function BracketView({
   circuit: CircuitDetail
   myParticipantIds: Set<string>
   onVote: (duelId: string, participantId: string) => void
-  onPickSong: (duelId: string, side: 'left' | 'right') => void
+  onPickSong: (duelId: string, side: 'left' | 'right', artistName: string) => void
   isVoting: boolean
 }) {
   const totalSlots = circuit.max_artists / 2
@@ -569,7 +572,7 @@ export default function CircuitPage() {
   const [actionMsg, setActionMsg]   = useState<string | null>(null)
 
   // Song picker state
-  const [songPicker, setSongPicker] = useState<{ duelId: string; side: 'left' | 'right' } | null>(null)
+  const [songPicker, setSongPicker] = useState<{ duelId: string; side: 'left' | 'right'; artistName: string } | null>(null)
   const [pickingMsg, setPickingMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -804,7 +807,7 @@ export default function CircuitPage() {
             circuit={circuit}
             myParticipantIds={myParticipantIds}
             onVote={handleVote}
-            onPickSong={(duelId, side) => setSongPicker({ duelId, side })}
+            onPickSong={(duelId, side, artistName) => setSongPicker({ duelId, side, artistName })}
             isVoting={isVoting}
           />
         </div>
@@ -831,9 +834,9 @@ export default function CircuitPage() {
       )}
 
       {/* Song picker modal */}
-      {songPicker && circuit.my_participant && (
+      {songPicker && (
         <SongSearchModal
-          artistName={circuit.my_participant.artist_name}
+          artistName={songPicker.artistName}
           usedSongIds={usedSongIds}
           onSelect={handlePickSong}
           onClose={() => { setSongPicker(null); setPickingMsg(null) }}

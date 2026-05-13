@@ -9,12 +9,27 @@ export async function GET(_request: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { data: profile } = await supabase
+    .from('profiles').select('role, is_super_admin').eq('id', user.id).maybeSingle()
+  const isProducer = profile?.role === 'stampede_producer' || profile?.is_super_admin === true
+
   const svc = createServiceClient()
-  const { data: circuits, error: err } = await svc
-    .from('circuits')
-    .select('id, title, description, event_name, event_date, cover_image_url, status, max_artists, current_round, voting_hours_per_round, created_at')
-    .neq('status', 'draft')
-    .order('created_at', { ascending: false })
+
+  // Producers/admins also see their own draft circuits
+  const [{ data: circuits, error: err }, { data: drafts }] = await Promise.all([
+    svc
+      .from('circuits')
+      .select('id, title, description, event_name, event_date, cover_image_url, status, max_artists, current_round, voting_hours_per_round, created_at')
+      .neq('status', 'draft')
+      .order('created_at', { ascending: false }),
+    isProducer
+      ? svc
+          .from('circuits')
+          .select('id, title, description, event_name, event_date, cover_image_url, status, max_artists, current_round, voting_hours_per_round, created_at')
+          .eq('status', 'draft')
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ])
 
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
 
@@ -41,7 +56,14 @@ export async function GET(_request: NextRequest) {
     i_am_participating: mySet.has(c.id),
   }))
 
-  return NextResponse.json({ circuits: enriched })
+  const enrichedDrafts = (drafts ?? []).map((c) => ({
+    ...c,
+    participant_count: 0,
+    total_rounds: Math.log2(c.max_artists),
+    i_am_participating: false,
+  }))
+
+  return NextResponse.json({ circuits: enriched, drafts: enrichedDrafts })
 }
 
 export async function POST(request: NextRequest) {

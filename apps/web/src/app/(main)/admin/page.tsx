@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, AlertCircle, TrendingUp, Swords,
 } from 'lucide-react'
 import CreateShowdownForm from '@/components/showdown/CreateShowdownForm'
+import UserRoleButton from '@/components/admin/UserRoleButton'
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -181,9 +182,10 @@ export default async function AdminPage() {
                   </div>
                   <p className="text-xs text-stone-600 truncate">{u.email}</p>
                 </div>
-                <span className={`text-xs font-medium shrink-0 ${TIER_COLORS[u.subscription_tier] ?? 'text-stone-500'}`}>
-                  {u.subscription_tier}
-                </span>
+                <UserRoleButton
+                  userId={u.id}
+                  currentRole={(u.role as 'fan' | 'artist_manager' | 'stampede_producer') ?? 'fan'}
+                />
               </div>
             ))}
           </div>

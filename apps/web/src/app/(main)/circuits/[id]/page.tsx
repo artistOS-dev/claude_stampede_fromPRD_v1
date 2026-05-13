@@ -61,7 +61,8 @@ interface CircuitDetail {
   winner_participant_id: string | null
   participants: Participant[]
   rounds: Round[]
-  my_participant: Participant | null
+  my_participant: Participant | null       // first of my participants (backwards compat)
+  my_participants: Participant[]           // all participants managed by me
   my_votes: Record<string, string>
   is_admin: boolean
   is_artist_manager: boolean
@@ -156,13 +157,13 @@ function SongSearchModal({
 
 function DuelCard({
   duel,
-  myParticipantId,
+  myParticipantIds,
   onVote,
   onPickSong,
   isVoting,
 }: {
   duel: CircuitDuel
-  myParticipantId: string | null
+  myParticipantIds: Set<string>
   onVote: (duelId: string, participantId: string) => void
   onPickSong: (duelId: string, side: 'left' | 'right') => void
   isVoting: boolean
@@ -176,8 +177,8 @@ function DuelCard({
   const isWinnerRight = duel.winner_participant_id === duel.participant_right_id
   const myVoteLeft    = duel.my_vote === duel.participant_left_id
   const myVoteRight   = duel.my_vote === duel.participant_right_id
-  const iAmLeft       = myParticipantId === duel.participant_left_id
-  const iAmRight      = myParticipantId === duel.participant_right_id
+  const iAmLeft       = !!duel.participant_left_id  && myParticipantIds.has(duel.participant_left_id)
+  const iAmRight      = !!duel.participant_right_id && myParticipantIds.has(duel.participant_right_id)
 
   const isPending  = duel.status === 'pending'
   const isSong     = duel.status === 'song_selection'
@@ -244,7 +245,7 @@ function DuelCard({
 
           {/* Vote button or tally */}
           <div className="shrink-0">
-            {isVotingOn && !duel.my_vote && myParticipantId !== duel.participant_left_id && myParticipantId !== duel.participant_right_id ? (
+            {isVotingOn && !duel.my_vote && !iAmLeft && !iAmRight ? (
               <button
                 type="button"
                 disabled={isVoting}
@@ -331,13 +332,13 @@ const SLOT_HEIGHT = 156 // px per bracket slot
 
 function BracketView({
   circuit,
-  myParticipantId,
+  myParticipantIds,
   onVote,
   onPickSong,
   isVoting,
 }: {
   circuit: CircuitDetail
-  myParticipantId: string | null
+  myParticipantIds: Set<string>
   onVote: (duelId: string, participantId: string) => void
   onPickSong: (duelId: string, side: 'left' | 'right') => void
   isVoting: boolean
@@ -381,7 +382,7 @@ function BracketView({
                     >
                       <DuelCard
                         duel={duel}
-                        myParticipantId={myParticipantId}
+                        myParticipantIds={myParticipantIds}
                         onVote={onVote}
                         onPickSong={onPickSong}
                         isVoting={isVoting}
@@ -628,15 +629,13 @@ export default function CircuitPage() {
     } catch { setPickingMsg('Failed to pick song') }
   }, [id, songPicker, load])
 
-  // Collect songs already used by my participant in this circuit
+  // Collect songs already used by any of my participants in this circuit
+  const myParticipantIds = new Set((circuit?.my_participants ?? []).map((p) => p.id))
   const usedSongIds: string[] = []
-  if (circuit?.my_participant) {
-    const myId = circuit.my_participant.id
-    for (const round of circuit.rounds) {
-      for (const duel of round.duels) {
-        if (duel.participant_left_id === myId && duel.song_left)  usedSongIds.push(duel.song_left.id)
-        if (duel.participant_right_id === myId && duel.song_right) usedSongIds.push(duel.song_right.id)
-      }
+  for (const round of circuit?.rounds ?? []) {
+    for (const duel of round.duels) {
+      if (duel.participant_left_id  && myParticipantIds.has(duel.participant_left_id)  && duel.song_left)  usedSongIds.push(duel.song_left.id)
+      if (duel.participant_right_id && myParticipantIds.has(duel.participant_right_id) && duel.song_right) usedSongIds.push(duel.song_right.id)
     }
   }
 
@@ -667,7 +666,6 @@ export default function CircuitPage() {
 
   const canJoin = circuit.status === 'open'
     && circuit.is_artist_manager
-    && !circuit.my_participant
     && circuit.participants.length < circuit.max_artists
 
   return (
@@ -685,7 +683,7 @@ export default function CircuitPage() {
               {circuit.status === 'open' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green-900/50 text-green-400 border border-green-800">Open</span>}
               {circuit.status === 'active' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-900/50 text-amber-400 border border-amber-800 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" /> Live</span>}
               {circuit.status === 'complete' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-800 text-stone-400 border border-stone-700">Complete</span>}
-              {circuit.my_participant && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-teal-900/50 text-teal-400 border border-teal-800">Your artist</span>}
+              {circuit.my_participants.length > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-teal-900/50 text-teal-400 border border-teal-800">{circuit.my_participants.length === 1 ? 'Your artist' : `Your ${circuit.my_participants.length} artists`}</span>}
             </div>
             <h1 className="text-2xl font-extrabold font-display text-amber-100">{circuit.title}</h1>
             {circuit.event_name && <p className="text-amber-300/70 mt-0.5">{circuit.event_name}</p>}
@@ -738,14 +736,16 @@ export default function CircuitPage() {
       {canJoin && <JoinPanel circuitId={id} onJoined={load} />}
 
       {/* Artist manager — waiting for round to open */}
-      {circuit.my_participant && circuit.status === 'active' && (() => {
-        const myId = circuit.my_participant!.id
+      {circuit.my_participants.length > 0 && circuit.status === 'active' && (() => {
         const myDuels = circuit.rounds
           .flatMap((r) => r.duels)
-          .filter((d) => d.participant_left_id === myId || d.participant_right_id === myId)
+          .filter((d) =>
+            (d.participant_left_id  && myParticipantIds.has(d.participant_left_id)) ||
+            (d.participant_right_id && myParticipantIds.has(d.participant_right_id))
+          )
         const hasSongToPick = myDuels.some((d) => {
           if (d.status !== 'song_selection') return false
-          const iAmLeft  = d.participant_left_id === myId
+          const iAmLeft  = !!(d.participant_left_id  && myParticipantIds.has(d.participant_left_id))
           return iAmLeft ? !d.song_left : !d.song_right
         })
         if (!hasSongToPick) return null
@@ -777,7 +777,7 @@ export default function CircuitPage() {
                 {p.status === 'champion' && <Trophy className="w-3 h-3 text-yellow-400" />}
                 {p.seed && <span className="text-[10px] text-stone-600 font-bold">#{p.seed}</span>}
                 {p.artist_name}
-                {circuit.my_participant?.id === p.id && <Crown className="w-3 h-3 text-amber-400" />}
+                {myParticipantIds.has(p.id) && <Crown className="w-3 h-3 text-amber-400" />}
               </div>
             ))}
           </div>
@@ -790,7 +790,7 @@ export default function CircuitPage() {
           <p className="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">Tournament Bracket</p>
           <BracketView
             circuit={circuit}
-            myParticipantId={circuit.my_participant?.id ?? null}
+            myParticipantIds={myParticipantIds}
             onVote={handleVote}
             onPickSong={(duelId, side) => setSongPicker({ duelId, side })}
             isVoting={isVoting}

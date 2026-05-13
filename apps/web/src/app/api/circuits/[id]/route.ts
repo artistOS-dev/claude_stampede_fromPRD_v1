@@ -104,8 +104,8 @@ export async function GET(
     duels: enrichedDuels.filter((d) => d.round_number === rn),
   }))
 
-  // My participant (if artist_manager in this circuit)
-  const myParticipant = (participants ?? []).find((p) => p.artist_manager_id === user.id) ?? null
+  // My participants (all of manager's artists in this circuit)
+  const myParticipants = (participants ?? []).filter((p) => p.artist_manager_id === user.id)
 
   return NextResponse.json({
     circuit: {
@@ -113,7 +113,8 @@ export async function GET(
       total_rounds: totalRounds,
       participants: participants ?? [],
       rounds,
-      my_participant: myParticipant,
+      my_participant: myParticipants[0] ?? null, // kept for backwards compat
+      my_participants: myParticipants,
       my_votes: myVoteMap,
       is_admin: profile?.role === 'stampede_producer' || profile?.is_super_admin === true,
       is_artist_manager: profile?.role === 'artist_manager',

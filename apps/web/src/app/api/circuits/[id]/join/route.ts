@@ -53,8 +53,6 @@ export async function POST(
     .single()
 
   if (insertErr) {
-    if (insertErr.code === '23505')
-      return NextResponse.json({ error: 'You have already registered an artist in this circuit' }, { status: 409 })
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 

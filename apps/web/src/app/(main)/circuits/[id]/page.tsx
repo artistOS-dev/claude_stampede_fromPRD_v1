@@ -481,7 +481,7 @@ function AdminPanel({
 
 // ── Join Panel ────────────────────────────────────────────────
 
-function JoinPanel({ circuitId, onJoined }: { circuitId: string; onJoined: () => void }) {
+function JoinPanel({ circuitId, onJoined }: { circuitId: string; onJoined: (bracketSeeded: boolean) => void }) {
   const [form, setForm]       = useState({ artist_name: '', artist_image_url: '' })
   const [submitting, setSub]  = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -498,9 +498,9 @@ function JoinPanel({ circuitId, onJoined }: { circuitId: string; onJoined: () =>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artist_name: form.artist_name.trim(), artist_image_url: form.artist_image_url.trim() || null }),
       })
-      const json: { error?: string } = await res.json()
+      const json: { error?: string; bracket_seeded?: boolean } = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to join')
-      onJoined()
+      onJoined(json.bracket_seeded ?? false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join')
     } finally { setSub(false) }
@@ -733,7 +733,19 @@ export default function CircuitPage() {
       {pickingMsg && <p className="text-sm text-red-400 text-center">{pickingMsg}</p>}
 
       {/* Join panel */}
-      {canJoin && <JoinPanel circuitId={id} onJoined={load} />}
+      {canJoin && (
+        <JoinPanel
+          circuitId={id}
+          onJoined={(bracketSeeded) => {
+            if (bracketSeeded) {
+              // Give the DB a moment to settle then reload to show the live bracket
+              setTimeout(() => load(), 800)
+            } else {
+              load()
+            }
+          }}
+        />
+      )}
 
       {/* Artist manager — waiting for round to open */}
       {circuit.my_participants.length > 0 && circuit.status === 'active' && (() => {
@@ -802,12 +814,19 @@ export default function CircuitPage() {
       {circuit.status === 'open' && circuit.rounds.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Swords className="w-10 h-10 text-stone-700 mb-3" />
-          <p className="text-stone-400 font-medium">Bracket not seeded yet</p>
-          <p className="text-stone-600 text-sm mt-1">
-            {circuit.participants.length < circuit.max_artists
-              ? `Waiting for ${circuit.max_artists - circuit.participants.length} more artist${circuit.max_artists - circuit.participants.length !== 1 ? 's' : ''}`
-              : 'Admin will seed the bracket soon'}
-          </p>
+          {circuit.participants.length >= circuit.max_artists ? (
+            <>
+              <p className="text-amber-400 font-medium">All spots filled — generating bracket…</p>
+              <p className="text-stone-600 text-sm mt-1">Refresh in a moment to see the matchups</p>
+            </>
+          ) : (
+            <>
+              <p className="text-stone-400 font-medium">Waiting for artists to register</p>
+              <p className="text-stone-600 text-sm mt-1">
+                {circuit.participants.length}/{circuit.max_artists} spots filled
+              </p>
+            </>
+          )}
         </div>
       )}
 

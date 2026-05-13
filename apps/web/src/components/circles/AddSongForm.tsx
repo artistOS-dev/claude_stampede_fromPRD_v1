@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Search, Music, X, ExternalLink } from 'lucide-react'
-import type { AppleMusicTrackResult as TrackResult } from '@/lib/appleMusic'
+import type { SpotifyTrackResult } from '@/app/api/songs/spotify-search/route'
 import type { MetadataResult } from '@/app/api/songs/metadata-search/route'
 
 interface Props {
@@ -17,21 +17,21 @@ type SearchResult = {
   artist: string
   album: string
   cover_url: string | null
-  apple_music_url: string | null
+  spotify_url: string | null
   source_url: string | null
-  source_label: 'Apple Music' | 'iTunes'
+  source_label: 'Spotify' | 'iTunes'
 }
 
-function fromApple(t: TrackResult): SearchResult {
+function fromSpotify(t: SpotifyTrackResult): SearchResult {
   return {
     id: t.id,
     title: t.title,
     artist: t.artist,
     album: t.album,
     cover_url: t.cover_url,
-    apple_music_url: t.apple_music_url || null,
-    source_url: t.apple_music_url || null,
-    source_label: 'Apple Music',
+    spotify_url: t.spotify_url,
+    source_url: t.spotify_url,
+    source_label: 'Spotify',
   }
 }
 
@@ -42,7 +42,7 @@ function fromItunes(r: MetadataResult): SearchResult {
     artist: r.artist,
     album: r.album ?? '',
     cover_url: r.cover_url,
-    apple_music_url: r.source_url ?? null,
+    spotify_url: null,
     source_url: r.source_url ?? null,
     source_label: 'iTunes',
   }
@@ -53,14 +53,14 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [appleMusicAvailable, setAppleMusicAvailable] = useState<boolean | null>(null)
+  const [spotifyAvailable, setSpotifyAvailable] = useState<boolean | null>(null)
 
-  const [title, setTitle]           = useState('')
-  const [artist, setArtist]         = useState('')
-  const [album, setAlbum]           = useState('')
-  const [appleMusicUrl, setAppleUrl] = useState('')
-  const [coverUrl, setCoverUrl]     = useState<string | null>(null)
-  const [picked, setPicked]         = useState<SearchResult | null>(null)
+  const [title, setTitle]       = useState('')
+  const [artist, setArtist]     = useState('')
+  const [album, setAlbum]       = useState('')
+  const [spotifyUrl, setSpotify] = useState('')
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [picked, setPicked]     = useState<SearchResult | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
@@ -76,19 +76,19 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
     debounce.current = setTimeout(async () => {
       setSearching(true)
       try {
-        // Try Apple Music first
-        const amRes = await fetch(`/api/songs/spotify-search?q=${encodeURIComponent(q)}&limit=20`)
-        if (amRes.ok) {
-          const json: { tracks: TrackResult[]; spotify_available: boolean } = await amRes.json()
+        // Try Spotify first
+        const spotifyRes = await fetch(`/api/songs/spotify-search?q=${encodeURIComponent(q)}&limit=20`)
+        if (spotifyRes.ok) {
+          const json: { tracks: SpotifyTrackResult[]; spotify_available: boolean } = await spotifyRes.json()
           if (json.spotify_available) {
-            setAppleMusicAvailable(true)
-            setResults(json.tracks.map(fromApple))
+            setSpotifyAvailable(true)
+            setResults(json.tracks.map(fromSpotify))
             setDropdownOpen(true)
             return
           }
         }
         // Fall back to iTunes
-        setAppleMusicAvailable(false)
+        setSpotifyAvailable(false)
         const itunesRes = await fetch(`/api/songs/metadata-search?q=${encodeURIComponent(q)}`)
         if (itunesRes.ok) {
           const json: { results: MetadataResult[] } = await itunesRes.json()
@@ -105,7 +105,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
     setArtist(r.artist)
     setAlbum(r.album)
     setCoverUrl(r.cover_url)
-    setAppleUrl(r.apple_music_url ?? '')
+    setSpotify(r.spotify_url ?? '')
     setQuery('')
     setResults([])
     setDropdownOpen(false)
@@ -114,7 +114,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
   const clear = useCallback(() => {
     setPicked(null)
     setTitle(''); setArtist(''); setAlbum('')
-    setCoverUrl(null); setAppleUrl('')
+    setCoverUrl(null); setSpotify('')
   }, [])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -130,7 +130,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
           title: title.trim(),
           artist: artist.trim(),
           album: album.trim() || null,
-          apple_music_url: appleMusicUrl.trim() || null,
+          spotify_url: spotifyUrl.trim() || null,
           cover_url: coverUrl || null,
         }),
       })
@@ -141,18 +141,18 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add song')
     } finally { setSubmitting(false) }
-  }, [title, artist, album, appleMusicUrl, coverUrl, circleId, onAdded, onClose])
+  }, [title, artist, album, spotifyUrl, coverUrl, circleId, onAdded, onClose])
 
   return (
     <div className="bg-amber-950/20 border border-amber-800 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-white text-sm">Share a new song</h3>
-          {appleMusicAvailable === true && (
-            <p className="text-xs text-pink-400 mt-0.5">Searching Apple Music</p>
+          {spotifyAvailable === true && (
+            <p className="text-xs text-green-400 mt-0.5">Searching Spotify</p>
           )}
-          {appleMusicAvailable === false && (
-            <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Apple Music not configured)</p>
+          {spotifyAvailable === false && (
+            <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Spotify not configured)</p>
           )}
         </div>
         <button type="button" onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors">
@@ -230,7 +230,7 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
             <p className="text-xs text-stone-400 truncate">{picked.artist}{picked.album ? ` · ${picked.album}` : ''}</p>
             {picked.source_url && (
               <a href={picked.source_url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-pink-500 hover:text-pink-400 mt-0.5">
+                className="inline-flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 mt-0.5">
                 <ExternalLink className="w-3 h-3" /> {picked.source_label}
               </a>
             )}
@@ -263,9 +263,9 @@ export default function AddSongForm({ circleId, onAdded, onClose }: Props) {
               className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-stone-400 mb-1">Apple Music link</label>
-            <input type="url" value={appleMusicUrl} onChange={(e) => setAppleUrl(e.target.value)}
-              placeholder="https://music.apple.com/…"
+            <label className="block text-xs font-medium text-stone-400 mb-1">Spotify link</label>
+            <input type="url" value={spotifyUrl} onChange={(e) => setSpotify(e.target.value)}
+              placeholder="https://open.spotify.com/…"
               className="w-full px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
         </div>

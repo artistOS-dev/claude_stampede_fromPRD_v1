@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAppleMusicToken, mapAppleAlbum, AM_BASE, type AppleMusicAlbumResult } from '@/lib/appleMusic'
+import { getSpotifyToken, mapSpotifyAlbum, type SpotifyAlbumResult } from '@/lib/spotify'
 
 // GET /api/songs/spotify-artist-albums?artist_id=<id>
-// Now backed by Apple Music. Lists albums (and singles) for an Apple Music artist.
+// Lists albums (and singles) for a Spotify artist — used by the bulk import picker.
 
-export type { AppleMusicAlbumResult as SpotifyAlbumResult }
+export type { SpotifyAlbumResult }
 
 export async function GET(request: NextRequest) {
   const supabase = createClient()
@@ -15,19 +15,20 @@ export async function GET(request: NextRequest) {
   const artistId = request.nextUrl.searchParams.get('artist_id')?.trim()
   if (!artistId) return NextResponse.json({ error: 'artist_id is required' }, { status: 400 })
 
-  const token = getAppleMusicToken()
-  if (!token) return NextResponse.json({ error: 'Apple Music not configured' }, { status: 503 })
+  const token = await getSpotifyToken()
+  if (!token) return NextResponse.json({ error: 'Spotify not configured' }, { status: 503 })
 
-  const url = `${AM_BASE}/artists/${artistId}/albums?${new URLSearchParams({ limit: '100' })}`
+  const url = `https://api.spotify.com/v1/artists/${artistId}/albums?${new URLSearchParams({
+    include_groups: 'album,single',
+    limit: '50',
+    market: 'US',
+  })}`
 
   let raw: Response
   try {
-    raw = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: 3600 },
-    })
+    raw = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, next: { revalidate: 3600 } })
   } catch {
-    return NextResponse.json({ error: 'Apple Music unavailable' }, { status: 502 })
+    return NextResponse.json({ error: 'Spotify unavailable' }, { status: 502 })
   }
 
   if (!raw.ok) return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
@@ -35,6 +36,6 @@ export async function GET(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json: any = await raw.json()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const albums: AppleMusicAlbumResult[] = ((json.data ?? []) as any[]).map((a) => mapAppleAlbum(a))
+  const albums: SpotifyAlbumResult[] = ((json.items ?? []) as any[]).map((a) => mapSpotifyAlbum(a))
   return NextResponse.json({ albums })
 }

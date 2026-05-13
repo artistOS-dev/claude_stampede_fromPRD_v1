@@ -199,6 +199,7 @@ export default function StablesPage() {
   const [error, setError]         = useState<string | null>(null)
   const [q, setQ]                 = useState('')
   const [isManager, setIsManager] = useState(false)
+  const [userRole, setUserRole]   = useState<string | null>(null)
 
   const load = useCallback(async (query = '') => {
     try {
@@ -220,6 +221,7 @@ export default function StablesPage() {
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
         supabase.from('profiles').select('role').eq('id', user.id).maybeSingle().then(({ data }) => {
+          setUserRole(data?.role ?? null)
           setIsManager(data?.role === 'artist_manager')
         })
       })
@@ -261,6 +263,13 @@ export default function StablesPage() {
       )}
       {isManager && !myStable && !isLoading && (
         <CreateStableForm onCreated={(slug) => router.push(`/stables/${slug}`)} />
+      )}
+      {!isLoading && userRole === 'fan' && (
+        <div className="bg-stone-900 border border-stone-700 rounded-xl px-4 py-3 text-xs text-stone-400">
+          Want to create your own Stable?{' '}
+          <span className="text-amber-400 font-medium">Artist Manager</span> role required.
+          Contact a Stampede admin to get your access code, then re-set your role in Account Settings.
+        </div>
       )}
 
       {/* Search */}

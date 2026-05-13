@@ -220,16 +220,19 @@ function CreateCircuitForm({ onCreated }: { onCreated: () => void }) {
 export default function CircuitsPage() {
   const router = useRouter()
   const [circuits, setCircuits]   = useState<Circuit[]>([])
+  const [drafts, setDrafts]       = useState<Circuit[]>([])
   const [isLoading, setLoading]   = useState(true)
   const [error, setError]         = useState<string | null>(null)
   const [canCreate, setCanCreate] = useState(false)
+  const [userRole, setUserRole]   = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/circuits')
       if (!res.ok) throw new Error('Failed to load')
-      const json: { circuits: Circuit[] } = await res.json()
+      const json: { circuits: Circuit[]; drafts?: Circuit[] } = await res.json()
       setCircuits(json.circuits ?? [])
+      setDrafts(json.drafts ?? [])
     } catch {
       setError('Could not load circuits. Please refresh.')
     } finally { setLoading(false) }
@@ -245,6 +248,7 @@ export default function CircuitsPage() {
       const { data: profile } = await supabase
         .from('profiles').select('role, is_super_admin').eq('id', auth.user.id).maybeSingle()
       setCanCreate(profile?.role === 'stampede_producer' || profile?.is_super_admin === true)
+      setUserRole(profile?.role ?? null)
     }
     checkRole()
   }, [])
@@ -271,6 +275,12 @@ export default function CircuitsPage() {
       </div>
 
       {canCreate && <CreateCircuitForm onCreated={load} />}
+      {!isLoading && !canCreate && userRole !== null && (
+        <div className="bg-stone-900 border border-stone-700 rounded-xl px-4 py-3 text-xs text-stone-400">
+          Circuits are created by <span className="text-amber-400 font-medium">Stampede Producers</span>.
+          Contact a Stampede admin to get that role if you run festivals or events.
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex justify-center py-20">
@@ -282,12 +292,21 @@ export default function CircuitsPage() {
         <div className="bg-red-950/30 border border-red-800 rounded-xl p-4 text-sm text-red-400">{error}</div>
       )}
 
-      {!isLoading && !error && circuits.length === 0 && (
+      {!isLoading && !error && circuits.length === 0 && drafts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Trophy className="w-12 h-12 text-stone-700 mb-3" />
           <p className="text-stone-400 font-medium">No circuits yet</p>
-          <p className="text-stone-600 text-sm mt-1">Check back soon for festival tournament brackets</p>
+          <p className="text-stone-600 text-sm mt-1">
+            {canCreate ? 'Create a circuit above, then open it for registration.' : 'Check back soon for festival tournament brackets'}
+          </p>
         </div>
+      )}
+
+      {drafts.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs font-bold text-stone-500 uppercase tracking-widest">Drafts (Producer Only)</h2>
+          {drafts.map((c) => <CircuitCard key={c.id} circuit={c} onClick={() => router.push(`/circuits/${c.id}`)} />)}
+        </section>
       )}
 
       {active.length > 0 && (

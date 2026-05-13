@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getSpotifyToken, mapSpotifyArtist, type SpotifyArtistResult } from '@/lib/spotify'
-
-// Re-export so existing importers of SpotifyArtistResult from this path keep working
-export type { SpotifyArtistResult }
+import { getAppleMusicToken, mapAppleArtist, AM_BASE, type AppleMusicArtistResult } from '@/lib/appleMusic'
 
 // GET /api/artists/spotify-search?q=<query>
-// Searches Spotify for artists using the Client Credentials flow.
-// Requires SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET in env.
+// Now backed by Apple Music Catalog search.
+// Kept at this path for backwards compatibility with existing component imports.
+
+export type { AppleMusicArtistResult as SpotifyArtistResult }
 
 export async function GET(request: NextRequest) {
   const supabase = createClient()
@@ -17,16 +16,12 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
   if (!q) return NextResponse.json({ artists: [] })
 
-  const token = await getSpotifyToken()
+  const token = getAppleMusicToken()
   if (!token) {
     return NextResponse.json({ artists: [], error: 'not_configured' })
   }
 
-  const url = `https://api.spotify.com/v1/search?${new URLSearchParams({
-    q,
-    type: 'artist',
-    limit: '8',
-  })}`
+  const url = `${AM_BASE}/search?${new URLSearchParams({ types: 'artists', term: q, limit: '8' })}`
 
   let raw: Response
   try {
@@ -43,9 +38,8 @@ export async function GET(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json: any = await raw.json()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items: any[] = json.artists?.items ?? []
+  const items: any[] = json.results?.artists?.data ?? []
 
-  const artists: SpotifyArtistResult[] = items.map((a) => mapSpotifyArtist(a))
-
+  const artists: AppleMusicArtistResult[] = items.map((a) => mapAppleArtist(a))
   return NextResponse.json({ artists })
 }

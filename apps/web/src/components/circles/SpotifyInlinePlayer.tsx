@@ -3,12 +3,22 @@
 import { useState } from 'react'
 import { Play, X } from 'lucide-react'
 
+// Renders an Apple Music embed for a song URL like:
+//   https://music.apple.com/us/album/title/albumId?i=songId
+// The embed is produced by replacing the hostname with embed.music.apple.com.
+
 export default function SpotifyInlinePlayer({ url }: { url: string }) {
   const [open, setOpen] = useState(false)
-  const trackId = url.match(/track\/([A-Za-z0-9]+)/)?.[1]
-  if (!trackId) return null
 
-  const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`
+  let embedUrl: string
+  try {
+    const parsed = new URL(url)
+    if (!parsed.hostname.includes('music.apple.com')) return null
+    parsed.hostname = 'embed.music.apple.com'
+    embedUrl = parsed.toString()
+  } catch {
+    return null
+  }
 
   return (
     <div className="mt-2">
@@ -16,7 +26,7 @@ export default function SpotifyInlinePlayer({ url }: { url: string }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-pink-400 hover:text-pink-300 transition-colors"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           Play preview
@@ -31,15 +41,14 @@ export default function SpotifyInlinePlayer({ url }: { url: string }) {
             <X className="w-3 h-3" /> Close player
           </button>
           <iframe
-            title="Spotify player"
+            title="Apple Music player"
             src={embedUrl}
             width="100%"
-            height="152"
+            height="175"
             frameBorder="0"
-            // eslint-disable-next-line react/no-unknown-property
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-            className="rounded-xl"
+            allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+            sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+            className="rounded-xl overflow-hidden"
           />
         </div>
       )}

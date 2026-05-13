@@ -2,14 +2,15 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Search, ChevronRight, ChevronLeft, Music, Check, X, Disc, AlertCircle, ChevronDown } from 'lucide-react'
-import type { SpotifyArtistResult, SpotifyAlbumResult, SpotifyTrackResult } from '@/lib/spotify'
+import type { AppleMusicArtistResult, AppleMusicAlbumResult, AppleMusicTrackResult } from '@/lib/appleMusic'
 
 interface BulkSong {
   title: string
   artist: string
   album: string
   cover_url: string | null
-  spotify_url: string | null
+  apple_music_url: string | null
+  preview_url?: string | null
   release_year?: number | null
 }
 
@@ -21,13 +22,10 @@ interface Props {
 type Step = 'artist' | 'albums'
 
 interface AlbumState {
-  album: SpotifyAlbumResult
-  // null = not yet loaded; 'loading' = in flight; array = loaded
-  tracks: SpotifyTrackResult[] | 'loading' | null
+  album: AppleMusicAlbumResult
+  tracks: AppleMusicTrackResult[] | 'loading' | null
   expanded: boolean
-  // which track IDs are selected (populated once tracks load)
   selectedIds: Set<string>
-  // convenience: are ALL tracks selected (may be true before track load)
   allSelected: boolean
 }
 
@@ -39,10 +37,10 @@ function releaseYear(date: string): number | null {
 export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
   // Step 1
   const [artistQuery, setArtistQuery]   = useState('')
-  const [artists, setArtists]           = useState<SpotifyArtistResult[]>([])
+  const [artists, setArtists]           = useState<AppleMusicArtistResult[]>([])
   const [artistSearching, setArtistSearching] = useState(false)
-  const [spotifyConfigured, setSpotifyConfigured] = useState<boolean | null>(null)
-  const [selectedArtist, setSelectedArtist]   = useState<SpotifyArtistResult | null>(null)
+  const [appleMusicConfigured, setAppleMusicConfigured] = useState<boolean | null>(null)
+  const [selectedArtist, setSelectedArtist]   = useState<AppleMusicArtistResult | null>(null)
 
   // Step 2
   const [albumStates, setAlbumStates]     = useState<AlbumState[]>([])
@@ -69,12 +67,12 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
       try {
         const res = await fetch(`/api/artists/spotify-search?q=${encodeURIComponent(q)}`)
         if (res.ok) {
-          const json: { artists: SpotifyArtistResult[]; error?: string } = await res.json()
+          const json: { artists: AppleMusicArtistResult[]; error?: string } = await res.json()
           if (json.error === 'not_configured') {
-            setSpotifyConfigured(false)
+            setAppleMusicConfigured(false)
             setArtists([])
           } else {
-            setSpotifyConfigured(true)
+            setAppleMusicConfigured(true)
             setArtists(json.artists ?? [])
           }
         }
@@ -82,7 +80,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
     }, 350)
   }, [])
 
-  const pickArtist = useCallback(async (artist: SpotifyArtistResult) => {
+  const pickArtist = useCallback(async (artist: AppleMusicArtistResult) => {
     setSelectedArtist(artist)
     setStep('albums')
     setAlbumsLoading(true)
@@ -90,8 +88,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
     try {
       const res = await fetch(`/api/songs/spotify-artist-albums?artist_id=${artist.id}`)
       if (!res.ok) throw new Error('Failed to load albums')
-      const json: { albums: SpotifyAlbumResult[] } = await res.json()
-      // Start with all albums unselected, no tracks loaded
+      const json: { albums: AppleMusicAlbumResult[] } = await res.json()
       setAlbumStates(json.albums.map((a) => ({
         album: a,
         tracks: null,
@@ -100,7 +97,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
         allSelected: false,
       })))
     } catch {
-      setError('Could not load albums. Check Spotify credentials.')
+      setError('Could not load albums. Check Apple Music credentials.')
       setStep('artist')
     } finally { setAlbumsLoading(false) }
   }, [])
@@ -115,12 +112,10 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
       const next = [...prev]
 
       if (state.allSelected) {
-        // Deselect all
         next[idx] = { ...state, allSelected: false, selectedIds: new Set() }
         return next
       }
 
-      // Select all — if tracks already loaded, fill selectedIds immediately
       if (Array.isArray(state.tracks)) {
         next[idx] = {
           ...state,
@@ -130,19 +125,16 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
         return next
       }
 
-      // Tracks not loaded yet — mark allSelected=true, load tracks in background
       next[idx] = { ...state, allSelected: true, tracks: 'loading' }
       return next
     })
 
-    // If tracks not loaded, fetch them now
     setAlbumStates((prev) => {
       const state = prev.find((s) => s.album.id === albumId)
       if (!state || Array.isArray(state.tracks)) return prev
-      // kick off load
       fetch(`/api/songs/spotify-album?album_id=${albumId}`)
         .then((r) => r.json())
-        .then((json: { album: { tracks: SpotifyTrackResult[] } }) => {
+        .then((json: { album: { tracks: AppleMusicTrackResult[] } }) => {
           setAlbumStates((p) => p.map((s) => {
             if (s.album.id !== albumId) return s
             const tracks = json.album?.tracks ?? []
@@ -163,7 +155,6 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
   }, [])
 
   const expandAlbum = useCallback(async (albumId: string) => {
-    // Toggle expansion; load tracks if needed
     setAlbumStates((prev) => {
       const idx = prev.findIndex((s) => s.album.id === albumId)
       if (idx === -1) return prev
@@ -175,12 +166,11 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
         return next
       }
 
-      // Expand — if tracks not loaded, start loading
       if (state.tracks === null) {
         next[idx] = { ...state, expanded: true, tracks: 'loading' }
         fetch(`/api/songs/spotify-album?album_id=${albumId}`)
           .then((r) => r.json())
-          .then((json: { album: { tracks: SpotifyTrackResult[] } }) => {
+          .then((json: { album: { tracks: AppleMusicTrackResult[] } }) => {
             setAlbumStates((p) => p.map((s) => {
               if (s.album.id !== albumId) return s
               const tracks = json.album?.tracks ?? []
@@ -223,7 +213,6 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
       setAlbumStates((prev) => prev.map((s) => ({ ...s, allSelected: false, selectedIds: new Set() })))
       return
     }
-    // Select all — load any unloaded albums in parallel
     const toLoad = albumStates.filter((s) => s.tracks === null).map((s) => s.album.id)
     setAlbumStates((prev) => prev.map((s) => ({
       ...s,
@@ -235,7 +224,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
     await Promise.all(toLoad.map(async (albumId) => {
       try {
         const res = await fetch(`/api/songs/spotify-album?album_id=${albumId}`)
-        const json: { album: { tracks: SpotifyTrackResult[] } } = await res.json()
+        const json: { album: { tracks: AppleMusicTrackResult[] } } = await res.json()
         const tracks = json.album?.tracks ?? []
         setAlbumStates((prev) => prev.map((s) =>
           s.album.id === albumId
@@ -253,10 +242,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
   // ── Total selected count ──────────────────────────────────────────────────
 
   const totalSelected = albumStates.reduce((sum, s) => {
-    if (s.allSelected && !Array.isArray(s.tracks)) {
-      // Tracks not loaded yet — use album's total_tracks as estimate
-      return sum + s.album.total_tracks
-    }
+    if (s.allSelected && !Array.isArray(s.tracks)) return sum + s.album.total_tracks
     return sum + s.selectedIds.size
   }, 0)
 
@@ -266,21 +252,19 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
     setImporting(true)
     setError(null)
     try {
-      // Collect all selected songs
       const songs: BulkSong[] = []
       for (const state of albumStates) {
         if (state.selectedIds.size === 0 && !state.allSelected) continue
         const tracks = Array.isArray(state.tracks) ? state.tracks : []
-        const selectedTracks = state.allSelected && tracks.length === 0
-          ? [] // shouldn't happen but guard
-          : tracks.filter((t) => state.selectedIds.has(t.id))
+        const selectedTracks = tracks.filter((t) => state.selectedIds.has(t.id))
         for (const t of selectedTracks) {
           songs.push({
             title: t.title,
             artist: t.artist,
             album: state.album.name,
             cover_url: state.album.cover_url,
-            spotify_url: t.spotify_url,
+            apple_music_url: t.apple_music_url || null,
+            preview_url: t.preview_url ?? null,
             release_year: releaseYear(state.album.release_date),
           })
         }
@@ -307,9 +291,9 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                 <ChevronLeft className="w-4 h-4" />
               </button>
             )}
-            <Disc className="w-4 h-4 text-green-400" />
+            <Disc className="w-4 h-4 text-pink-400" />
             <h3 className="font-bold text-white text-sm">
-              {importResult ? 'Import Complete' : step === 'artist' ? 'Import from Spotify' : selectedArtist?.name}
+              {importResult ? 'Import Complete' : step === 'artist' ? 'Import from Apple Music' : selectedArtist?.name}
             </h3>
           </div>
           <button type="button" onClick={onClose} className="text-stone-500 hover:text-white transition-colors">
@@ -323,8 +307,8 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
           {/* Done */}
           {importResult && (
             <div className="p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-green-950/40 border border-green-700 flex items-center justify-center mx-auto">
-                <Check className="w-6 h-6 text-green-400" />
+              <div className="w-12 h-12 rounded-full bg-pink-950/40 border border-pink-700 flex items-center justify-center mx-auto">
+                <Check className="w-6 h-6 text-pink-400" />
               </div>
               <p className="text-lg font-bold text-white">
                 {importResult.inserted} song{importResult.inserted !== 1 ? 's' : ''} added
@@ -344,17 +328,23 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
             <div className="p-4 space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
-                <input type="text" autoFocus placeholder="Search for an artist on Spotify…"
+                <input type="text" autoFocus placeholder="Search for an artist on Apple Music…"
                   value={artistQuery} onChange={(e) => searchArtists(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-pink-500" />
                 {artistSearching && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
-              {spotifyConfigured === false && (
-                <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-950/30 border border-amber-800 rounded-lg px-3 py-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  Spotify is not configured. Add <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_ID</code> and <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_SECRET</code> to your environment.
+              {appleMusicConfigured === false && (
+                <div className="flex items-start gap-2 text-sm text-amber-400 bg-amber-950/30 border border-amber-800 rounded-lg px-3 py-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    Apple Music is not configured. Add{' '}
+                    <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">APPLE_MUSIC_TEAM_ID</code>,{' '}
+                    <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">APPLE_MUSIC_KEY_ID</code>, and{' '}
+                    <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">APPLE_MUSIC_PRIVATE_KEY</code>{' '}
+                    to your environment.
+                  </span>
                 </div>
               )}
               {artists.length > 0 && (
@@ -370,7 +360,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                           <p className="text-sm font-medium text-white truncate">{a.name}</p>
                           {a.genres.length > 0 && <p className="text-xs text-stone-500 truncate capitalize">{a.genres.slice(0, 2).join(', ')}</p>}
                         </div>
-                        <ChevronRight className="w-4 h-4 text-stone-600 group-hover:text-green-400 transition-colors shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-stone-600 group-hover:text-pink-400 transition-colors shrink-0" />
                       </button>
                     </li>
                   ))}
@@ -389,18 +379,17 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
             <div className="p-4 space-y-2">
               {albumsLoading && (
                 <div className="flex justify-center py-12">
-                  <div className="w-6 h-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+                  <div className="w-6 h-6 rounded-full border-2 border-pink-500 border-t-transparent animate-spin" />
                 </div>
               )}
 
               {!albumsLoading && albumStates.length > 0 && (
                 <>
-                  {/* Select all row */}
                   <div className="flex items-center justify-between pb-2 border-b border-stone-800">
                     <button type="button" onClick={toggleSelectAll}
                       className="flex items-center gap-2 text-sm font-semibold text-stone-300 hover:text-white transition-colors">
                       <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                        allAlbumsSelected ? 'bg-green-500 border-green-500' : 'border-stone-600'
+                        allAlbumsSelected ? 'bg-pink-500 border-pink-500' : 'border-stone-600'
                       }`}>
                         {allAlbumsSelected && <Check className="w-3 h-3 text-white" />}
                       </div>
@@ -409,26 +398,23 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                     <span className="text-xs text-stone-500">{albumStates.length} release{albumStates.length !== 1 ? 's' : ''}</span>
                   </div>
 
-                  {/* Album rows */}
                   {albumStates.map((state) => {
                     const { album, tracks, expanded, selectedIds, allSelected } = state
-                    const tracksLoaded = Array.isArray(tracks)
-                    const tracksLoading = tracks === 'loading'
-                    const trackCount = tracksLoaded ? tracks.length : album.total_tracks
-                    const selectedCount = tracksLoaded ? selectedIds.size : (allSelected ? album.total_tracks : 0)
+                    const tracksLoaded   = Array.isArray(tracks)
+                    const tracksLoading  = tracks === 'loading'
+                    const trackCount     = tracksLoaded ? tracks.length : album.total_tracks
+                    const selectedCount  = tracksLoaded ? selectedIds.size : (allSelected ? album.total_tracks : 0)
 
                     return (
                       <div key={album.id} className="border border-stone-800 rounded-xl overflow-hidden">
-                        {/* Album header row */}
                         <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-stone-800/50 transition-colors">
-                          {/* Checkbox */}
                           <button type="button" onClick={() => toggleAlbumAll(album.id)}
                             className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              allSelected ? 'bg-green-500 border-green-500' :
-                              selectedCount > 0 ? 'bg-green-900 border-green-600' : 'border-stone-600'
+                              allSelected ? 'bg-pink-500 border-pink-500' :
+                              selectedCount > 0 ? 'bg-pink-900 border-pink-600' : 'border-stone-600'
                             }`}>
                             {allSelected && <Check className="w-3 h-3 text-white" />}
-                            {!allSelected && selectedCount > 0 && <div className="w-2 h-2 bg-green-400 rounded-sm" />}
+                            {!allSelected && selectedCount > 0 && <div className="w-2 h-2 bg-pink-400 rounded-sm" />}
                           </button>
 
                           {album.cover_url
@@ -441,34 +427,32 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                               {releaseYear(album.release_date)}
                               {' · '}
                               {selectedCount > 0 && selectedCount < trackCount
-                                ? <span className="text-green-400">{selectedCount}/{trackCount}</span>
+                                ? <span className="text-pink-400">{selectedCount}/{trackCount}</span>
                                 : selectedCount === trackCount && trackCount > 0
-                                ? <span className="text-green-400">all {trackCount}</span>
+                                ? <span className="text-pink-400">all {trackCount}</span>
                                 : <span>{trackCount}</span>} track{trackCount !== 1 ? 's' : ''}
                             </p>
                           </div>
 
-                          {/* Expand toggle */}
                           <button type="button" onClick={() => expandAlbum(album.id)}
                             className="shrink-0 p-1 text-stone-500 hover:text-white transition-colors">
                             {tracksLoading
-                              ? <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                              ? <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                               : <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />}
                           </button>
                         </div>
 
-                        {/* Track list (expanded) */}
                         {expanded && tracksLoaded && (
                           <ul className="border-t border-stone-800 divide-y divide-stone-800/50">
                             {tracks.map((track, i) => (
                               <li key={track.id}>
                                 <button type="button" onClick={() => toggleTrack(album.id, track.id)}
                                   className={`w-full flex items-center gap-3 px-3 py-2 transition-colors text-left ${
-                                    selectedIds.has(track.id) ? 'bg-green-950/20 hover:bg-green-950/30' : 'hover:bg-stone-800'
+                                    selectedIds.has(track.id) ? 'bg-pink-950/20 hover:bg-pink-950/30' : 'hover:bg-stone-800'
                                   }`}>
                                   <span className="text-xs text-stone-600 w-5 text-right tabular-nums shrink-0">{i + 1}</span>
                                   <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                                    selectedIds.has(track.id) ? 'bg-green-500 border-green-500' : 'border-stone-600'
+                                    selectedIds.has(track.id) ? 'bg-pink-500 border-pink-500' : 'border-stone-600'
                                   }`}>
                                     {selectedIds.has(track.id) && <Check className="w-3 h-3 text-white" />}
                                   </div>
@@ -499,7 +483,7 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
               : <p className="text-xs text-stone-500 flex-1">{totalSelected} song{totalSelected !== 1 ? 's' : ''} selected</p>}
             <button type="button" onClick={handleImport}
               disabled={importing || totalSelected === 0}
-              className="shrink-0 px-5 py-2 rounded-xl bg-green-700 hover:bg-green-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
+              className="shrink-0 px-5 py-2 rounded-xl bg-pink-700 hover:bg-pink-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
               {importing ? 'Importing…' : `Import ${totalSelected > 0 ? totalSelected : ''} song${totalSelected !== 1 ? 's' : ''}`}
             </button>
           </div>

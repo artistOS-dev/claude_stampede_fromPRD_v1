@@ -141,17 +141,17 @@ function timeAgo(iso: string): string {
 
 function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song: Song) => void; onClose: () => void }) {
   const [query, setQuery]       = useState('')
-  const [results, setResults]   = useState<{ id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }[]>([])
+  const [results, setResults]   = useState<{ id: string; title: string; artist: string; album: string; cover_url: string | null; apple_music_url: string }[]>([])
   const [searching, setSearching] = useState(false)
   const [dropdownOpen, setDropdown] = useState(false)
-  const [spotifyAvailable, setSpotifyAvailable] = useState<boolean | null>(null)
+  const [appleMusicAvailable, setAppleMusicAvailable] = useState<boolean | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [title, setTitle]     = useState('')
   const [artist, setArtist]   = useState('')
   const [album, setAlbum]     = useState('')
   const [year, setYear]       = useState('')
-  const [spotify, setSpotify] = useState('')
+  const [appleMusicUrl, setAppleUrl] = useState('')
   const [coverUrl, setCover]  = useState<string | null>(null)
   const [picked, setPicked]   = useState(false)
 
@@ -168,28 +168,28 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
       try {
         const res = await fetch(`/api/songs/spotify-search?q=${encodeURIComponent(q)}&limit=20`)
         if (res.ok) {
-          const json: { tracks: { id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }[]; spotify_available: boolean } = await res.json()
+          const json: { tracks: { id: string; title: string; artist: string; album: string; cover_url: string | null; apple_music_url: string }[]; spotify_available: boolean } = await res.json()
           if (json.spotify_available) {
-            setSpotifyAvailable(true)
+            setAppleMusicAvailable(true)
             setResults(json.tracks)
             setDropdown(true)
             return
           }
         }
-        setSpotifyAvailable(false)
+        setAppleMusicAvailable(false)
         const fallback = await fetch(`/api/songs/metadata-search?q=${encodeURIComponent(q)}`)
         if (fallback.ok) {
           const json: { results: { id: string; title: string; artist: string; album?: string; cover_url: string | null; source_url?: string }[] } = await fallback.json()
-          setResults((json.results ?? []).map((r) => ({ id: r.id, title: r.title, artist: r.artist, album: r.album ?? '', cover_url: r.cover_url, spotify_url: '' })))
+          setResults((json.results ?? []).map((r) => ({ id: r.id, title: r.title, artist: r.artist, album: r.album ?? '', cover_url: r.cover_url, apple_music_url: r.source_url ?? '' })))
           setDropdown(true)
         }
       } finally { setSearching(false) }
     }, 350)
   }, [])
 
-  const pick = (r: { id: string; title: string; artist: string; album: string; cover_url: string | null; spotify_url: string }) => {
+  const pick = (r: { id: string; title: string; artist: string; album: string; cover_url: string | null; apple_music_url: string }) => {
     setTitle(r.title); setArtist(r.artist); setAlbum(r.album)
-    setCover(r.cover_url); setSpotify(r.spotify_url)
+    setCover(r.cover_url); setAppleUrl(r.apple_music_url)
     setPicked(true); setQuery(''); setResults([]); setDropdown(false)
   }
 
@@ -205,7 +205,7 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
           title: title.trim(), artist: artist.trim(),
           album: album.trim() || null,
           release_year: year ? Number(year) : null,
-          spotify_url: spotify.trim() || null,
+          apple_music_url: appleMusicUrl.trim() || null,
           cover_url: coverUrl || null,
         }),
       })
@@ -223,8 +223,8 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-800">
           <div>
             <h3 className="font-bold text-white">Add Song to Catalog</h3>
-            {spotifyAvailable === true && <p className="text-xs text-green-400 mt-0.5">Searching Spotify</p>}
-            {spotifyAvailable === false && <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Spotify not configured)</p>}
+            {appleMusicAvailable === true && <p className="text-xs text-pink-400 mt-0.5">Searching Apple Music</p>}
+            {appleMusicAvailable === false && <p className="text-xs text-stone-500 mt-0.5">Searching iTunes (Apple Music not configured)</p>}
           </div>
           <button type="button" onClick={onClose} className="text-stone-500 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -270,7 +270,7 @@ function AddSongModal({ slug, onAdded, onClose }: { slug: string; onAdded: (song
                 <p className="text-sm font-semibold text-white truncate">{title}</p>
                 <p className="text-xs text-stone-400 truncate">{artist}{album ? ` · ${album}` : ''}</p>
               </div>
-              <button type="button" onClick={() => { setPicked(false); setTitle(''); setArtist(''); setAlbum(''); setCover(null); setSpotify('') }}
+              <button type="button" onClick={() => { setPicked(false); setTitle(''); setArtist(''); setAlbum(''); setCover(null); setAppleUrl('') }}
                 className="shrink-0 text-stone-500 hover:text-stone-300 transition-colors"><X className="w-4 h-4" /></button>
             </div>
           )}
@@ -958,9 +958,9 @@ export default function StableDetailPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {song.spotify_url && (
-                    <a href={song.spotify_url} target="_blank" rel="noopener noreferrer"
-                      className="p-1.5 text-stone-600 hover:text-green-400 transition-colors">
+                  {(song.apple_music_url || song.spotify_url) && (
+                    <a href={song.apple_music_url || song.spotify_url!} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 text-stone-600 hover:text-pink-400 transition-colors">
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { CheckCircle2, Music, Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import type { SpotifyArtistResult } from '@/lib/spotify'
+import type { AppleMusicArtistResult } from '@/lib/appleMusic'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -12,10 +12,13 @@ import type { SpotifyArtistResult } from '@/lib/spotify'
 
 export interface FavoriteArtist {
   name: string
-  spotify_id: string
+  apple_music_id: string
   image_url: string | null
-  spotify_url: string
+  apple_music_url: string
 }
+
+// Alias so internal usage of SpotifyArtistResult still compiles
+type SpotifyArtistResult = AppleMusicArtistResult
 
 interface Step6Props {
   personalityTypes: string[]
@@ -217,9 +220,9 @@ export default function Step6ArtistTaste({ personalityTypes, onSuccess, onSkip }
       } else {
         next.set(artist.id, {
           name: artist.name,
-          spotify_id: artist.id,
+          apple_music_id: artist.id,
           image_url: artist.image_url,
-          spotify_url: artist.spotify_url,
+          apple_music_url: artist.apple_music_url,
         })
       }
       return next
@@ -235,7 +238,7 @@ export default function Step6ArtistTaste({ personalityTypes, onSuccess, onSkip }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           favorite_genres:       selectedGenres,
-          favorite_artist_ids:   artists.map((a) => a.spotify_id),
+          favorite_artist_ids:   artists.map((a) => a.apple_music_id),
           favorite_artist_names: artists.map((a) => a.name),
           personality_types:     personalityTypes,
         }),

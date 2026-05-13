@@ -6,6 +6,7 @@ const songSchema = z.object({
   title: z.string().min(1).max(200),
   artist: z.string().min(1).max(200),
   album: z.string().max(200).optional().nullable(),
+  apple_music_url: z.string().url().optional().nullable(),
   spotify_url: z.string().url().optional().nullable(),
   cover_url: z.string().url().optional().nullable(),
 })

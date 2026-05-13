@@ -2,26 +2,20 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Search, User, X, ExternalLink } from 'lucide-react'
-import type { SpotifyArtistResult } from '@/app/api/artists/spotify-search/route'
+import type { AppleMusicArtistResult as ArtistResult } from '@/lib/appleMusic'
 
 interface Props {
   circleId: string
   onAdded: () => void
 }
 
-function formatFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
-  return String(n)
-}
-
 export default function AddArtistForm({ circleId, onAdded }: Props) {
   const [query, setQuery]           = useState('')
-  const [results, setResults]       = useState<SpotifyArtistResult[]>([])
+  const [results, setResults]       = useState<ArtistResult[]>([])
   const [searching, setSearching]   = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  const [picked, setPicked]         = useState<SpotifyArtistResult | null>(null)
+  const [picked, setPicked]         = useState<ArtistResult | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
@@ -39,15 +33,15 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
       try {
         const res = await fetch(`/api/artists/spotify-search?q=${encodeURIComponent(q)}`)
         if (!res.ok) return
-        const json: { artists: SpotifyArtistResult[]; error?: string } = await res.json()
-        if (json.error === 'not_configured') return   // no credentials — just let user type name
+        const json: { artists: ArtistResult[]; error?: string } = await res.json()
+        if (json.error === 'not_configured') return // no credentials — let user type name
         setResults(json.artists ?? [])
         setDropdownOpen(true)
       } finally { setSearching(false) }
     }, 350)
   }, [])
 
-  const pick = useCallback((r: SpotifyArtistResult) => {
+  const pick = useCallback((r: ArtistResult) => {
     setPicked(r)
     setQuery('')
     setResults([])
@@ -61,7 +55,6 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    // If a Spotify result was picked use it; otherwise use whatever was typed
     const artistName = picked?.name ?? query.trim()
     if (!artistName) return
     setError(null)
@@ -72,8 +65,6 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           artist_name: artistName,
-          spotify_url: picked?.spotify_url ?? null,
-          spotify_image_url: picked?.image_url ?? null,
         }),
       })
       const data: { success?: boolean; error?: string } = await res.json()
@@ -93,13 +84,13 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
 
-      {/* Search box — hidden once an artist is picked */}
+      {/* Search box */}
       {!picked && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
           <input
             type="text"
-            placeholder="Search Spotify or type name…"
+            placeholder="Search Apple Music or type name…"
             value={query}
             onChange={(e) => search(e.target.value)}
             onFocus={() => results.length > 0 && setDropdownOpen(true)}
@@ -107,7 +98,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
             className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-white text-sm placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           {searching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
           )}
 
           {dropdownOpen && results.length > 0 && (
@@ -117,7 +108,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
                   <button
                     type="button"
                     onMouseDown={() => pick(r)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-green-950/30 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-pink-950/30 transition-colors text-left"
                   >
                     {r.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -129,11 +120,9 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{r.name}</p>
-                      <p className="text-xs text-stone-500 truncate">
-                        {r.followers > 0 && `${formatFollowers(r.followers)} followers`}
-                        {r.genres.length > 0 && r.followers > 0 && ' · '}
-                        {r.genres.slice(0, 2).join(', ')}
-                      </p>
+                      {r.genres.length > 0 && (
+                        <p className="text-xs text-stone-500 truncate capitalize">{r.genres.slice(0, 2).join(', ')}</p>
+                      )}
                     </div>
                   </button>
                 </li>
@@ -143,7 +132,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
           {!searching && query.trim() && results.length === 0 && dropdownOpen && (
             <div className="absolute z-50 w-full mt-1 bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-sm text-stone-500">
-              No Spotify results — artist will be added by name only.
+              No results — artist will be added by name only.
             </div>
           )}
         </div>
@@ -151,7 +140,7 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
 
       {/* Picked artist preview */}
       {picked && (
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-green-700/50 rounded-xl">
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-stone-800 border border-pink-700/50 rounded-xl">
           {picked.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picked.image_url} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
@@ -163,15 +152,15 @@ export default function AddArtistForm({ circleId, onAdded }: Props) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white truncate">{picked.name}</p>
             {picked.genres.length > 0 && (
-              <p className="text-xs text-stone-400 truncate">{picked.genres.slice(0, 3).join(', ')}</p>
+              <p className="text-xs text-stone-400 truncate capitalize">{picked.genres.slice(0, 3).join(', ')}</p>
             )}
             <a
-              href={picked.spotify_url}
+              href={picked.apple_music_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-green-400 hover:text-green-300 mt-0.5"
+              className="inline-flex items-center gap-1 text-xs text-pink-400 hover:text-pink-300 mt-0.5"
             >
-              <ExternalLink className="w-3 h-3" /> Open on Spotify
+              <ExternalLink className="w-3 h-3" /> Open on Apple Music
             </a>
           </div>
           <button type="button" onClick={clear} className="shrink-0 text-stone-500 hover:text-stone-300 transition-colors">

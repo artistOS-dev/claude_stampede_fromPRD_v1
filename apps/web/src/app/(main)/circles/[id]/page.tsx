@@ -20,6 +20,7 @@ interface Song {
   title: string
   artist: string
   album: string | null
+  apple_music_url: string | null
   spotify_url: string | null
   cover_url: string | null
   avg_rating: number
@@ -1715,7 +1716,7 @@ export default function CircleDetailPage() {
           title: songTitle.trim(),
           artist: songArtist.trim(),
           album: songAlbum.trim() || null,
-          spotify_url: songSpotify.trim() || null,
+          apple_music_url: songSpotify.trim() || null,
         }),
       })
       const data: { success?: boolean; error?: string } = await res.json()
@@ -1998,7 +1999,7 @@ export default function CircleDetailPage() {
                   </p>
                 )}
 
-                {song.spotify_url && <SpotifyInlinePlayer url={song.spotify_url} />}
+                {song.apple_music_url && <SpotifyInlinePlayer url={song.apple_music_url} />}
               </div>
             </div>
           ))}

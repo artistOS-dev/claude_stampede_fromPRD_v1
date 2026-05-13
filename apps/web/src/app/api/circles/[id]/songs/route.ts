@@ -7,6 +7,7 @@ const addSongSchema = z.object({
   title: z.string().min(1).max(200),
   artist: z.string().min(1).max(200),
   album: z.string().max(200).optional().nullable(),
+  apple_music_url: z.string().url().optional().nullable(),
   spotify_url: z.string().url().optional().nullable(),
   cover_url: z.string().url().optional().nullable(),
 })
@@ -22,7 +23,7 @@ export async function GET(
   const { data, error } = await supabase
     .from('circle_songs')
     .select(`
-      id, title, artist, album, spotify_url, cover_url,
+      id, title, artist, album, apple_music_url, spotify_url, cover_url,
       avg_rating, rating_count, created_at,
       shared_by,
       profiles!circle_songs_shared_by_fkey(display_name, avatar_url),

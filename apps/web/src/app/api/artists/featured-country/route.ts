@@ -48,10 +48,11 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const token = await getSpotifyToken()
-  if (!token) {
+  const tokenResult = await getSpotifyToken()
+  if (!tokenResult.ok) {
     return NextResponse.json({ trending: [], classics: [], configured: false })
   }
+  const token = tokenResult.token
 
   // Fetch trending + classics in parallel
   const [trendingRes, ...classicResults] = await Promise.all([

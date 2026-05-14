@@ -17,10 +17,11 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
   if (!q) return NextResponse.json({ artists: [] })
 
-  const token = await getSpotifyToken()
-  if (!token) {
-    return NextResponse.json({ artists: [], error: 'not_configured' })
+  const tokenResult = await getSpotifyToken()
+  if (!tokenResult.ok) {
+    return NextResponse.json({ artists: [], error: tokenResult.error, details: tokenResult.details })
   }
+  const token = tokenResult.token
 
   const url = `https://api.spotify.com/v1/search?${new URLSearchParams({
     q,

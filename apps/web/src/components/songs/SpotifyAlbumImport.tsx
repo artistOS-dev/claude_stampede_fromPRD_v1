@@ -69,9 +69,13 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
       try {
         const res = await fetch(`/api/artists/spotify-search?q=${encodeURIComponent(q)}`)
         if (res.ok) {
-          const json: { artists: SpotifyArtistResult[]; error?: string } = await res.json()
+          const json: { artists: SpotifyArtistResult[]; error?: string; details?: string } = await res.json()
           if (json.error === 'not_configured') {
             setSpotifyConfigured(false)
+            setArtists([])
+          } else if (json.error === 'auth_failed') {
+            setSpotifyConfigured(false)
+            setError(`Spotify credentials are invalid. Check your SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET. Details: ${json.details ?? 'unknown'}`)
             setArtists([])
           } else {
             setSpotifyConfigured(true)
@@ -351,10 +355,17 @@ export default function SpotifyAlbumImport({ onImport, onClose }: Props) {
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
-              {spotifyConfigured === false && (
-                <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-950/30 border border-amber-800 rounded-lg px-3 py-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  Spotify is not configured. Add <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_ID</code> and <code className="mx-1 text-xs bg-stone-800 px-1 py-0.5 rounded">SPOTIFY_CLIENT_SECRET</code> to your environment.
+              {spotifyConfigured === false && !error && (
+                <div className="text-sm text-amber-400 bg-amber-950/30 border border-amber-800 rounded-lg px-3 py-2.5 space-y-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Spotify not configured
+                  </div>
+                  <p className="text-xs text-amber-300/70 leading-relaxed">
+                    Create a <strong>.env.local</strong> file in <code className="bg-stone-800 px-1 py-0.5 rounded">apps/web/</code> with:
+                  </p>
+                  <pre className="text-xs bg-stone-900 rounded p-2 text-stone-300 overflow-x-auto">{`SPOTIFY_CLIENT_ID=your_id\nSPOTIFY_CLIENT_SECRET=your_secret`}</pre>
+                  <p className="text-xs text-amber-300/60">Get credentials at <strong>developer.spotify.com</strong> → create an app → Settings → Client ID/Secret</p>
                 </div>
               )}
               {artists.length > 0 && (

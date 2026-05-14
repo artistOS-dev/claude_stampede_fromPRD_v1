@@ -37,12 +37,16 @@ export interface SpotifyAlbumWithTracks extends SpotifyAlbumResult {
 
 let tokenCache: { token: string; expiresAt: number } | null = null
 
-export async function getSpotifyToken(): Promise<string | null> {
+export type SpotifyTokenResult =
+  | { ok: true; token: string }
+  | { ok: false; error: 'not_configured' | 'auth_failed'; details?: string }
+
+export async function getSpotifyToken(): Promise<SpotifyTokenResult> {
   const clientId     = process.env.SPOTIFY_CLIENT_ID
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
-  if (!clientId || !clientSecret) return null
+  if (!clientId || !clientSecret) return { ok: false, error: 'not_configured' }
 
-  if (tokenCache && Date.now() < tokenCache.expiresAt - 60_000) return tokenCache.token
+  if (tokenCache && Date.now() < tokenCache.expiresAt - 60_000) return { ok: true, token: tokenCache.token }
 
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -53,12 +57,17 @@ export async function getSpotifyToken(): Promise<string | null> {
     body: 'grant_type=client_credentials',
     cache: 'no-store',
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    let details: string | undefined
+    try { details = await res.text() } catch { /* ignore */ }
+    console.error('[Spotify] Token fetch failed', res.status, details)
+    return { ok: false, error: 'auth_failed', details }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json: any = await res.json()
   tokenCache = { token: json.access_token, expiresAt: Date.now() + json.expires_in * 1000 }
-  return tokenCache.token
+  return { ok: true, token: tokenCache.token }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -15,8 +15,14 @@ export async function GET(request: NextRequest) {
   const artistId = request.nextUrl.searchParams.get('artist_id')?.trim()
   if (!artistId) return NextResponse.json({ error: 'artist_id is required' }, { status: 400 })
 
-  const token = await getSpotifyToken()
-  if (!token) return NextResponse.json({ error: 'Spotify not configured' }, { status: 503 })
+  const tokenResult = await getSpotifyToken()
+  if (!tokenResult.ok) {
+    const msg = tokenResult.error === 'not_configured'
+      ? 'Spotify not configured — add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET'
+      : `Spotify auth failed: ${tokenResult.details ?? tokenResult.error}`
+    return NextResponse.json({ error: msg }, { status: 503 })
+  }
+  const token = tokenResult.token
 
   const url = `https://api.spotify.com/v1/artists/${artistId}/albums?${new URLSearchParams({
     include_groups: 'album,single',

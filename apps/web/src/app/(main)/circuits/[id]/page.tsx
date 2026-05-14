@@ -333,7 +333,7 @@ function DuelCard({
 
 // ── Bracket ───────────────────────────────────────────────────
 
-const SLOT_HEIGHT = 156 // px per bracket slot
+const SLOT_HEIGHT = 280 // px per bracket slot — must be ≥ max DuelCard height (~250px)
 
 function BracketView({
   circuit,
@@ -354,7 +354,7 @@ function BracketView({
 
   return (
     <div className="overflow-x-auto pb-4">
-      <div className="flex gap-6 items-start" style={{ minWidth: `${circuit.total_rounds * 240}px` }}>
+      <div className="flex gap-8 items-start" style={{ minWidth: `${circuit.total_rounds * 248}px` }}>
         {circuit.rounds.map((round) => {
           const slotsPerDuel = Math.pow(2, round.round_number - 1)
           const containerHeight = totalSlots * SLOT_HEIGHT

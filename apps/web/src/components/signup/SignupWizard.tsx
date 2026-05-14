@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Music2 } from 'lucide-react'
+import { Guitar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import ProgressBar from './ProgressBar'
 import Step1Credentials from './Step1Credentials'
@@ -239,9 +239,9 @@ export default function SignupWizard({
       <header className="bg-stone-900 border-b border-stone-800 py-4 px-4 sm:px-6">
         <div className="max-w-lg mx-auto flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center" aria-hidden="true">
-            <Music2 className="w-4 h-4 text-white" />
+            <Guitar className="w-4 h-4 text-white" />
           </div>
-          <span className="text-base font-bold text-white">Stampede</span>
+          <span className="text-base font-bold text-white">The Stampede</span>
           {entryPoint && (
             <span className="ml-auto text-xs text-stone-600">
               via {entryPoint}

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff, Music2, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Guitar, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -54,9 +54,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-700 mb-4 shadow-lg">
-            <Music2 className="w-8 h-8 text-amber-100" />
+            <Guitar className="w-8 h-8 text-amber-100" />
           </div>
-          <h1 className="text-3xl font-bold font-display text-amber-100 tracking-wide">Stampede</h1>
+          <h1 className="text-3xl font-bold font-display text-amber-100 tracking-wide">The Stampede</h1>
           <p className="text-stone-400 mt-1">The home of country music</p>
         </div>
 
@@ -128,7 +128,7 @@ export default function LoginPage() {
           <p className="text-center text-sm text-stone-400 mt-6">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-              Join Stampede
+              Join The Stampede
             </Link>
           </p>
         </div>

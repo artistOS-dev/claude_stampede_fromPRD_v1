@@ -35,14 +35,20 @@ export default async function MainLayout({
             <div className="w-8 h-8 rounded-lg bg-amber-700 flex items-center justify-center shadow-md group-hover:bg-amber-600 transition-colors">
               <svg
                 className="w-5 h-5 text-amber-100"
-                fill="currentColor"
-                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                viewBox="0 0 24 24"
                 aria-hidden="true"
               >
-                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
               </svg>
             </div>
-            <span className="text-lg font-bold font-display text-amber-100 tracking-wide">Stampede</span>
+            <span className="text-lg font-bold font-display text-amber-100 tracking-wide">The Stampede</span>
           </a>
 
           <nav className="flex items-center gap-1">

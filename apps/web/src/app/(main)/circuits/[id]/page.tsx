@@ -95,7 +95,7 @@ function SongSearchModal({
     debounce.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(q)}&limit=20&source=all`)
+        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(q)}&limit=20&source=circle`)
         if (!res.ok) return
         const json: { songs: SongResult[] } = await res.json()
         setResults(json.songs ?? [])
@@ -146,7 +146,7 @@ function SongSearchModal({
             {!loading && results.length === 0 && query && (
               <div className="text-center py-4 space-y-1">
                 <p className="text-stone-500 text-sm">No songs found</p>
-                <p className="text-stone-600 text-xs">Add songs to your stable or a circle first</p>
+                <p className="text-stone-600 text-xs">Songs must be shared to a circle to appear here</p>
               </div>
             )}
           </div>
@@ -161,12 +161,14 @@ function SongSearchModal({
 function DuelCard({
   duel,
   myParticipantIds,
+  isAdmin,
   onVote,
   onPickSong,
   isVoting,
 }: {
   duel: CircuitDuel
   myParticipantIds: Set<string>
+  isAdmin: boolean
   onVote: (duelId: string, participantId: string) => void
   onPickSong: (duelId: string, side: 'left' | 'right', artistName: string) => void
   isVoting: boolean
@@ -233,13 +235,13 @@ function DuelCard({
                 <Music className="w-3 h-3 text-stone-500 shrink-0" />
                 <span className="text-xs text-stone-400 truncate">{song.title}</span>
               </div>
-            ) : iAm && isSong ? (
+            ) : (iAm || isAdmin) && isSong ? (
               <button
                 type="button"
                 onClick={() => onPickSong(duel.id, side, participant?.artist_name ?? '')}
                 className="mt-1 flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
               >
-                <Music className="w-3 h-3" /> Pick your song
+                <Music className="w-3 h-3" /> {iAm ? 'Pick your song' : 'Set song'}
               </button>
             ) : (
               <span className="text-xs text-stone-600 mt-0.5 block">No song yet</span>
@@ -336,12 +338,14 @@ const SLOT_HEIGHT = 156 // px per bracket slot
 function BracketView({
   circuit,
   myParticipantIds,
+  isAdmin,
   onVote,
   onPickSong,
   isVoting,
 }: {
   circuit: CircuitDetail
   myParticipantIds: Set<string>
+  isAdmin: boolean
   onVote: (duelId: string, participantId: string) => void
   onPickSong: (duelId: string, side: 'left' | 'right', artistName: string) => void
   isVoting: boolean
@@ -386,6 +390,7 @@ function BracketView({
                       <DuelCard
                         duel={duel}
                         myParticipantIds={myParticipantIds}
+                        isAdmin={isAdmin}
                         onVote={onVote}
                         onPickSong={onPickSong}
                         isVoting={isVoting}
@@ -623,7 +628,7 @@ export default function CircuitPage() {
       const res = await fetch(`/api/circuits/${id}/duels/${songPicker.duelId}/song`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ song_id: song.id }),
+        body: JSON.stringify({ song_id: song.id, side: songPicker.side }),
       })
       const json: { error?: string } = await res.json()
       if (!res.ok) { setPickingMsg(json.error ?? 'Failed to pick song'); return }
@@ -806,6 +811,7 @@ export default function CircuitPage() {
           <BracketView
             circuit={circuit}
             myParticipantIds={myParticipantIds}
+            isAdmin={circuit.is_admin}
             onVote={handleVote}
             onPickSong={(duelId, side, artistName) => setSongPicker({ duelId, side, artistName })}
             isVoting={isVoting}

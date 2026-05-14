@@ -17,10 +17,11 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
   const limit = Math.min(Number(request.nextUrl.searchParams.get('limit') ?? 20), 50)
 
-  const token = await getSpotifyToken()
-  if (!token) {
-    return NextResponse.json({ tracks: [], spotify_available: false })
+  const tokenResult = await getSpotifyToken()
+  if (!tokenResult.ok) {
+    return NextResponse.json({ tracks: [], spotify_available: false, error: tokenResult.error })
   }
+  const token = tokenResult.token
 
   if (!q) return NextResponse.json({ tracks: [], spotify_available: true })
 
